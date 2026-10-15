@@ -180,7 +180,10 @@
       isSupporterConnected = false;
       isSupporterReady = false;
 
-      // P2P 방 생성 패킷 전송 (성공 시 network.js에서 자동으로 정비실 전환)
+      // 1P 호스트 2인 정비실 화면으로 즉시 전환!
+      setScreenState('maintenance');
+
+      // P2P 방 생성 패킷 전송
       if (typeof initNetworkSocket === 'function') {
         initNetworkSocket();
         sendNetPacket({

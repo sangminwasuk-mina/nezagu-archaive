@@ -5,19 +5,15 @@ let peer = null;
 let peerConn = null;
 let isNetworkConnected = false;
 const pendingPackets = [];
-const PEER_ROOM_PREFIX = 'kaiten-city-room-';
+const PEER_ROOM_PREFIX = 'kaiten-v2-';
 
 // 동료 플레이어의 실시간 장비 세팅 보관
 window.peerStrikerLoadout = null;
 window.peerSupporterLoadout = null;
 window.peerSupporterMode = 'ground';
 
-// STUN 서버 설정 (Google 초고속 무료 STUN 및 고정 포트 443 WSS 설정)
+// STUN 서버 설정 (Google 초고속 무료 STUN)
 const PEER_CONFIG = {
-  host: '0.peerjs.com',
-  port: 443,
-  path: '/',
-  secure: true,
   debug: 1,
   config: {
     iceServers: [
@@ -39,22 +35,10 @@ function startHostPeerRoom(code) {
   const peerId = PEER_ROOM_PREFIX + code;
   console.log(`[P2P] 1P 호스트 룸 생성 시도: ${peerId}`);
 
-  const btnHost = document.getElementById('btn-duo-host');
-  if (btnHost) {
-    btnHost.innerText = '⏳ 방 개설 중... (1~2초)';
-    btnHost.style.opacity = '0.7';
-    btnHost.disabled = true;
-  }
-
   try {
     peer = new Peer(peerId, PEER_CONFIG);
   } catch (e) {
     console.error('[P2P] PeerJS 생성 오류:', e);
-    if (btnHost) {
-      btnHost.innerText = '방 만들기 시작';
-      btnHost.style.opacity = '1';
-      btnHost.disabled = false;
-    }
     alert('P2P 라이브러리 초기화 실패. 인터넷 연결을 확인해주세요.');
     return;
   }
@@ -62,13 +46,9 @@ function startHostPeerRoom(code) {
   peer.on('open', (id) => {
     console.log('[P2P] 1P 호스트 룸 개설 성공! ID:', id);
     isNetworkConnected = true;
-    if (btnHost) {
-      btnHost.innerText = '방 만들기 시작';
-      btnHost.style.opacity = '1';
-      btnHost.disabled = false;
+    if (displayPeerStatus) {
+      displayPeerStatus.innerHTML = '<span style="color:#38bdf8; font-weight:bold;">📡 2P 동료 접속 대기 중...</span>';
     }
-    // 안내소에 방이 정상 등록된 순간 정비실 화면으로 이동!
-    setScreenState('maintenance');
     handleNetworkMessage({ type: 'ROOM_CREATED', roomCode: code });
   });
 
@@ -80,13 +60,9 @@ function startHostPeerRoom(code) {
 
   peer.on('error', (err) => {
     console.error('[P2P] 호스트 에러:', err);
-    if (btnHost) {
-      btnHost.innerText = '방 만들기 시작';
-      btnHost.style.opacity = '1';
-      btnHost.disabled = false;
-    }
     if (err.type === 'unavailable-id') {
-      alert(`방 코드 [${code}]는 이미 사용 중입니다.\n이전 접속이 완전히 종료될 때까지 5초 기다리시거나, 다른 방 코드로 만들어주세요!`);
+      alert(`방 코드 [${code}]는 현재 이미 사용 중입니다.\n다른 방 코드로 입력해주세요 (예: ${code}1)!`);
+      setScreenState('duo_lobby');
     } else {
       alert(`P2P 네트워크 에러 [${err.type}]: ${err.message || ''}`);
     }
@@ -97,23 +73,33 @@ function startHostPeerRoom(code) {
   });
 }
 
-// 2P 게스트 P2P 참가 (호스트 연결 지연 시 최대 3회 자동 재시도)
+// 2P 게스트 P2P 참가 (호스트 연결 지연 시 최대 4회 자동 재시도)
 function startGuestPeerRoom(code) {
   cleanupPeer();
   roomCode = code;
   const targetPeerId = PEER_ROOM_PREFIX + code;
   console.log(`[P2P] 2P 게스트 방 참가 시도 -> 타겟 호스트: ${targetPeerId}`);
 
+  const btnJoin = document.getElementById('btn-duo-join');
+  if (btnJoin) {
+    btnJoin.innerText = '📡 접속 시도 중...';
+    btnJoin.style.opacity = '0.7';
+  }
+
   try {
     peer = new Peer(null, PEER_CONFIG);
   } catch (e) {
     console.error('[P2P] PeerJS 생성 오류:', e);
+    if (btnJoin) {
+      btnJoin.innerText = '작전실 참가하기';
+      btnJoin.style.opacity = '1';
+    }
     alert('P2P 라이브러리 초기화 실패. 인터넷 연결을 확인해주세요.');
     return;
   }
 
   let attemptCount = 0;
-  const maxAttempts = 3;
+  const maxAttempts = 4;
   let isConnected = false;
 
   function tryConnect() {
@@ -121,13 +107,15 @@ function startGuestPeerRoom(code) {
     attemptCount++;
     console.log(`[P2P] 호스트 연결 시도 (${attemptCount}/${maxAttempts})...`);
     
-    const btn = document.getElementById('btn-duo-join');
-    if (btn) btn.innerText = `📡 방 찾는 중... (${attemptCount}/${maxAttempts})`;
+    if (btnJoin) btnJoin.innerText = `📡 방 찾는 중... (${attemptCount}/${maxAttempts})`;
 
     peerConn = peer.connect(targetPeerId, { reliable: true });
     setupDataConnection(peerConn, () => {
       isConnected = true;
-      if (btn) btn.innerText = '작전실 참가하기';
+      if (btnJoin) {
+        btnJoin.innerText = '작전실 참가하기';
+        btnJoin.style.opacity = '1';
+      }
     });
   }
 
@@ -145,12 +133,16 @@ function startGuestPeerRoom(code) {
         setTimeout(tryConnect, 1500);
         return;
       }
-      const btn = document.getElementById('btn-duo-join');
-      if (btn) btn.innerText = '작전실 참가하기';
-      alert(`방 [${code}]를 찾을 수 없습니다.\n호스트가 [방 만들기 시작]을 누르고 정비실에 완전히 들어갔는지 확인해주세요!`);
+      if (btnJoin) {
+        btnJoin.innerText = '작전실 참가하기';
+        btnJoin.style.opacity = '1';
+      }
+      alert(`방 [${code}]를 찾을 수 없습니다.\n호스트가 [방 만들기 시작]을 먼저 누르고 정비실에 들어가 있는지 확인해주세요!`);
     } else {
-      const btn = document.getElementById('btn-duo-join');
-      if (btn) btn.innerText = '작전실 참가하기';
+      if (btnJoin) {
+        btnJoin.innerText = '작전실 참가하기';
+        btnJoin.style.opacity = '1';
+      }
       alert(`P2P 연결 에러 [${err.type}]: ${err.message || ''}`);
     }
   });
