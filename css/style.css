@@ -36,7 +36,7 @@
     #top-hud.hidden {
       display: none !important;
     }
-    #minimap.hidden {
+    #minimap {
       display: none !important;
     }
     .panel {
@@ -1488,22 +1488,24 @@
 
     #controls-help-modal {
       position: fixed;
-      inset: 0;
+      top: 56px;
+      right: 20px;
       z-index: 200;
-      background: rgba(0, 0, 0, 0.65);
-      backdrop-filter: blur(5px);
       display: flex;
-      align-items: center;
-      justify-content: center;
+      pointer-events: auto;
+      transition: opacity 0.15s ease;
+    }
+    #controls-help-modal.hidden {
+      display: none !important;
     }
     .controls-help-box {
-      width: 400px;
+      width: 360px;
       max-width: 90vw;
       background: rgba(15, 23, 42, 0.96);
-      border: 2px solid #38bdf8;
-      border-radius: 12px;
-      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75), 0 0 24px rgba(56, 189, 248, 0.35);
-      padding: 20px 24px;
+      border: 1.5px solid #38bdf8;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 18px rgba(56, 189, 248, 0.35);
+      padding: 16px 20px;
       color: #f8fafc;
     }
     .controls-help-header {

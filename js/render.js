@@ -5444,56 +5444,229 @@
         ctx.restore();
       }
 
-      // 11. 미니맵
-      drawMinimap();
+      // 11. [신규 UI] 화면 외곽 엣지 타겟 핀 레이더 (오프스크린 보스/동료 위치 추적)
+      drawOffscreenTargetPins();
     }
 
-    function drawMinimap() {
-      miniCtx.clearRect(0, 0, minimap.width, minimap.height);
-      miniCtx.fillStyle = '#1e293b';
-      miniCtx.fillRect(0, 0, minimap.width, minimap.height);
+    function drawOffscreenTargetPins() {
+      const viewLeft = camera.x;
+      const viewRight = camera.x + canvas.width;
+      const playerCenterX = player.x + player.width / 2;
 
-      const ratio = minimap.width / WORLD_WIDTH;
-
-      // 카메라 시야
-      const camMiniX = camera.x * ratio;
-      const camMiniW = canvas.width * ratio;
-      miniCtx.fillStyle = 'rgba(56, 189, 248, 0.2)';
-      miniCtx.fillRect(camMiniX, 0, camMiniW, minimap.height);
-      miniCtx.strokeStyle = '#38bdf8';
-      miniCtx.lineWidth = 1;
-      miniCtx.strokeRect(camMiniX, 0, camMiniW, minimap.height);
-
-      // 로컬 플레이어 점
-      miniCtx.fillStyle = player.color || '#0284c7';
-      miniCtx.beginPath();
-      miniCtx.arc(player.x * ratio, minimap.height - 12, 4, 0, Math.PI * 2);
-      miniCtx.fill();
-
-      // 2인 모드 시 동료 스트라이커 점
-      if (currentMode === 'duo' && remotePlayer.isActive) {
-        miniCtx.fillStyle = remotePlayer.color || (myRole === 'striker' ? '#ef4444' : '#0284c7');
-        miniCtx.beginPath();
-        miniCtx.arc(remotePlayer.x * ratio, minimap.height - 12, 4, 0, Math.PI * 2);
-        miniCtx.fill();
-      }
-
-      // 카이텐저 5인
+      // 1. 카이텐저 5인방 (1페이즈 보스들) - 화면 밖으로 나갈 때 색상별 핀 렌더링
       kaitenzers.forEach(k => {
-        miniCtx.fillStyle = k.color;
-        miniCtx.beginPath();
-        miniCtx.arc(k.x * ratio, minimap.height - 12, 4, 0, Math.PI * 2);
-        miniCtx.fill();
+        if (!k.isSpawned || k.isDead) return;
+
+        const kCenterX = k.x + k.size / 2;
+        const isOffLeft = (kCenterX < viewLeft);
+        const isOffRight = (kCenterX > viewRight);
+
+        // 화면 안에 있으면 핀을 그리지 않음
+        if (!isOffLeft && !isOffRight) return;
+
+        const dir = isOffLeft ? -1 : 1;
+        const offDist = isOffLeft ? (viewLeft - kCenterX) : (kCenterX - viewRight);
+        const worldDist = Math.abs(kCenterX - playerCenterX);
+
+        // 거리 비례 크기 스케일링 (가까우면 1.35배 대형, 멀수록 0.65배로 축소)
+        const distFactor = Math.max(0, Math.min(1, offDist / 2000));
+        const pinScale = 1.35 - distFactor * 0.7;
+
+        // 화면 가장자리 고정 좌표 (여백 38px)
+        const pinX = isOffLeft ? 38 : (canvas.width - 38);
+        const kScreenY = groundY - (k.jumpY || 0) - (k.size / 2);
+        const pinY = Math.max(85, Math.min(canvas.height - 75, kScreenY));
+
+        ctx.save();
+
+        // (A) 방향 지향 핀 쐐기 화살표
+        const r = 12 * pinScale;
+        ctx.fillStyle = k.color;
+        ctx.beginPath();
+        ctx.moveTo(pinX + dir * (r + 7 * pinScale), pinY);
+        ctx.lineTo(pinX + dir * (r - 2 * pinScale), pinY - 6 * pinScale);
+        ctx.lineTo(pinX + dir * (r - 2 * pinScale), pinY + 6 * pinScale);
+        ctx.closePath();
+        ctx.fill();
+
+        // (B) 핀 베이스 원형 본체 (글로우 링 + 다크 코어)
+        ctx.shadowColor = k.color;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(pinX, pinY, r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+        ctx.fill();
+        ctx.lineWidth = 2.2 * pinScale;
+        ctx.strokeStyle = k.color;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // (C) 핀 내부 보스 이니셜 심볼
+        const initial = (k.id ? k.id[0].toUpperCase() : 'K');
+        ctx.font = `bold ${Math.round(11 * pinScale)}px sans-serif`;
+        ctx.fillStyle = k.color;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(initial, pinX, pinY + 0.5);
+
+        // (D) 거리 텍스트 배지 (미터 단위)
+        const distM = Math.round(worldDist / 10);
+        const distText = `${distM}m`;
+        ctx.font = 'bold 9px monospace';
+        const textW = ctx.measureText(distText).width;
+        const badgeY = pinY + r + 8;
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        ctx.strokeStyle = k.color;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(pinX - textW / 2 - 3, badgeY - 5, textW + 6, 12, 3);
+        else ctx.rect(pinX - textW / 2 - 3, badgeY - 5, textW + 6, 12);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(distText, pinX, badgeY + 1);
+
+        ctx.restore();
       });
 
-      // 2페이즈 KAITEN FX Mk.0 거대 보스 점 (황금/적색 대형 점)
+      // 2. 2페이즈 KAITEN FX Mk.0 거대 보스 - 화면 밖 전용 대형 핀
       if (typeof kaitenFx !== 'undefined' && kaitenFx.isSpawned && !kaitenFx.isDead) {
-        miniCtx.fillStyle = '#ef4444';
-        miniCtx.beginPath();
-        miniCtx.arc(kaitenFx.x * ratio, minimap.height - 14, 7, 0, Math.PI * 2);
-        miniCtx.fill();
-        miniCtx.strokeStyle = '#facc15';
-        miniCtx.lineWidth = 1.5;
-        miniCtx.stroke();
+        const fxCenterX = kaitenFx.x + kaitenFx.width / 2;
+        const isOffLeft = (fxCenterX < viewLeft);
+        const isOffRight = (fxCenterX > viewRight);
+
+        if (isOffLeft || isOffRight) {
+          const dir = isOffLeft ? -1 : 1;
+          const offDist = isOffLeft ? (viewLeft - fxCenterX) : (fxCenterX - viewRight);
+          const worldDist = Math.abs(fxCenterX - playerCenterX);
+
+          const distFactor = Math.max(0, Math.min(1, offDist / 2500));
+          const pinScale = 1.5 - distFactor * 0.65; // 대형 보스 핀
+
+          const pinX = isOffLeft ? 44 : (canvas.width - 44);
+          const pinY = Math.max(120, Math.min(canvas.height - 90, groundY - 140));
+
+          ctx.save();
+          const r = 16 * pinScale;
+
+          // 화살표
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.moveTo(pinX + dir * (r + 10 * pinScale), pinY);
+          ctx.lineTo(pinX + dir * (r - 3 * pinScale), pinY - 8 * pinScale);
+          ctx.lineTo(pinX + dir * (r - 3 * pinScale), pinY + 8 * pinScale);
+          ctx.closePath();
+          ctx.fill();
+
+          // 핀 본체
+          ctx.shadowColor = '#ef4444';
+          ctx.shadowBlur = 12;
+          ctx.beginPath();
+          ctx.arc(pinX, pinY, r, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.96)';
+          ctx.fill();
+          ctx.lineWidth = 3 * pinScale;
+          ctx.strokeStyle = '#facc15';
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+
+          // 보스 아이콘
+          ctx.font = `${Math.round(14 * pinScale)}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('🤖', pinX, pinY);
+
+          // 거리 라벨 배지
+          const distM = Math.round(worldDist / 10);
+          const distText = `FX [${distM}m]`;
+          ctx.font = 'bold 9.5px monospace';
+          const textW = ctx.measureText(distText).width;
+          const badgeY = pinY + r + 9;
+
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(pinX - textW / 2 - 4, badgeY - 5, textW + 8, 13, 3);
+          else ctx.rect(pinX - textW / 2 - 4, badgeY - 5, textW + 8, 13);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#fde047';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(distText, pinX, badgeY + 1.5);
+
+          ctx.restore();
+        }
+      }
+
+      // 3. 2인 협동 모드 시 동료 스트라이커 - 화면 밖 핀
+      if (currentMode === 'duo' && remotePlayer.isActive) {
+        const rCenterX = remotePlayer.x + remotePlayer.width / 2;
+        const isOffLeft = (rCenterX < viewLeft);
+        const isOffRight = (rCenterX > viewRight);
+
+        if (isOffLeft || isOffRight) {
+          const dir = isOffLeft ? -1 : 1;
+          const worldDist = Math.abs(rCenterX - playerCenterX);
+          const pinScale = 1.15;
+          const pinX = isOffLeft ? 38 : (canvas.width - 38);
+          const pinY = Math.max(90, Math.min(canvas.height - 80, remotePlayer.y + remotePlayer.height / 2));
+          const allyColor = remotePlayer.color || (myRole === 'striker' ? '#ef4444' : '#0284c7');
+
+          ctx.save();
+          const r = 12 * pinScale;
+
+          // 화살표
+          ctx.fillStyle = allyColor;
+          ctx.beginPath();
+          ctx.moveTo(pinX + dir * (r + 7 * pinScale), pinY);
+          ctx.lineTo(pinX + dir * (r - 2 * pinScale), pinY - 6 * pinScale);
+          ctx.lineTo(pinX + dir * (r - 2 * pinScale), pinY + 6 * pinScale);
+          ctx.closePath();
+          ctx.fill();
+
+          // 핀 본체
+          ctx.beginPath();
+          ctx.arc(pinX, pinY, r, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+          ctx.fill();
+          ctx.lineWidth = 2 * pinScale;
+          ctx.strokeStyle = allyColor;
+          ctx.stroke();
+
+          ctx.font = `${Math.round(11 * pinScale)}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('🛡️', pinX, pinY);
+
+          // 거리 라벨
+          const distM = Math.round(worldDist / 10);
+          const distText = `동료 ${distM}m`;
+          ctx.font = 'bold 9px monospace';
+          const textW = ctx.measureText(distText).width;
+          const badgeY = pinY + r + 8;
+
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+          ctx.strokeStyle = allyColor;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(pinX - textW / 2 - 3, badgeY - 5, textW + 6, 12, 3);
+          else ctx.rect(pinX - textW / 2 - 3, badgeY - 5, textW + 6, 12);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(distText, pinX, badgeY + 1);
+
+          ctx.restore();
+        }
       }
     }
