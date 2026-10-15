@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kaiten City - Weapon Attacks Complete</title>
-  <link rel="stylesheet" href="css/style.css?v=2.9.2">
+  <link rel="stylesheet" href="css/style.css?v=2.9.3">
 </head>
 <body>
   <!-- 메인 화면 (타이틀 오버레이) -->
@@ -652,18 +652,8 @@
     <div id="kaiten-status" class="panel hidden"></div>
   </div>
 
-  <!-- [신규 UI] 우측 상단 HUD: 코스트 게이지 & 도움말(+) 버튼 -->
+  <!-- [신규 UI] 우측 상단 HUD: 도움말(+) 버튼 -->
   <div id="top-right-hud" class="hidden">
-    <!-- 사선 블록형 코스트 게이지 & 현재 코스트 박스 (우측 상단 배치) -->
-    <div class="deck-cost-container">
-      <div class="deck-cost-bar-track">
-        <div class="deck-cost-segments" id="deck-cost-segments"></div>
-      </div>
-      <div class="deck-cost-val-box">
-        <span id="deck-current-cost">0</span>
-      </div>
-    </div>
-
     <!-- 도움말(+) 버튼 -->
     <button id="btn-open-controls-help" title="전투 조작키 안내 (단축키: = / +)">
       <span>도움말 (+)</span>
@@ -699,14 +689,26 @@
     </div>
   </div>
 
-  <!-- [신규 UI] 좌측 하단 전술 스킬 슬롯 UI (이름 제거, 아이콘/코스트/키만 미니멀하게 표시) -->
+  <!-- [신규 UI] 좌측 상단 전술 스킬 슬롯 & 코스트 바 UI -->
   <div id="tactical-deck" class="hidden">
-    <!-- 콤팩트 무기/탄약 칩 -->
-    <div class="deck-weapon-chip">
-      <span id="deck-weapon-name" class="deck-chip-name">MG</span>
-      <span class="deck-chip-divider">|</span>
-      <span class="deck-chip-ammo"><b id="deck-ammo-cur">40</b> / <span id="deck-ammo-mag">∞</span></span>
-      <span id="deck-aim-badge" class="deck-chip-aim">[Shift] 자동 에임</span>
+    <!-- 상단 1열: 무기 칩 & 코스트 사선 게이지 -->
+    <div class="deck-top-row">
+      <div class="deck-weapon-chip">
+        <span id="deck-weapon-name" class="deck-chip-name">MG</span>
+        <span class="deck-chip-divider">|</span>
+        <span class="deck-chip-ammo"><b id="deck-ammo-cur">40</b> / <span id="deck-ammo-mag">∞</span></span>
+        <span id="deck-aim-badge" class="deck-chip-aim">[Shift] 자동 에임</span>
+      </div>
+
+      <!-- 사선 블록형 코스트 게이지 & 현재 코스트 박스 (좌측 상단 통합) -->
+      <div class="deck-cost-container">
+        <div class="deck-cost-bar-track">
+          <div class="deck-cost-segments" id="deck-cost-segments"></div>
+        </div>
+        <div class="deck-cost-val-box">
+          <span id="deck-current-cost">0</span>
+        </div>
+      </div>
     </div>
 
     <!-- 4개 스킬 카드 슬롯 행 -->
@@ -757,15 +759,15 @@
   <canvas id="minimap" class="hidden"></canvas>
 
   <!-- WebRTC 순수 P2P 라이브러리 (로컬 내장 PeerJS) -->
-  <script src="js/peerjs.min.js?v=2.9.2"></script>
+  <script src="js/peerjs.min.js?v=2.9.3"></script>
   <script>window.Peer || document.write('<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"><\/script>');</script>
 
-  <!-- 게임 엔진 스크립트 모듈 순차 로드 (캐시 방지 v=2.9.2) -->
-  <script src="js/constants.js?v=2.9.2"></script>
-  <script src="js/entities.js?v=2.9.2"></script>
-  <script src="js/network.js?v=2.9.2"></script>
-  <script src="js/ui.js?v=2.9.2"></script>
-  <script src="js/render.js?v=2.9.2"></script>
-  <script src="js/main.js?v=2.9.2"></script>
+  <!-- 게임 엔진 스크립트 모듈 순차 로드 (캐시 방지 v=2.9.3) -->
+  <script src="js/constants.js?v=2.9.3"></script>
+  <script src="js/entities.js?v=2.9.3"></script>
+  <script src="js/network.js?v=2.9.3"></script>
+  <script src="js/ui.js?v=2.9.3"></script>
+  <script src="js/render.js?v=2.9.3"></script>
+  <script src="js/main.js?v=2.9.3"></script>
 </body>
 </html>
