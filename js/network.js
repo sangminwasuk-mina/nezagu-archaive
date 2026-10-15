@@ -12,7 +12,51 @@ window.peerStrikerLoadout = null;
 window.peerSupporterLoadout = null;
 window.peerSupporterMode = 'ground';
 
-// STUN 서버 설정 (Google + Twilio 초고속 무료 STUN)
+const isServerRelayMode = window.location.hostname !== 'sangminwasuk-mina.github.io';
+let socket = null;
+
+// 중계 서버(server.js) 웹소켓 연결
+function initRelayWebSocket() {
+  if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) return;
+  const host = window.location.hostname || 'localhost';
+  const isHttps = window.location.protocol === 'https:';
+  const wsProtocol = isHttps ? 'wss:' : 'ws:';
+  let portPart = '';
+  if (window.location.port) {
+    portPart = `:${window.location.port}`;
+  } else if (!isHttps && (host === 'localhost' || host === '127.0.0.1' || host.startsWith('10.') || host.startsWith('192.168.'))) {
+    portPart = ':8080';
+  }
+  const wsUrl = `${wsProtocol}//${host}${portPart}`;
+  console.log(`[NET] 웹소켓 서버 접속: ${wsUrl}`);
+  try {
+    socket = new WebSocket(wsUrl);
+  } catch (err) {
+    console.error('[NET] 소켓 생성 실패:', err);
+    return;
+  }
+  socket.onopen = () => {
+    isNetworkConnected = true;
+    console.log('[NET] 웹소켓 서버 연결 성공!');
+    while (pendingPackets.length > 0) {
+      const pkt = pendingPackets.shift();
+      try {
+        socket.send(JSON.stringify(pkt));
+      } catch (e) {}
+    }
+  };
+  socket.onmessage = async (event) => {
+    let raw = event.data;
+    if (typeof Blob !== 'undefined' && raw instanceof Blob) raw = await raw.text();
+    try {
+      handleNetworkMessage(JSON.parse(raw));
+    } catch (e) {}
+  };
+  socket.onclose = () => { isNetworkConnected = false; };
+  socket.onerror = (err) => { console.error('[NET] 소켓 에러:', err); };
+}
+
+// STUN 및 TURN 서버 설정 (초고속 한국/글로벌 STUN + 방화벽 우회 OpenRelay TURN)
 const PEER_CONFIG = {
   debug: 1,
   config: {
@@ -21,16 +65,39 @@ const PEER_CONFIG = {
       { urls: 'stun:stun1.l.google.com:19302' },
       { urls: 'stun:stun2.l.google.com:19302' },
       { urls: 'stun:stun3.l.google.com:19302' },
-      { urls: 'stun:global.stun.twilio.com:3478' }
-    ]
+      { urls: 'stun:global.stun.twilio.com:3478' },
+      { urls: 'stun:openrelay.metered.ca:80' },
+      {
+        urls: 'turn:openrelay.metered.ca:80',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      },
+      {
+        urls: 'turn:openrelay.metered.ca:443',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      },
+      {
+        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      }
+    ],
+    iceCandidatePoolSize: 10
   }
 };
 
-// 기존 ui.js 코드와의 하위 호환을 위한 더미 함수
-function initNetworkSocket() {}
+// 기존 ui.js 코드와의 하위 호환을 위한 함수
+function initNetworkSocket() {
+  if (isServerRelayMode) initRelayWebSocket();
+}
 
 // 1P 호스트 P2P 룸 생성
 function startHostPeerRoom(code) {
+  if (isServerRelayMode) {
+    initRelayWebSocket();
+    return;
+  }
   cleanupPeer();
   roomCode = code;
   const peerId = PEER_ROOM_PREFIX + code;
@@ -64,6 +131,12 @@ function startHostPeerRoom(code) {
     if (err.type === 'unavailable-id') {
       alert(`방 코드 [${code}]는 현재 이미 사용 중입니다.\n다른 방 코드로 입력해주세요 (예: ${code}1)!`);
       setScreenState('duo_lobby');
+    } else if (err.type === 'network' || (err.message && err.message.includes('lost connect'))) {
+      if (isNetworkConnected) {
+        console.warn('[P2P] 호스트: 신호 서버 일시 지연 (P2P 연결은 유지됨)');
+        return;
+      }
+      console.warn('[P2P] 신호 서버 연결 지연:', err);
     } else {
       alert(`P2P 네트워크 에러 [${err.type}]: ${err.message || ''}`);
     }
@@ -139,6 +212,16 @@ function startGuestPeerRoom(code) {
         btnJoin.style.opacity = '1';
       }
       alert(`방 [${code}]를 찾을 수 없습니다.\n호스트가 [방 만들기 시작]을 먼저 누르고 정비실에 들어가 있는지 확인해주세요!`);
+    } else if (err.type === 'network' || (err.message && err.message.includes('lost connect'))) {
+      if (isNetworkConnected) {
+        console.warn('[P2P] 게스트: 신호 서버 일시 지연 (P2P 연결은 유지됨)');
+        return;
+      }
+      if (btnJoin) {
+        btnJoin.innerText = '작전실 참가하기';
+        btnJoin.style.opacity = '1';
+      }
+      console.warn('[P2P] 게스트 신호 서버 지연:', err);
     } else {
       if (btnJoin) {
         btnJoin.innerText = '작전실 참가하기';
@@ -239,9 +322,14 @@ function sendNetPacket(obj) {
     return;
   }
 
-  if (peerConn && peerConn.open) {
-    peerConn.send(obj);
-  } else {
+  try {
+    if (peerConn && peerConn.open) {
+      peerConn.send(obj);
+    } else {
+      pendingPackets.push(obj);
+    }
+  } catch (err) {
+    console.warn('[P2P] 패킷 전송 일시 지연 (대기 큐 적재):', err);
     pendingPackets.push(obj);
   }
 }
