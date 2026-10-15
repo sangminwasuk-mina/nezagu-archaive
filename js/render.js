@@ -5449,6 +5449,7 @@
     }
 
     function drawOffscreenTargetPins() {
+      const groundY = canvas.height - (typeof GROUND_OFFSET !== 'undefined' ? GROUND_OFFSET : 60);
       const viewLeft = camera.x;
       const viewRight = camera.x + canvas.width;
       const playerCenterX = player.x + player.width / 2;
