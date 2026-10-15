@@ -18,6 +18,23 @@
 
     // 조작키 이벤트 리스너
     window.addEventListener('keydown', (e) => {
+      // [신규 UI: 조작키 도움말(=/+) 토글 및 자동 닫기 제어]
+      if (e.key === '=' || e.key === '+' || e.code === 'Equal' || e.key === 'Add') {
+        if (!e.repeat && typeof toggleControlsHelp === 'function') {
+          toggleControlsHelp();
+          return;
+        }
+      }
+
+      // 조작키 도움말 팝업이 열려 있는 상태에서 게임 조작키나 Escape를 누르면 창 자동 닫기
+      const helpModalEl = document.getElementById('controls-help-modal');
+      if (helpModalEl && !helpModalEl.classList.contains('hidden')) {
+        if (typeof toggleControlsHelp === 'function') {
+          toggleControlsHelp(false);
+        }
+        if (e.key === 'Escape') return;
+      }
+
       if (currentGameState !== 'battle') return;
 
       const now = performance.now();

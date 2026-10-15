@@ -142,6 +142,97 @@
       ctx.restore();
     }
 
+    // [신규 UI] 플레이어 머리 위 사선 블록형 체력바 & 퍼센트 렌더링 (유저 스케치 반영)
+    function drawOverheadSlantedHpBar(targetScreenX, targetScreenY, targetEntity, isLocal = true) {
+      if (!targetEntity || targetEntity.isDead) return;
+      const hp = Math.max(0, targetEntity.hp);
+      const maxHp = targetEntity.maxHp || 65000;
+      const hpPct = Math.max(0, Math.min(100, (hp / maxHp) * 100));
+
+      const barW = 76;
+      const barH = 11;
+      const skew = -7; // 사선 기울기
+      const totalW = barW + 36;
+      const startX = targetScreenX + targetEntity.width / 2 - totalW / 2;
+      const startY = targetScreenY - 26;
+
+      ctx.save();
+
+      // 1. 체력바 외곽 베이스 트랙
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+      ctx.lineWidth = 1.2;
+
+      ctx.beginPath();
+      ctx.moveTo(startX - skew, startY);
+      ctx.lineTo(startX + barW - skew, startY);
+      ctx.lineTo(startX + barW, startY + barH);
+      ctx.lineTo(startX, startY + barH);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // 2. 5개 사선 세그먼트 (스케치 반영)
+      const numSegs = 5;
+      const segGap = 2;
+      const segW = (barW - (numSegs + 1) * segGap) / numSegs;
+      const barColor = hpPct <= 25 ? '#ef4444' : (hpPct <= 50 ? '#facc15' : '#84cc16'); // 라임 그린
+
+      for (let i = 0; i < numSegs; i++) {
+        const segStartX = startX + segGap + i * (segW + segGap);
+        const segSkew = skew * (segW / barW);
+        const segMinPct = i * 20;
+
+        if (hpPct > segMinPct) {
+          const segFill = Math.max(0, Math.min(1, (hpPct - segMinPct) / 20));
+          ctx.fillStyle = barColor;
+          ctx.beginPath();
+          ctx.moveTo(segStartX - segSkew, startY + 1.5);
+          ctx.lineTo(segStartX + (segW * segFill) - segSkew, startY + 1.5);
+          ctx.lineTo(segStartX + (segW * segFill), startY + barH - 1.5);
+          ctx.lineTo(segStartX, startY + barH - 1.5);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // 세그먼트 구분선
+        if (i > 0) {
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(segStartX - 1 - segSkew, startY);
+          ctx.lineTo(segStartX - 1, startY + barH);
+          ctx.stroke();
+        }
+      }
+
+      // 3. 우측 사선 퍼센트 박스 (스케치의 '80%' 표시 영역)
+      const pctBoxX = startX + barW + 5;
+      const pctBoxW = 32;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+      ctx.strokeStyle = barColor;
+      ctx.lineWidth = 1.3;
+
+      ctx.beginPath();
+      ctx.moveTo(pctBoxX - skew, startY - 0.5);
+      ctx.lineTo(pctBoxX + pctBoxW - skew, startY - 0.5);
+      ctx.lineTo(pctBoxX + pctBoxW, startY + barH + 0.5);
+      ctx.lineTo(pctBoxX, startY + barH + 0.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // 퍼센트 텍스트 렌더링
+      ctx.font = 'bold 9.5px monospace';
+      ctx.fillStyle = barColor;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${Math.round(hpPct)}%`, pctBoxX + pctBoxW / 2 - skew / 2, startY + barH / 2);
+
+      ctx.restore();
+    }
+
     // 플레이어 전용 무기 캔버스 드로잉 함수 (종막의 디스트로이어 & 루거 P08 스타일 보조권총 & 아비 에슈흐 레일건)
     function drawPlayerWeapon(pScreenX, pScreenY, playerCenterX, playerCenterY, groundY, targetEntity = player) {
       const isMain = targetEntity.activeWeaponSlot === 'main';
@@ -3672,19 +3763,26 @@
         ctx.fillRect(pScreenX - 5, pScreenY - 14, (player.width + 10) * reloadPct, 6);
       }
 
-      ctx.font = 'bold 12px monospace';
+      // [신규 UI] 플레이어 머리 위 사선 블록형 체력바 & 퍼센트 렌더링 (유저 스케치 반영)
+      drawOverheadSlantedHpBar(pScreenX, pScreenY, player, true);
+
+      // 머리 위 타이틀 라벨 (체력바 상단 배치)
+      ctx.save();
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center';
       if (currentMode === 'duo') {
         if (myRole === 'striker') {
           ctx.fillStyle = '#0284c7';
-          ctx.fillText('👑 [나 (1P 스트라이커)]', pScreenX - 35, pScreenY - 20);
+          ctx.fillText('👑 [나 (1P 스트라이커)]', pScreenX + player.width / 2, pScreenY - 32);
         } else {
           ctx.fillStyle = '#ef4444';
-          ctx.fillText('👑 [나 (2P 스트라이커)]', pScreenX - 35, pScreenY - 20);
+          ctx.fillText('👑 [나 (2P 스트라이커)]', pScreenX + player.width / 2, pScreenY - 32);
         }
       } else {
         ctx.fillStyle = '#0284c7';
-        ctx.fillText('스트라이커', pScreenX - 8, pScreenY - 20);
+        ctx.fillText('스트라이커', pScreenX + player.width / 2, pScreenY - 32);
       }
+      ctx.restore();
 
       // 6.5. [동료 2인 스트라이커] (2인 모드 시 상대방 스트라이커 캐릭터 및 무기 렌더링)
       if (currentMode === 'duo' && remotePlayer.isActive) {
@@ -3943,22 +4041,21 @@
         // 동료 무기 외형 렌더링
         drawPlayerWeapon(rScreenX, rScreenY, rWorldCenterX, rWorldCenterY, groundY, remotePlayer);
 
-        // 동료 HP 바
-        const rHpPct = Math.max(0, remotePlayer.hp / (remotePlayer.maxHp || 10000));
-        ctx.fillStyle = 'rgba(15,23,42,0.8)';
-        ctx.fillRect(rScreenX - 5, rScreenY - 14, remotePlayer.width + 10, 5);
-        ctx.fillStyle = remotePlayer.hp <= 0 ? '#ef4444' : (remotePlayer.color || '#ef4444');
-        ctx.fillRect(rScreenX - 5, rScreenY - 14, (remotePlayer.width + 10) * rHpPct, 5);
+        // [신규 UI] 동료 머리 위 사선 블록형 체력바 & 퍼센트 렌더링
+        drawOverheadSlantedHpBar(rScreenX, rScreenY, remotePlayer, false);
 
-        // 동료 이름 라벨
-        ctx.font = 'bold 12px monospace';
+        // 동료 이름 라벨 (체력바 상단 배치)
+        ctx.save();
+        ctx.font = 'bold 11px monospace';
+        ctx.textAlign = 'center';
         if (myRole === 'striker') {
           ctx.fillStyle = '#ef4444';
-          ctx.fillText('🛡️ [2P 스트라이커]', rScreenX - 28, rScreenY - 20);
+          ctx.fillText('🛡️ [2P 스트라이커]', rScreenX + remotePlayer.width / 2, rScreenY - 32);
         } else {
           ctx.fillStyle = '#0284c7';
-          ctx.fillText('🛡️ [1P 스트라이커]', rScreenX - 28, rScreenY - 20);
+          ctx.fillText('🛡️ [1P 스트라이커]', rScreenX + remotePlayer.width / 2, rScreenY - 32);
         }
+        ctx.restore();
         ctx.restore();
       }
 

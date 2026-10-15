@@ -12,6 +12,12 @@
       maintenanceScreen.classList.add('hidden');
       topHud.classList.add('hidden');
       minimap.classList.add('hidden');
+      const tacticalDeck = document.getElementById('tactical-deck');
+      if (tacticalDeck) tacticalDeck.classList.add('hidden');
+      const btnHelp = document.getElementById('btn-open-controls-help');
+      if (btnHelp) btnHelp.classList.add('hidden');
+      const helpModal = document.getElementById('controls-help-modal');
+      if (helpModal) helpModal.classList.add('hidden');
       supporterModal.classList.add('hidden');
       const aModal = document.getElementById('armor-table-modal');
       if (aModal) aModal.classList.add('hidden');
@@ -89,6 +95,10 @@
       } else if (state === 'battle') {
         topHud.classList.remove('hidden');
         minimap.classList.remove('hidden');
+        const tacticalDeck = document.getElementById('tactical-deck');
+        if (tacticalDeck) tacticalDeck.classList.remove('hidden');
+        const btnHelp = document.getElementById('btn-open-controls-help');
+        if (btnHelp) btnHelp.classList.remove('hidden');
         const peerPanel = document.getElementById('peer-status-panel');
         if (peerPanel) {
           if (currentMode === 'duo') {
@@ -1014,14 +1024,175 @@
       }
 
       // 코스트 바 갱신
-      document.getElementById('costText').innerText = `${Math.floor(player.cost)} / ${player.maxCost}`;
-      document.getElementById('costBar').style.width = `${(player.cost / player.maxCost) * 100}%`;
+      const costTextEl = document.getElementById('costText');
+      const costBarEl = document.getElementById('costBar');
+      if (costTextEl) costTextEl.innerText = `${Math.floor(player.cost)} / ${player.maxCost}`;
+      if (costBarEl) costBarEl.style.width = `${(player.cost / player.maxCost) * 100}%`;
     }
 
+    // [신규 UI] 무기별 스킬 기본 정보 및 코스트 설정 (유저 스케치 반영)
+    const WEAPON_SKILL_CONFIG = {
+      mg_destructor: {
+        skill1: { name: '종막: 이스보셋', cost: 6 },
+        skill2: { name: '개연 : 이스보셋', cost: 10 },
+        special: { name: '선도부장', cost: 0, isSpecial: true, canUse: p => (p.hp / p.maxHp <= 0.50) && !p.specialSkillUsed }
+      },
+      rg_supernova: {
+        skill1: { name: '각성 : 빛의 검', cost: 3 },
+        skill2: { name: '슈퍼노바 방출', cost: 7 },
+        special: { name: '아비 에슈흐', cost: 0, isSpecial: true, canUse: p => !p.specialSkillUsed }
+      },
+      sg_bloody_gunpowder: {
+        skill1: { name: '기괴멸렬', cost: 4 },
+        skill2: { name: '격류 난사', cost: 5 },
+        special: { name: '불사(不死)', cost: 0, isSpecial: true, canUse: p => !p.specialSkillUsed }
+      },
+      ar_white_fang: {
+        skill1: { name: '라이딩 그레네이드', cost: 3 },
+        skill2: { name: '페이탈 팡', cost: 6 },
+        special: { name: '색채 각성', cost: 0, isSpecial: true, canUse: p => p.isColorActive || !p.specialSkillUsed }
+      },
+      smg_fox45: {
+        skill1: { name: '철벽의 방어', cost: 2 },
+        skill2: { name: '공세 전환', cost: 4 },
+        special: { name: '전술 방패', cost: 4, isSpecial: true, canUse: p => (p.foxShieldCooldown <= 0) && (p.cost >= 4) }
+      }
+    };
+
+    // [신규 UI] 좌측 하단 전술 스킬 덱 & 15블록 사선 코스트 바 실시간 업데이트
+    function updateTacticalDeck() {
+      const deckEl = document.getElementById('tactical-deck');
+      if (!deckEl || deckEl.classList.contains('hidden')) return;
+
+      const curW = (player.activeWeaponSlot === 'main' ? player.mainWeapon : player.subWeapon) || player.mainWeapon;
+      if (!curW) return;
+
+      // 1. 상단 무기/탄약 칩 갱신
+      const nameEl = document.getElementById('deck-weapon-name');
+      const curAmmoEl = document.getElementById('deck-ammo-cur');
+      const magEl = document.getElementById('deck-ammo-mag');
+      const aimBadgeEl = document.getElementById('deck-aim-badge');
+
+      if (nameEl) nameEl.innerText = curW.name ? curW.name.split(' ')[0] : '무기';
+      if (curAmmoEl) {
+        if (curW.isReloading) {
+          curAmmoEl.innerText = '장전 중';
+          curAmmoEl.style.color = '#f59e0b';
+        } else {
+          curAmmoEl.innerText = `${curW.ammo}`;
+          curAmmoEl.style.color = curW.ammo <= 5 ? '#ef4444' : '#38bdf8';
+        }
+      }
+      if (magEl) {
+        magEl.innerText = curW.magazineCount === Infinity ? '∞' : `${curW.magazineCount}`;
+      }
+      if (aimBadgeEl) {
+        aimBadgeEl.innerText = player.aimMode === 'manual' ? '[Shift] 수동' : '[Shift] 자동';
+        aimBadgeEl.style.color = player.aimMode === 'manual' ? '#f59e0b' : '#38bdf8';
+      }
+
+      // 2. 15개 코스트 사선 세그먼트 생성 및 점등
+      const segmentsTrack = document.getElementById('deck-cost-segments');
+      if (segmentsTrack && segmentsTrack.children.length === 0) {
+        for (let i = 0; i < 15; i++) {
+          const seg = document.createElement('div');
+          seg.className = 'cost-seg';
+          segmentsTrack.appendChild(seg);
+        }
+      }
+      if (segmentsTrack) {
+        const curCost = Math.floor(player.cost || 0);
+        const children = segmentsTrack.children;
+        for (let i = 0; i < children.length; i++) {
+          if (i < curCost) {
+            children[i].classList.add('filled');
+          } else {
+            children[i].classList.remove('filled');
+          }
+        }
+      }
+      const curCostText = document.getElementById('deck-current-cost');
+      if (curCostText) {
+        curCostText.innerText = Math.floor(player.cost || 0);
+      }
+
+      // 3. 4개 스킬 카드 슬롯 갱신
+      const wCfg = WEAPON_SKILL_CONFIG[curW.id] || {
+        skill1: { name: curW.skillName || '메인1', cost: 4 },
+        skill2: { name: curW.skill2Name || '메인2', cost: 6 },
+        special: { name: curW.specialSkillName || '특수', cost: 0, isSpecial: true, canUse: () => true }
+      };
+
+      const isStunned = (player.stunTimer > 0);
+
+      // 카드 1: 메인스킬 1 (K)
+      updateDeckSkillCard(1, wCfg.skill1.name, wCfg.skill1.cost, {
+        cooldown: 0,
+        canUse: !isStunned && (player.cost >= wCfg.skill1.cost)
+      });
+
+      // 카드 2: 메인스킬 2 (L)
+      updateDeckSkillCard(2, wCfg.skill2.name, wCfg.skill2.cost, {
+        cooldown: 0,
+        canUse: !isStunned && (player.cost >= wCfg.skill2.cost)
+      });
+
+      // 카드 3: 특수스킬 (S)
+      const specCan = wCfg.special.canUse ? wCfg.special.canUse(player) : false;
+      const specCd = curW.id === 'smg_fox45' ? (player.foxShieldCooldown || 0) : 0;
+      updateDeckSkillCard(3, wCfg.special.name, wCfg.special.cost, {
+        cooldown: specCd,
+        canUse: !isStunned && specCan,
+        isSpecial: true
+      });
+
+      // 카드 4: 대시/달리기 (;)
+      updateDeckSkillCard(4, player.isRunning ? '달리기 ON' : '대시 / 달리기', 0, {
+        cooldown: 0,
+        canUse: !isStunned,
+        isZeroCost: true
+      });
+    }
+
+    function updateDeckSkillCard(slotNum, name, cost, state) {
+      const cardEl = document.getElementById(`deck-skill-${slotNum}`);
+      const nameEl = document.getElementById(`deck-name-${slotNum}`);
+      const badgeEl = document.getElementById(`deck-cost-badge-${slotNum}`);
+      const cdOverlay = document.getElementById(`deck-cd-${slotNum}`);
+
+      if (!cardEl) return;
+      if (nameEl) nameEl.innerText = name;
+      if (badgeEl) {
+        badgeEl.innerText = cost;
+        if (state.isSpecial) badgeEl.className = 'deck-cost-badge special-cost';
+        else if (cost === 0) badgeEl.className = 'deck-cost-badge zero-cost';
+        else badgeEl.className = 'deck-cost-badge';
+      }
+
+      if (state.cooldown && state.cooldown > 0) {
+        cardEl.classList.add('disabled');
+        cardEl.classList.remove('ready');
+        if (cdOverlay) {
+          cdOverlay.classList.remove('hidden');
+          const cdText = cdOverlay.querySelector('.deck-cd-text');
+          if (cdText) cdText.innerText = `${state.cooldown.toFixed(1)}s`;
+        }
+      } else {
+        if (cdOverlay) cdOverlay.classList.add('hidden');
+        if (state.canUse) {
+          cardEl.classList.remove('disabled');
+          cardEl.classList.add('ready');
+        } else {
+          cardEl.classList.add('disabled');
+          cardEl.classList.remove('ready');
+        }
+      }
+    }
 
     function updateUI() {
       // 플레이어 무기, 탄약, 코스트(2.5초마다 자연회복) HUD 매 프레임 실시간 동기화
       updateWeaponHUD();
+      updateTacticalDeck();
 
       const hpPct = Math.max(0, (player.hp / player.maxHp) * 100);
       if (playerHpBar) {
@@ -1256,5 +1427,37 @@
         });
       }
     }
+    // [신규 UI] 조작키 도움말(=/+) 팝업 토글 & 닫기 제어
+    const controlsHelpModal = document.getElementById('controls-help-modal');
+    const btnOpenControlsHelp = document.getElementById('btn-open-controls-help');
+    const btnCloseControlsHelp = document.getElementById('btn-close-controls-help');
+
+    function toggleControlsHelp(forceOpen = null) {
+      if (!controlsHelpModal) return;
+      if (forceOpen === true) {
+        controlsHelpModal.classList.remove('hidden');
+      } else if (forceOpen === false) {
+        controlsHelpModal.classList.add('hidden');
+      } else {
+        controlsHelpModal.classList.toggle('hidden');
+      }
+    }
+    window.toggleControlsHelp = toggleControlsHelp;
+
+    if (btnOpenControlsHelp) {
+      btnOpenControlsHelp.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleControlsHelp();
+      });
+    }
+    if (btnCloseControlsHelp) {
+      btnCloseControlsHelp.addEventListener('click', () => toggleControlsHelp(false));
+    }
+    if (controlsHelpModal) {
+      controlsHelpModal.addEventListener('click', (e) => {
+        if (e.target === controlsHelpModal) toggleControlsHelp(false);
+      });
+    }
+
     // UI 초기화 완료
     updateWeaponHUD();

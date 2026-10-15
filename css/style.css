@@ -1167,3 +1167,403 @@
       color: #cbd5e1;
       line-height: 1.6;
     }
+
+    /* ========================================================
+       [신규 UI] 구형 플레이어 상태창 숨김 및 중앙 보스바 배치
+       ======================================================== */
+    #player-status {
+      display: none !important;
+    }
+
+    /* ========================================================
+       [신규 UI] 좌측 하단 전술 스킬 슬롯 덱 & 사선 코스트 게이지
+       ======================================================== */
+    #tactical-deck {
+      position: fixed;
+      bottom: 20px;
+      left: 24px;
+      z-index: 90;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    #tactical-deck.hidden {
+      display: none !important;
+    }
+
+    /* 콤팩트 무기/탄약 칩 */
+    .deck-weapon-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(8px);
+      border: 1.5px solid rgba(56, 189, 248, 0.45);
+      border-radius: 6px;
+      padding: 4px 12px;
+      width: fit-content;
+      transform: skewX(-14deg);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    }
+    .deck-weapon-chip > * {
+      transform: skewX(14deg);
+    }
+    .deck-chip-name {
+      font-weight: 900;
+      font-size: 12px;
+      color: #facc15;
+      letter-spacing: 0.5px;
+    }
+    .deck-chip-divider {
+      color: rgba(255, 255, 255, 0.25);
+      font-size: 11px;
+    }
+    .deck-chip-ammo {
+      font-family: monospace;
+      font-size: 12px;
+      color: #f8fafc;
+    }
+    .deck-chip-ammo b {
+      color: #38bdf8;
+      font-size: 13px;
+    }
+    .deck-chip-aim {
+      font-size: 11px;
+      color: #38bdf8;
+      font-weight: bold;
+      background: rgba(56, 189, 248, 0.15);
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    /* 4개 스킬 카드 슬롯 행 */
+    .deck-skill-slots {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    /* 개별 사선 스킬 카드 (유저 스케치 반영) */
+    .deck-skill-card {
+      width: 70px;
+      height: 82px;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 41, 59, 0.94));
+      backdrop-filter: blur(8px);
+      border: 2px solid rgba(255, 255, 255, 0.24);
+      border-radius: 6px;
+      position: relative;
+      transform: skewX(-14deg);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+      transition: all 0.15s ease;
+      overflow: visible;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 4px 6px;
+    }
+
+    /* 사용 가능 (활성화) 상태 */
+    .deck-skill-card.ready {
+      border-color: #38bdf8;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.5), inset 0 0 10px rgba(56, 189, 248, 0.18);
+    }
+
+    /* 사용 불가 (코스트 부족, 쿨타임, 기절 등) 상태 - 회색 처리 */
+    .deck-skill-card.disabled {
+      filter: grayscale(1);
+      opacity: 0.42;
+      border-color: rgba(100, 116, 139, 0.4);
+      box-shadow: none;
+    }
+
+    /* 카드 내부 내용 (기울기 보정) */
+    .deck-card-inner {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      transform: skewX(14deg);
+      position: relative;
+    }
+
+    /* 우측 상단 코스트 원형 배지 (유저 스케치 반영) */
+    .deck-cost-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #0284c7;
+      color: #ffffff;
+      font-weight: 900;
+      font-size: 11px;
+      font-family: monospace;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 8px rgba(14, 165, 233, 0.95);
+      z-index: 10;
+      transform: skewX(14deg);
+    }
+    .deck-cost-badge.zero-cost {
+      background: #475569;
+      box-shadow: none;
+      border-color: #94a3b8;
+    }
+    .deck-cost-badge.special-cost {
+      background: #a855f7;
+      box-shadow: 0 0 8px rgba(168, 85, 247, 0.9);
+    }
+
+    /* 중앙 스킬 아이콘 영역 (현재는 빈칸 플레이스홀더) */
+    .deck-icon-placeholder {
+      width: 44px;
+      height: 38px;
+      border: 1.5px dashed rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 4px;
+      transition: border-color 0.2s ease;
+    }
+    .deck-skill-card.ready .deck-icon-placeholder {
+      border-color: rgba(56, 189, 248, 0.4);
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    /* 스킬 단축키 태그 (좌측 상단) */
+    .deck-key-tag {
+      position: absolute;
+      top: 1px;
+      left: 1px;
+      font-size: 10px;
+      font-weight: 900;
+      color: #38bdf8;
+      background: rgba(14, 165, 233, 0.22);
+      border: 1px solid rgba(56, 189, 248, 0.5);
+      border-radius: 3px;
+      padding: 0 4px;
+      line-height: 14px;
+    }
+
+    /* 하단 스킬 이름 */
+    .deck-skill-name {
+      font-size: 9.5px;
+      font-weight: bold;
+      color: #e2e8f0;
+      text-align: center;
+      width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 3px;
+      letter-spacing: -0.2px;
+    }
+
+    /* 쿨타임 어두운 오버레이 */
+    .deck-cooldown-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.72);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 8;
+    }
+    .deck-cd-text {
+      font-size: 13px;
+      font-weight: 900;
+      color: #facc15;
+      font-family: monospace;
+      transform: skewX(14deg);
+      text-shadow: 0 0 6px rgba(0,0,0,0.9);
+    }
+
+    /* 하단 코스트 바 컨테이너 (스케치 반영) */
+    .deck-cost-container {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      width: 310px;
+    }
+
+    /* 사선 코스트 게이지 트랙 */
+    .deck-cost-bar-track {
+      flex: 1;
+      height: 20px;
+      background: rgba(15, 23, 42, 0.94);
+      border: 1.5px solid rgba(255, 255, 255, 0.25);
+      border-radius: 4px;
+      padding: 2.5px 3px;
+      transform: skewX(-14deg);
+      display: flex;
+      align-items: center;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    }
+
+    /* 15개 코스트 사선 세그먼트 */
+    .deck-cost-segments {
+      display: flex;
+      gap: 2.5px;
+      width: 100%;
+      height: 100%;
+    }
+    .cost-seg {
+      flex: 1;
+      height: 100%;
+      border-radius: 2px;
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: background 0.08s ease, box-shadow 0.08s ease;
+    }
+    .cost-seg.filled {
+      background: linear-gradient(180deg, #38bdf8, #0284c7);
+      border-color: #38bdf8;
+      box-shadow: 0 0 6px rgba(56, 189, 248, 0.85);
+    }
+
+    /* 우측 사선 코스트 숫자 박스 (스케치의 '3' 표시 영역) */
+    .deck-cost-val-box {
+      width: 44px;
+      height: 26px;
+      background: rgba(15, 23, 42, 0.96);
+      border: 2px solid #38bdf8;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: skewX(-14deg);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
+    }
+    #deck-current-cost {
+      font-size: 18px;
+      font-weight: 900;
+      color: #38bdf8;
+      font-family: monospace;
+      transform: skewX(14deg);
+      text-shadow: 0 0 8px rgba(56, 189, 248, 0.75);
+    }
+
+    /* ========================================================
+       [신규 UI] 우측 상단 도움말(+) 버튼 및 조작키 팝업 모달
+       ======================================================== */
+    #btn-open-controls-help {
+      position: fixed;
+      top: 16px;
+      right: 20px;
+      z-index: 95;
+      transform: skewX(-12deg);
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(8px);
+      border: 1.5px solid #38bdf8;
+      color: #38bdf8;
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: 800;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+      transition: all 0.15s ease;
+      pointer-events: auto;
+    }
+    #btn-open-controls-help > span {
+      display: inline-block;
+      transform: skewX(12deg);
+    }
+    #btn-open-controls-help:hover {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #ffffff;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.85);
+    }
+
+    #controls-help-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(5px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .controls-help-box {
+      width: 400px;
+      max-width: 90vw;
+      background: rgba(15, 23, 42, 0.96);
+      border: 2px solid #38bdf8;
+      border-radius: 12px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75), 0 0 24px rgba(56, 189, 248, 0.35);
+      padding: 20px 24px;
+      color: #f8fafc;
+    }
+    .controls-help-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      margin-bottom: 14px;
+    }
+    .controls-help-close-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 2px 6px;
+      transition: color 0.15s ease;
+    }
+    .controls-help-close-btn:hover {
+      color: #ef4444;
+    }
+    .controls-help-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .help-key-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 4px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 13px;
+    }
+    .help-key-label {
+      color: #cbd5e1;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .help-key-badge {
+      background: rgba(56, 189, 248, 0.14);
+      border: 1px solid #38bdf8;
+      color: #38bdf8;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-weight: bold;
+      font-size: 12px;
+    }
+    .controls-help-footer {
+      margin-top: 14px;
+      text-align: center;
+      font-size: 11px;
+      color: #94a3b8;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 6px;
+      border-radius: 6px;
+    }
