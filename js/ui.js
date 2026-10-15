@@ -124,18 +124,21 @@
       if (!duoRoomBadge || currentMode !== 'duo' || myRole !== 'striker') return;
 
       if (!isSupporterConnected) {
-        displayPeerStatus.innerHTML = '<span style="color:#f59e0b;">📡 2P 대원 대기 중... (단독 테스트 가능)</span>';
-        btnDeployBattle.innerText = '🚀 작전 출격! (단독 테스트 가능)';
-        btnDeployBattle.style.opacity = '1';
-        btnDeployBattle.style.cursor = 'pointer';
+        displayPeerStatus.innerHTML = '<span style="color:#f59e0b; font-weight:bold;">⏳ 2P 동료 접속 대기 중... (친구에게 방 코드를 알려주세요)</span>';
+        btnDeployBattle.innerText = '⏳ 2P 동료 접속 대기 중...';
+        btnDeployBattle.style.background = '#475569';
+        btnDeployBattle.style.opacity = '0.6';
+        btnDeployBattle.style.cursor = 'not-allowed';
       } else if (!isSupporterReady) {
-        displayPeerStatus.innerHTML = '<span style="color:#38bdf8;">🟢 2P 대원 접속됨 (정비 중...)</span>';
-        btnDeployBattle.innerText = '🚀 작전 출격! (강제 개전 가능)';
+        displayPeerStatus.innerHTML = '<span style="color:#38bdf8; font-weight:bold;">🟢 2P 동료 접속됨! (장비 정비 중...)</span>';
+        btnDeployBattle.innerText = '🚀 2P 정비 완료 대기 중 (강제 출격 가능)';
+        btnDeployBattle.style.background = 'linear-gradient(135deg, #0284c7, #0369a1)';
         btnDeployBattle.style.opacity = '1';
         btnDeployBattle.style.cursor = 'pointer';
       } else {
-        displayPeerStatus.innerHTML = '<span style="color:#10b981; font-weight:bold;">🏁 2P 대원 준비 완료!</span>';
-        btnDeployBattle.innerText = '🚀 작전 출격! (호스트 개전)';
+        displayPeerStatus.innerHTML = '<span style="color:#10b981; font-weight:bold;">🏁 2P 동료 준비 완료! 출격 가능!</span>';
+        btnDeployBattle.innerText = '🚀 2인 동시 작전 출격! (클릭 시 개전)';
+        btnDeployBattle.style.background = 'linear-gradient(135deg, #10b981, #059669)';
         btnDeployBattle.style.opacity = '1';
         btnDeployBattle.style.cursor = 'pointer';
       }
@@ -354,13 +357,13 @@
     // 정비실 -> 작전 출격! (인게임 시작)
     btnDeployBattle.addEventListener('click', () => {
       try {
-        // 2인 모드에서 호스트인 경우 2P 스트라이커의 준비 상태 체크
+        // 2인 모드에서 호스트인 경우 2P 스트라이커의 접속 및 준비 상태 체크
         if (currentMode === 'duo' && myRole === 'striker') {
           if (!isSupporterConnected) {
-            const forceSolo = confirm('⚠️ 아직 2P 스트라이커 대원이 접속하지 않았습니다.\n1P 단독으로 테스트 출격하시겠습니까?');
-            if (!forceSolo) return;
+            alert(`⚠️ 아직 2P 동료가 방에 접속하지 않았습니다!\n친구가 방 코드 [${roomCode}]로 들어올 때까지 기다려주세요.`);
+            return;
           } else if (!isSupporterReady) {
-            const forceStart = confirm('⚠️ 2P 스트라이커 대원이 아직 [준비 완료] 상태가 아닙니다.\n호스트 권한으로 작전을 강제 개전하시겠습니까?');
+            const forceStart = confirm('⚠️ 2P 동료가 아직 [준비 완료] 상태가 아닙니다.\n호스트 권한으로 작전을 바로 개전하시겠습니까?');
             if (!forceStart) return;
           }
         }
