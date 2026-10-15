@@ -1193,13 +1193,6 @@
       display: none !important;
     }
 
-    /* 상단 1열: 무기 칩 & 코스트 사선 게이지 통합 컨테이너 */
-    .deck-top-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
     /* 콤팩트 무기/탄약 칩 */
     .deck-weapon-chip {
       display: inline-flex;
@@ -1401,12 +1394,13 @@
       display: none !important;
     }
 
-    /* 좌측 상단 통합 코스트 바 컨테이너 */
+    /* 스킬 슬롯 아래쪽 사선 코스트 바 컨테이너 (적 체력바와 간섭 방지) */
     .deck-cost-container {
       display: flex;
       gap: 7px;
       align-items: center;
-      width: 220px;
+      width: 291px;
+      margin-top: 1px;
     }
 
     /* 사선 코스트 게이지 트랙 */

@@ -1084,7 +1084,7 @@
         }
       }
       if (magEl) {
-        magEl.innerText = curW.magazineCount === Infinity ? '∞' : `${curW.magazineCount}`;
+        magEl.innerText = (curW.mags === Infinity || curW.mags == null) ? '∞' : `${curW.mags}`;
       }
       if (aimBadgeEl) {
         aimBadgeEl.innerText = player.aimMode === 'manual' ? '[Shift] 수동' : '[Shift] 자동';
