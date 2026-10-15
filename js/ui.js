@@ -158,6 +158,7 @@
 
     // 로비: 메인으로 복귀
     btnDuoLobbyBack.addEventListener('click', () => {
+      if (typeof cleanupPeer === 'function') cleanupPeer();
       setScreenState('main');
     });
 
@@ -176,7 +177,7 @@
       isSupporterConnected = false;
       isSupporterReady = false;
 
-      // 웹소켓 연결 및 방 생성 패킷 전송
+      // P2P 방 생성 패킷 전송 (성공 시 network.js에서 자동으로 정비실 전환)
       if (typeof initNetworkSocket === 'function') {
         initNetworkSocket();
         sendNetPacket({
@@ -184,8 +185,6 @@
           roomCode: roomCode
         });
       }
-
-      setScreenState('maintenance');
     });
 
     // 로비: 참여 (참여자 = 서포터, 호스트 방 코드 입력)
