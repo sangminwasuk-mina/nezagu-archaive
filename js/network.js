@@ -1,75 +1,204 @@
 // ==========================================
-// network.js - 실시간 멀티플레이 웹소켓 클라이언트 엔진
+// network.js - 실시간 WebRTC 순수 P2P 클라이언트 엔진 (PeerJS 기반)
 // ==========================================
-let socket = null;
+let peer = null;
+let peerConn = null;
 let isNetworkConnected = false;
 const pendingPackets = [];
+const PEER_ROOM_PREFIX = 'kaiten-city-room-';
 
 // 동료 플레이어의 실시간 장비 세팅 보관
 window.peerStrikerLoadout = null;
 window.peerSupporterLoadout = null;
 window.peerSupporterMode = 'ground';
 
-// 웹소켓 연결 초기화 함수
-function initNetworkSocket() {
-  if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+// STUN 서버 설정 (Google 초고속 무료 STUN - 전 세계 어디서든 다이렉트 P2P 연결)
+const PEER_CONFIG = {
+  debug: 1,
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' }
+    ]
+  }
+};
+
+// 기존 ui.js 코드와의 하위 호환을 위한 더미 함수
+function initNetworkSocket() {}
+
+// 1P 호스트 P2P 룸 생성
+function startHostPeerRoom(code) {
+  cleanupPeer();
+  roomCode = code;
+  const peerId = PEER_ROOM_PREFIX + code;
+  console.log(`[P2P] 1P 호스트 룸 생성 시도: ${peerId}`);
+
+  try {
+    peer = new Peer(peerId, PEER_CONFIG);
+  } catch (e) {
+    console.error('[P2P] PeerJS 생성 오류:', e);
+    alert('P2P 라이브러리 초기화 실패. 인터넷 연결을 확인해주세요.');
     return;
   }
 
-  // 현재 브라우저 주소 기반 호스트 감지 (localhost or 10.170.146.122)
-  const host = window.location.hostname || 'localhost';
-  const port = window.location.port || '8080';
-  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${wsProtocol}//${host}:${port}`;
-
-  console.log(`[NET] 웹소켓 서버 접속 시도: ${wsUrl}`);
-  socket = new WebSocket(wsUrl);
-
-  socket.onopen = () => {
+  peer.on('open', (id) => {
+    console.log('[P2P] 1P 호스트 룸 개설 성공! ID:', id);
     isNetworkConnected = true;
-    console.log('[NET] 웹소켓 서버 연결 성공! 대기 큐 패킷 전송...');
+    handleNetworkMessage({ type: 'ROOM_CREATED', roomCode: code });
+  });
+
+  peer.on('connection', (conn) => {
+    console.log('[P2P] 2P 게스트가 방에 접속했습니다!');
+    peerConn = conn;
+    setupDataConnection(conn);
+  });
+
+  peer.on('error', (err) => {
+    console.error('[P2P] 호스트 에러:', err);
+    if (err.type === 'unavailable-id') {
+      alert(`이미 사용 중인 방 코드입니다: [${code}]\n다른 방 코드를 사용해주세요!`);
+      setScreenState('duo_lobby');
+    } else {
+      alert(`P2P 네트워크 에러 [${err.type}]: ${err.message || ''}`);
+    }
+  });
+
+  peer.on('close', () => {
+    isNetworkConnected = false;
+  });
+}
+
+// 2P 게스트 P2P 참가
+function startGuestPeerRoom(code) {
+  cleanupPeer();
+  roomCode = code;
+  const targetPeerId = PEER_ROOM_PREFIX + code;
+  console.log(`[P2P] 2P 게스트 방 참가 시도 -> 타겟 호스트: ${targetPeerId}`);
+
+  try {
+    peer = new Peer(null, PEER_CONFIG);
+  } catch (e) {
+    console.error('[P2P] PeerJS 생성 오류:', e);
+    alert('P2P 라이브러리 초기화 실패. 인터넷 연결을 확인해주세요.');
+    return;
+  }
+
+  let connected = false;
+
+  peer.on('open', (myId) => {
+    console.log('[P2P] 게스트 Peer 준비 완료! ID:', myId);
+    peerConn = peer.connect(targetPeerId, { reliable: true });
+    setupDataConnection(peerConn, () => {
+      connected = true;
+    });
+
+    // 8초 내에 연결되지 않으면 친절한 안내
+    setTimeout(() => {
+      if (!connected && currentGameState === 'duo_lobby') {
+        const btn = document.getElementById('btn-duo-join');
+        if (btn) btn.innerText = '참가하기';
+        alert(`방 [${code}]에 접속할 수 없습니다.\n호스트가 방을 먼저 열어두었는지, 방 코드가 맞는지 확인해주세요!`);
+      }
+    }, 8000);
+  });
+
+  peer.on('error', (err) => {
+    console.error('[P2P] 게스트 에러:', err);
+    const btn = document.getElementById('btn-duo-join');
+    if (btn) btn.innerText = '참가하기';
+
+    if (err.type === 'peer-unavailable') {
+      alert(`방 [${code}]를 찾을 수 없습니다.\n호스트가 먼저 방을 열어두었는지 확인해주세요!`);
+    } else {
+      alert(`P2P 연결 에러 [${err.type}]: ${err.message || ''}`);
+    }
+  });
+}
+
+// 1:1 WebRTC 데이터 채널 이벤트 핸들러 바인딩
+function setupDataConnection(conn, onOpenCb) {
+  conn.on('open', () => {
+    isNetworkConnected = true;
+    if (typeof onOpenCb === 'function') onOpenCb();
+    console.log('[P2P] 1:1 직통 WebRTC 데이터 채널 연결 성공!');
+
+    // 대기 큐 패킷 전송
     while (pendingPackets.length > 0) {
       const pkt = pendingPackets.shift();
       try {
-        socket.send(JSON.stringify(pkt));
-      } catch (err) {
-        console.error('[NET] 큐 패킷 전송 실패:', err);
+        conn.send(pkt);
+      } catch (e) {
+        console.error('[P2P] 큐 패킷 전송 실패:', e);
       }
     }
-  };
 
-  socket.onmessage = async (event) => {
-    try {
-      let rawText = event.data;
-      if (typeof Blob !== 'undefined' && rawText instanceof Blob) {
-        rawText = await rawText.text();
-      }
-      const data = JSON.parse(rawText);
-      handleNetworkMessage(data);
-    } catch (e) {
-      console.error('[NET] 메시지 파싱 오류:', e);
+    if (myRole === 'striker') {
+      // 1P 호스트: 2P 게스트 입장 처리
+      handleNetworkMessage({ type: 'PEER_CONNECTED' });
+    } else {
+      // 2P 게스트: 입장 성공 처리
+      handleNetworkMessage({ type: 'JOIN_SUCCESS', roomCode: roomCode });
     }
-  };
+  });
 
-  socket.onclose = () => {
+  conn.on('data', (data) => {
+    let parsed = data;
+    if (typeof data === 'string') {
+      try {
+        parsed = JSON.parse(data);
+      } catch (e) {}
+    }
+    handleNetworkMessage(parsed);
+  });
+
+  conn.on('close', () => {
     isNetworkConnected = false;
-    console.log('[NET] 웹소켓 서버 연결 종료');
-  };
+    console.log('[P2P] P2P 데이터 채널 연결 종료');
+    if (myRole === 'striker') {
+      handleNetworkMessage({ type: 'PEER_DISCONNECTED' });
+    } else {
+      handleNetworkMessage({ type: 'HOST_DISCONNECTED' });
+    }
+  });
 
-  socket.onerror = (err) => {
-    console.error('[NET] 웹소켓 오류:', err);
-  };
+  conn.on('error', (err) => {
+    console.error('[P2P] 데이터 채널 오류:', err);
+  });
 }
 
-// 실시간 패킷 전송 래퍼 (연결 대기 중이면 큐에 자동 저장하여 패킷 유실 방지!)
+// P2P 인스턴스 정리
+function cleanupPeer() {
+  if (peerConn) {
+    try { peerConn.close(); } catch (e) {}
+    peerConn = null;
+  }
+  if (peer) {
+    try { peer.destroy(); } catch (e) {}
+    peer = null;
+  }
+  isNetworkConnected = false;
+  pendingPackets.length = 0;
+}
+
+// 실시간 패킷 전송 래퍼
 function sendNetPacket(obj) {
-  if (socket && socket.readyState === WebSocket.OPEN) {
-    socket.send(JSON.stringify(obj));
+  // 특수 패킷 (방 생성 / 참가) 인터셉트
+  if (obj.type === 'CREATE_ROOM') {
+    startHostPeerRoom(obj.roomCode);
+    return;
+  }
+  if (obj.type === 'JOIN_ROOM') {
+    startGuestPeerRoom(obj.roomCode);
+    return;
+  }
+
+  if (peerConn && peerConn.open) {
+    peerConn.send(obj);
   } else {
     pendingPackets.push(obj);
-    if (!socket || socket.readyState === WebSocket.CLOSED) {
-      initNetworkSocket();
-    }
   }
 }
 

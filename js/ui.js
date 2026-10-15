@@ -203,6 +203,14 @@
       isSupporterConnected = false;
       isSupporterReady = false;
 
+      const origText = btnDuoJoin.innerText;
+      btnDuoJoin.innerText = '📡 접속 시도 중...';
+      setTimeout(() => {
+        if (currentGameState === 'duo_lobby') {
+          btnDuoJoin.innerText = origText;
+        }
+      }, 3500);
+
       // 웹소켓 연결 및 방 참가 패킷 전송
       if (typeof initNetworkSocket === 'function') {
         initNetworkSocket();

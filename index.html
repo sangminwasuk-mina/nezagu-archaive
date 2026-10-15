@@ -655,6 +655,10 @@
   <canvas id="gameCanvas"></canvas>
   <canvas id="minimap" class="hidden"></canvas>
 
+  <!-- WebRTC 순수 P2P 라이브러리 (PeerJS) -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script>window.Peer || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"><\/script>');</script>
+
   <!-- 게임 엔진 스크립트 모듈 순차 로드 -->
   <script src="js/constants.js"></script>
   <script src="js/entities.js"></script>
