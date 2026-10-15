@@ -14,8 +14,8 @@
       minimap.classList.add('hidden');
       const tacticalDeck = document.getElementById('tactical-deck');
       if (tacticalDeck) tacticalDeck.classList.add('hidden');
-      const btnHelp = document.getElementById('btn-open-controls-help');
-      if (btnHelp) btnHelp.classList.add('hidden');
+      const topRightHud = document.getElementById('top-right-hud');
+      if (topRightHud) topRightHud.classList.add('hidden');
       const helpModal = document.getElementById('controls-help-modal');
       if (helpModal) helpModal.classList.add('hidden');
       supporterModal.classList.add('hidden');
@@ -97,8 +97,8 @@
         minimap.classList.remove('hidden');
         const tacticalDeck = document.getElementById('tactical-deck');
         if (tacticalDeck) tacticalDeck.classList.remove('hidden');
-        const btnHelp = document.getElementById('btn-open-controls-help');
-        if (btnHelp) btnHelp.classList.remove('hidden');
+        const topRightHud = document.getElementById('top-right-hud');
+        if (topRightHud) topRightHud.classList.remove('hidden');
         const peerPanel = document.getElementById('peer-status-panel');
         if (peerPanel) {
           if (currentMode === 'duo') {
