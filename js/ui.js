@@ -33,7 +33,6 @@
           btnSupporterStatus.classList.remove('hidden');
           btnSupporterStatus.innerHTML = '<span>📡 1P 블루 스트라이커 현황</span>';
           if (strikerSpecView) strikerSpecView.classList.remove('hidden');
-          if (supporterSpecView) supporterSpecView.classList.add('hidden');
           
           // 하단 버튼 역할별 전환: 2P는 준비완료 버튼 표시, 출격 버튼 숨김
           if (btnSupporterReady) btnSupporterReady.classList.remove('hidden');
@@ -55,7 +54,6 @@
         } else {
           // [1P 호스트 스트라이커 / 솔로 출격 정비실]
           if (strikerSpecView) strikerSpecView.classList.remove('hidden');
-          if (supporterSpecView) supporterSpecView.classList.add('hidden');
           
           // 하단 버튼 역할별 전환: 호스트는 출격 버튼 표시, 준비 버튼 숨김
           if (btnSupporterReady) btnSupporterReady.classList.add('hidden');
