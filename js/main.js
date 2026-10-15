@@ -18,21 +18,25 @@
 
     // 조작키 이벤트 리스너
     window.addEventListener('keydown', (e) => {
-      // [신규 UI: 조작키 도움말(=/+) 토글 및 자동 닫기 제어]
-      if (e.key === '=' || e.key === '+' || e.code === 'Equal' || e.key === 'Add') {
+      // [신규 UI: 조작키 도움말(=/+) 1회 호출 고정 및 브라우저 단축키 충돌 차단]
+      if (e.key === '=' || e.key === '+' || e.code === 'Equal' || e.key === 'Add' || e.code === 'NumpadAdd') {
+        e.preventDefault();
         if (!e.repeat && typeof toggleControlsHelp === 'function') {
           toggleControlsHelp();
-          return;
         }
+        return; // 키 반복(e.repeat) 시에도 즉시 리턴하여 중복 호출 원천 차단
       }
 
-      // 조작키 도움말 팝업이 열려 있는 상태에서 게임 조작키나 Escape를 누르면 창 자동 닫기
-      const helpModalEl = document.getElementById('controls-help-modal');
-      if (helpModalEl && !helpModalEl.classList.contains('hidden')) {
-        if (typeof toggleControlsHelp === 'function') {
-          toggleControlsHelp(false);
+      // Escape를 누르면 조작키 도움말 팝업 닫기
+      if (e.key === 'Escape') {
+        const helpModalEl = document.getElementById('controls-help-modal');
+        if (helpModalEl && !helpModalEl.classList.contains('hidden')) {
+          e.preventDefault();
+          if (typeof toggleControlsHelp === 'function') {
+            toggleControlsHelp(false);
+          }
+          return;
         }
-        if (e.key === 'Escape') return;
       }
 
       if (currentGameState !== 'battle') return;

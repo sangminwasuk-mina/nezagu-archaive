@@ -1460,11 +1460,10 @@
       text-shadow: 0 0 8px rgba(56, 189, 248, 0.75);
     }
 
-    /* 우측 상단 도움말(+) 버튼 */
+    /* 우측 상단 도움말(+) 버튼 (고성능 경량 스타일) */
     #btn-open-controls-help {
       transform: skewX(-12deg);
-      background: rgba(15, 23, 42, 0.88);
-      backdrop-filter: blur(8px);
+      background: #0f172a;
       border: 1.5px solid #38bdf8;
       color: #38bdf8;
       padding: 6px 14px;
@@ -1472,8 +1471,8 @@
       font-weight: 800;
       border-radius: 6px;
       cursor: pointer;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
-      transition: all 0.15s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      transition: background 0.15s ease, color 0.15s ease;
       white-space: nowrap;
     }
     #btn-open-controls-help > span {
@@ -1487,6 +1486,7 @@
       box-shadow: 0 0 14px rgba(56, 189, 248, 0.85);
     }
 
+    /* 초경량 독립 GPU 레이어 조작키 도움말 창 (60 FPS 보장) */
     #controls-help-modal {
       position: fixed;
       top: 56px;
@@ -1494,7 +1494,8 @@
       z-index: 200;
       display: flex;
       pointer-events: auto;
-      transition: opacity 0.15s ease;
+      will-change: transform;
+      transform: translateZ(0);
     }
     #controls-help-modal.hidden {
       display: none !important;
@@ -1502,12 +1503,13 @@
     .controls-help-box {
       width: 360px;
       max-width: 90vw;
-      background: rgba(15, 23, 42, 0.96);
-      border: 1.5px solid #38bdf8;
+      background: #0f172a; /* 100% 불투명 솔리드로 캔버스 알파 블렌딩 부하 완전 제거 */
+      border: 2px solid #38bdf8;
       border-radius: 10px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 18px rgba(56, 189, 248, 0.35);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.75);
       padding: 16px 20px;
       color: #f8fafc;
+      transform: translateZ(0);
     }
     .controls-help-header {
       display: flex;
