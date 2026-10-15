@@ -183,7 +183,7 @@ function startGuestPeerRoom(code) {
     
     if (btnJoin) btnJoin.innerText = `📡 방 찾는 중... (${attemptCount}/${maxAttempts})`;
 
-    peerConn = peer.connect(targetPeerId);
+    peerConn = peer.connect(targetPeerId, { serialization: 'json' });
     setupDataConnection(peerConn, () => {
       isConnected = true;
       if (btnJoin) {
@@ -246,7 +246,8 @@ function setupDataConnection(conn, onOpenCb) {
     while (pendingPackets.length > 0) {
       const pkt = pendingPackets.shift();
       try {
-        conn.send(pkt);
+        const payload = (typeof pkt === 'string') ? pkt : JSON.stringify(pkt);
+        conn.send(payload);
       } catch (e) {
         console.error('[P2P] 큐 패킷 전송 실패:', e);
       }
@@ -322,15 +323,17 @@ function sendNetPacket(obj) {
     return;
   }
 
+  const payload = (typeof obj === 'string') ? obj : JSON.stringify(obj);
+
   try {
     if (peerConn && peerConn.open) {
-      peerConn.send(obj);
+      peerConn.send(payload);
     } else {
-      pendingPackets.push(obj);
+      pendingPackets.push(payload);
     }
   } catch (err) {
     console.warn('[P2P] 패킷 전송 일시 지연 (대기 큐 적재):', err);
-    pendingPackets.push(obj);
+    pendingPackets.push(payload);
   }
 }
 
@@ -384,14 +387,20 @@ function handleNetworkMessage(data) {
   }
 
   // [5] 호스트 화면: 2P가 [준비 완료] / [취소] 누름
-  else if (data.type === 'SUPPORTER_READY_CHANGED') {
-    isSupporterReady = data.ready;
-    updateHostRoomStatusUI();
-    addDamageText(canvas.width / 2, 120, data.ready ? '🏁 2P 스트라이커 준비 완료!' : '⏳ 2P 스트라이커 준비 대기 중', data.ready ? '#10b981' : '#f59e0b');
+  else if (data.type === 'SUPPORTER_READY_CHANGED' || data.type === 'SUPPORTER_READY') {
+    isSupporterReady = !!data.ready;
+    if (typeof updateHostRoomStatusUI === 'function') updateHostRoomStatusUI();
+    addDamageText(canvas.width / 2, 120, isSupporterReady ? '🏁 2P 스트라이커 준비 완료!' : '⏳ 2P 스트라이커 준비 대기 중', isSupporterReady ? '#10b981' : '#f59e0b');
   }
 
   // [6] 정비실 장비/스킬 변경 동기화 수신
   else if (data.type === 'LOADOUT_UPDATE') {
+    if (data.loadout && data.loadout.slot1 && data.loadout.slot1.stats) {
+      if (data.loadout.slot1.stats.maxMags === null) data.loadout.slot1.stats.maxMags = Infinity;
+    }
+    if (data.loadout && data.loadout.slot7 && data.loadout.slot7.stats) {
+      if (data.loadout.slot7.stats.maxMags === null) data.loadout.slot7.stats.maxMags = Infinity;
+    }
     if (data.role === 'striker') {
       window.peerStrikerLoadout = data.loadout;
       console.log('[NET] 1P 스트라이커 세팅 수신:', data.loadout);
@@ -413,9 +422,9 @@ function handleNetworkMessage(data) {
   }
 
   // [7] 2P 화면: 호스트가 [작전 출격!] 누름 -> 동시 개전!
-  else if (data.type === 'DEPLOY_BATTLE_START') {
-    applyMaintenanceLoadoutToPlayer();
-    initBattleEncounter();
+  else if (data.type === 'DEPLOY_BATTLE_START' || data.type === 'DEPLOY_BATTLE') {
+    if (typeof applyMaintenanceLoadoutToPlayer === 'function') applyMaintenanceLoadoutToPlayer();
+    if (typeof initBattleEncounter === 'function') initBattleEncounter();
     setScreenState('battle');
     camera.x = Math.max(0, player.x - (canvas.width / 2));
     addDamageText(player.x, player.y - 35, '🚨 [동시 출격!] 작전 개전!', '#38bdf8');
