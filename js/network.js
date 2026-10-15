@@ -12,7 +12,7 @@ window.peerStrikerLoadout = null;
 window.peerSupporterLoadout = null;
 window.peerSupporterMode = 'ground';
 
-// STUN 서버 설정 (Google 초고속 무료 STUN)
+// STUN 서버 설정 (Google + Twilio 초고속 무료 STUN)
 const PEER_CONFIG = {
   debug: 1,
   config: {
@@ -20,7 +20,8 @@ const PEER_CONFIG = {
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
       { urls: 'stun:stun2.l.google.com:19302' },
-      { urls: 'stun:stun3.l.google.com:19302' }
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:global.stun.twilio.com:3478' }
     ]
   }
 };
@@ -109,7 +110,7 @@ function startGuestPeerRoom(code) {
     
     if (btnJoin) btnJoin.innerText = `📡 방 찾는 중... (${attemptCount}/${maxAttempts})`;
 
-    peerConn = peer.connect(targetPeerId, { reliable: true });
+    peerConn = peer.connect(targetPeerId);
     setupDataConnection(peerConn, () => {
       isConnected = true;
       if (btnJoin) {
@@ -150,7 +151,10 @@ function startGuestPeerRoom(code) {
 
 // 1:1 WebRTC 데이터 채널 이벤트 핸들러 바인딩
 function setupDataConnection(conn, onOpenCb) {
-  conn.on('open', () => {
+  let isHandled = false;
+  function handleOpen() {
+    if (isHandled) return;
+    isHandled = true;
     isNetworkConnected = true;
     if (typeof onOpenCb === 'function') onOpenCb();
     console.log('[P2P] 1:1 직통 WebRTC 데이터 채널 연결 성공!');
@@ -169,10 +173,16 @@ function setupDataConnection(conn, onOpenCb) {
       // 1P 호스트: 2P 게스트 입장 처리
       handleNetworkMessage({ type: 'PEER_CONNECTED' });
     } else {
-      // 2P 게스트: 입장 성공 처리
+      // 2P 게스트: 입장 성공 처리 (정비실 전환)
       handleNetworkMessage({ type: 'JOIN_SUCCESS', roomCode: roomCode });
     }
-  });
+  }
+
+  if (conn.open) {
+    handleOpen();
+  } else {
+    conn.on('open', handleOpen);
+  }
 
   conn.on('data', (data) => {
     let parsed = data;
