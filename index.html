@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kaiten City - Weapon Attacks Complete</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- 메인 화면 (타이틀 오버레이) -->
+  <div id="main-screen">
+    <div class="title-banner">Kaiten Screw!!!</div>
+    <div class="title-sub">무한초밥전대 카이텐저</div>
+    <div class="mode-btn-group">
+      <button class="mode-btn" id="btn-solo">
+        <span>1인 클</span>
+        <span class="btn-desc">(솔로 진압 모드)</span>
+      </button>
+      <button class="mode-btn secondary" id="btn-duo">
+        <span>2인 클</span>
+        <span class="btn-desc">(전투원 + 지원팀 P2P)</span>
+      </button>
+    </div>
+    </div>
+  </div>
+
+  <!-- 2인 클 전용 로비 모달 -->
+  <!-- 2인 협동 전용 로비 모달 -->
+  <div id="duo-lobby-modal" class="hidden">
+    <div class="lobby-box">
+      <div class="lobby-title">🌐 2인 협동 P2P 작전실</div>
+      <div class="lobby-desc">
+        동료와 함께 카이텐저를 토벌하는 2인 대칭 협동 모드입니다.<br>
+        1P(호스트)는 <b>블루 스트라이커</b>, 2P(게스트)는 <b>레드 스트라이커</b>로 출격합니다.
+      </div>
+      <div class="lobby-actions">
+        <!-- 호스팅 섹션 (방 코드 직접 지정) -->
+        <div class="lobby-card-btn" id="btn-duo-host-card">
+          <div style="font-size: 32px;">👑</div>
+          <div class="lobby-btn-title">방 만들기 (1P 호스트)</div>
+          <span class="lobby-role-badge" style="background: #0284c7;">역할: 1P 스트라이커 (블루)</span>
+          <div class="lobby-btn-sub">방 코드를 정하고 작전실을 개설합니다.</div>
+          <div style="width: 100%; display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+            <input type="text" id="input-host-code" placeholder="방 코드 (예: 7777, KAITEN)" value="57291" maxlength="10"
+                   style="width: 100%; padding: 8px 12px; font-size: 14px; font-weight: bold; border-radius: 6px; border: 1.5px solid #38bdf8; background: #0f172a; color: #38bdf8; text-align: center; letter-spacing: 2px;">
+            <button class="action-btn" id="btn-duo-host" style="width: 100%; padding: 10px; font-size: 14px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; border-radius: 8px; border: none; cursor: pointer;">
+              방 만들기 시작
+            </button>
+          </div>
+        </div>
+
+        <!-- 참여 섹션 (코드 입력 후 참가) -->
+        <div class="lobby-card-btn" id="btn-duo-join-card">
+          <div style="font-size: 32px;">🔍</div>
+          <div class="lobby-btn-title">방 찾기 (2P 게스트)</div>
+          <span class="lobby-role-badge" style="background: #ef4444;">역할: 2P 스트라이커 (레드)</span>
+          <div class="lobby-btn-sub">호스트가 알려준 방 코드를 입력하고 참가합니다.</div>
+          <div style="width: 100%; display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+            <input type="text" id="input-join-code" placeholder="호스트 방 코드 입력" value="57291" maxlength="10"
+                   style="width: 100%; padding: 8px 12px; font-size: 14px; font-weight: bold; border-radius: 6px; border: 1.5px solid #ef4444; background: #0f172a; color: #f87171; text-align: center; letter-spacing: 2px;">
+            <button class="action-btn" id="btn-duo-join" style="width: 100%; padding: 10px; font-size: 14px; font-weight: 800; background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff; border-radius: 8px; border: none; cursor: pointer;">
+              작전실 참가하기
+            </button>
+          </div>
+        </div>
+      </div>
+      <button class="action-btn btn-back" id="btn-duo-lobby-back" style="padding: 10px 24px; font-size: 14px;">← 타이틀로 돌아가기</button>
+    </div>
+  </div>
+
+  <!-- 정비실 화면 -->
+  <div id="maintenance-screen" class="hidden">
+    <div class="maint-header">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <div class="maint-title" id="maint-title-text">⚙️ 출격 정비실 (스트라이커)</div>
+        <!-- 2인 플레이 시에만 표시되는 방 정보 & 서포터 상태 뱃지 -->
+        <div id="duo-room-badge" class="hidden" style="display: flex; align-items: center; gap: 8px; background: rgba(30, 41, 59, 0.85); border: 1.5px solid #38bdf8; border-radius: 8px; padding: 6px 12px; font-size: 12px;">
+          <span style="color: #94a3b8;">방 코드: <b id="display-room-code" style="color: #38bdf8; letter-spacing: 1px;">-</b></span>
+          <span style="color: rgba(255,255,255,0.2);">|</span>
+          <span id="display-peer-status" style="font-weight: bold; color: #f59e0b;">📡 동료 접속 대기 중...</span>
+        </div>
+        <!-- 2인 플레이 시에만 표시되는 동료 정비현황 확인 버튼 -->
+        <button class="btn-supporter-status hidden" id="btn-supporter-status">
+          <span>📡 동료 정비현황</span>
+        </button>
+
+        <!-- [신규] 상성표 & 전투 스탯 가이드 버튼 -->
+        <button class="guide-toggle-btn" id="btn-open-armor-table" title="공격 타입 vs 방어 장갑 상성 매트릭스">
+          <span>🛡️ 공격/장갑 상성표</span>
+        </button>
+        <button class="guide-toggle-btn" id="btn-open-stats-guide" title="전투 세부 스탯 및 피해 공식 가이드">
+          <span>📊 전투 스탯 가이드</span>
+        </button>
+      </div>
+      <!-- 조작키 설명 배너 -->
+      <div id="maint-key-guide" style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.4); padding: 8px 14px; border-radius: 8px; font-size: 12px; color: #cbd5e1; line-height: 1.5; text-align: right;">
+        <div>🎮 <b>조작키:</b> 이동: <span style="color:#38bdf8; font-weight:bold;">A / D</span> | 점프: <span style="color:#38bdf8; font-weight:bold;">Space / W</span> | 대시: <span style="color:#38bdf8; font-weight:bold;">이동키 따닥</span> | 사격: <span style="color:#facc15; font-weight:bold;">J</span></div>
+        <div>스킬1: <span style="color:#f43f5e; font-weight:bold;">K</span> | 스킬2: <span style="color:#94a3b8; font-weight:bold;">L (제작중)</span> | 특수: <span style="color:#94a3b8; font-weight:bold;">S (제작중)</span> | 재장전: <span style="color:#22c55e; font-weight:bold;">R</span> | 조준모드(자동/수동): <span style="color:#38bdf8; font-weight:bold;">Shift</span> | 달리기: <span style="color:#fb923c; font-weight:bold;">;</span></div>
+      </div>
+    </div>
+
+    <!-- 스트라이커 정비 화면 (오직 스트라이커 슬롯들만 깔끔하게 노출) -->
+    <div class="maint-grid-container" id="striker-spec-view">
+      <!-- 좌측 칼럼: [7] 보조무기, [6] 서폿팅 -->
+      <div class="maint-col-side">
+        <!-- [7] 역할군 & 포지션 -->
+        <div class="maint-slot interactive" id="slot-card-7">
+          <div class="slot-header">
+            <span class="slot-label">역할군 & 포지션</span>
+            <span class="slot-num-badge">슬롯 7</span>
+          </div>
+          <div class="slot-name" style="color: #facc15;" id="slot-7-name">딜러 [BACK]</div>
+          <div class="slot-desc" style="color: #cbd5e1;" id="slot-7-desc">
+            • 역할: 딜러 | 포지션: BACK (1,420px)<br>
+            딜러는 적에게 강한 피해를 줘서 적을 처치해요.
+          </div>
+          <span class="slot-click-hint">상세 확인 ▾</span>
+        </div>
+
+        <!-- [6] 소속 -->
+        <div class="maint-slot interactive" id="slot-card-6">
+          <div class="slot-header">
+            <span class="slot-label">소속</span>
+            <span class="slot-num-badge">슬롯 6</span>
+          </div>
+          <div class="slot-name" style="color: #ef4444;" id="slot-6-name">게헨나</div>
+          <div class="slot-desc" id="slot-6-desc">
+            • 기본 공격력 +70
+          </div>
+          <span class="slot-click-hint">클릭하여 변경 ▾</span>
+        </div>
+      </div>
+
+      <!-- 중앙 칼럼: 상단 [1] 메인무기, 하단 [2, 3, 4, 5] 메인스킬 및 서브스킬 3개 -->
+      <div class="maint-col-center">
+        <!-- [1] 메인 무기 (넓은 상단 슬롯) -->
+        <div class="maint-slot interactive" id="slot-card-1">
+          <div class="slot-header">
+            <span class="slot-label">메인 무기</span>
+            <span class="slot-num-badge">슬롯 1</span>
+          </div>
+          <div class="slot-name" style="font-size: 18px; color: #facc15;" id="slot-1-name">MG (종막의 디스트로이어)</div>
+          <div class="slot-desc" id="slot-1-desc" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <div>• 탄창 용량: <b>40발</b> (연사 홀딩 가능)</div>
+            <div>• 발당 피해량: <b>400</b></div>
+            <div>• 재장전 시간: <b>2.5초</b></div>
+            <div>• 보유 탄창: <b>7개</b> (1분 30초마다 +1 충전)</div>
+          </div>
+          <span class="slot-click-hint">클릭하여 변경 ▾</span>
+        </div>
+
+        <!-- 중앙 하단 6칸 (상단 3칸: 스킬 슬롯 / 하단 3칸: 서브스킬 슬롯) -->
+        <div class="maint-center-bottom">
+          <!-- [2] 메인 스킬 1 (K키) -->
+          <div class="maint-slot interactive" id="slot-card-2">
+            <div class="slot-header">
+              <span class="slot-label">메인스킬 1</span>
+              <span class="slot-num-badge" style="background: #f43f5e; color: #ffffff;">[K]</span>
+            </div>
+            <div class="slot-name" style="font-size: 14px; color: #f43f5e;" id="slot-2-name">종막: 이스보셋</div>
+            <div class="slot-desc" id="slot-2-desc" style="font-size: 11px;">
+              • 소모: <b>6 코스트</b> | 라인 관통 <b>28발</b> 난사 (발당 600%)
+            </div>
+            <span class="slot-click-hint" id="slot-2-hint">상세 확인 ▾</span>
+          </div>
+
+          <!-- 메인스킬 2 [L키] -->
+          <div class="maint-slot interactive" id="slot-card-main2">
+            <div class="slot-header">
+              <span class="slot-label">메인스킬 2</span>
+              <span class="slot-num-badge" id="slot-main2-badge" style="background: #38bdf8; color: #ffffff;">[L]</span>
+            </div>
+            <div class="slot-name" style="font-size: 14px; color: #38bdf8;" id="slot-main2-name">개연 : 이스보셋</div>
+            <div class="slot-desc" style="font-size: 11px; color: #cbd5e1;" id="slot-main2-desc">
+              • 소모: <b>10 코스트</b> | 15s 고정 사격 모드 | 3단계 순차 발사
+            </div>
+            <span class="slot-click-hint" id="slot-main2-hint">상세 확인 ▾</span>
+          </div>
+
+          <!-- 특수스킬 [S키] -->
+          <div class="maint-slot interactive" id="slot-card-special">
+            <div class="slot-header">
+              <span class="slot-label">특수스킬</span>
+              <span class="slot-num-badge" id="slot-special-badge" style="background: #a855f7; color: #ffffff;">[S]</span>
+            </div>
+            <div class="slot-name" style="font-size: 14px; color: #c084fc;" id="slot-special-name">선도부장</div>
+            <div class="slot-desc" style="font-size: 11px; color: #cbd5e1;" id="slot-special-desc">
+              • 발동: <b>체력 50% 이하 1회 해금</b> (0코스트) | 7s 폭풍 관통 난사
+            </div>
+            <span class="slot-click-hint" id="slot-special-hint">상세 확인 ▾</span>
+          </div>
+
+          <!-- [3] 서브스킬 1 -->
+          <div class="maint-slot interactive" id="slot-card-3">
+            <div class="slot-header">
+              <span class="slot-label">보조스킬 1</span>
+              <span class="slot-num-badge">패시브 1</span>
+            </div>
+            <div class="slot-name" style="font-size: 13px;" id="slot-3-name">세라믹 방탄판</div>
+            <div class="slot-desc" style="font-size: 11px;" id="slot-3-desc">
+              방어력 20% 증가
+            </div>
+            <span class="slot-click-hint">변경 ▾</span>
+          </div>
+
+          <!-- [4] 서브스킬 2 -->
+          <div class="maint-slot interactive" id="slot-card-4">
+            <div class="slot-header">
+              <span class="slot-label">보조스킬 2</span>
+              <span class="slot-num-badge">패시브 2</span>
+            </div>
+            <div class="slot-name" style="font-size: 13px;" id="slot-4-name">긴급 구호 세트 B</div>
+            <div class="slot-desc" style="font-size: 11px;" id="slot-4-desc">
+              45초마다 체력 3500 회복
+            </div>
+            <span class="slot-click-hint">변경 ▾</span>
+          </div>
+
+          <!-- [5] 서브스킬 3 -->
+          <div class="maint-slot interactive" id="slot-card-5">
+            <div class="slot-header">
+              <span class="slot-label">보조스킬 3</span>
+              <span class="slot-num-badge">패시브 3</span>
+            </div>
+            <div class="slot-name" style="font-size: 13px;" id="slot-5-name">단련된 체력</div>
+            <div class="slot-desc" style="font-size: 11px;" id="slot-5-desc">
+              코스트 회복속도 20% 감소
+            </div>
+            <span class="slot-click-hint">변경 ▾</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 우측 칼럼: [8] 제약, [9] 가호 -->
+      <div class="maint-col-side">
+        <!-- [8] 제약 -->
+        <div class="maint-slot interactive" id="slot-card-8">
+          <div class="slot-header">
+            <span class="slot-label">작전 제약</span>
+            <span class="slot-num-badge">슬롯 8</span>
+          </div>
+          <div class="slot-name" style="color: #fb923c;" id="slot-8-name">(선택 없음)</div>
+          <div class="slot-desc" id="slot-8-desc" style="color: #cbd5e1;">
+            제약 패널티를 장착하여 전투 난이도를 조율합니다.
+          </div>
+          <span class="slot-click-hint">선택 ▾</span>
+        </div>
+
+        <!-- [9] 가호 -->
+        <div class="maint-slot interactive" id="slot-card-9">
+          <div class="slot-header">
+            <span class="slot-label">작전 가호</span>
+            <span class="slot-num-badge">슬롯 9</span>
+          </div>
+          <div class="slot-name" style="color: #a855f7;" id="slot-9-name">(선택 없음)</div>
+          <div class="slot-desc" id="slot-9-desc" style="color: #cbd5e1;">
+            작전 지원 가호 패시브를 선택합니다.
+          </div>
+          <span class="slot-click-hint">선택 ▾</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 하단 출격 바 (호스트 출격 vs 게스트 준비완료) -->
+    <div class="maint-footer">
+      <button class="action-btn btn-back" id="btn-back-to-main">메인으로</button>
+      
+      <!-- 2P 게스트 전용 준비완료 토글 버튼 -->
+      <button class="action-btn hidden" id="btn-supporter-ready" style="background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff; font-size: 16px; font-weight: 800; padding: 12px 32px; border-radius: 12px; border: 2px solid #ef4444; cursor: pointer; transition: all 0.2s;">
+        <span>🏁 준비 완료 (READY)</span>
+      </button>
+
+      <!-- 1P 호스트 / 솔로 전용 출격 버튼 -->
+      <button class="action-btn btn-deploy" id="btn-deploy-battle">🚀 작전 출격!</button>
+    </div>
+  </div>
+
+  <!-- 동료 정비현황 확인 팝업 모달 -->
+  <div id="supporter-modal" class="hidden">
+    <div class="supporter-modal-box" style="max-width: 900px; width: 92%;">
+      <div class="supporter-modal-header">
+        <div class="supporter-modal-title">
+          <span id="peer-modal-title-text">📡 동료 대원 정비 현황</span>
+          <span style="font-size: 11px; padding: 2px 7px; background: rgba(56, 189, 248, 0.2); border: 1px solid #38bdf8; border-radius: 4px; color: #38bdf8;">실시간 관전 (읽기 전용)</span>
+        </div>
+        <button class="modal-close-btn" id="supporter-modal-close-btn">✕</button>
+      </div>
+      <div class="supporter-modal-content" id="peer-modal-content-body">
+        <!-- JS updatePeerStatusModalUI()에서 실시간 렌더링 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 아이템 선택 팝업 모달 -->
+  <div id="selection-modal" class="hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-title">장비 선택</div>
+        <button class="modal-close-btn" id="modal-close-btn">✕</button>
+      </div>
+      <div class="modal-list" id="modal-list">
+        <!-- 목록이 스크립트로 렌더링됨 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 스킬 상세 정보 팝업 모달 (시스템 팝업 대체 인게임 모달) -->
+  <div id="skill-detail-modal" class="hidden">
+    <div class="skill-detail-box">
+      <div class="skill-detail-header">
+        <div class="skill-detail-title-group">
+          <span class="skill-detail-type-badge" id="skill-detail-badge">[K] 메인스킬 1</span>
+          <div class="skill-detail-title" id="skill-detail-title">스킬 상세 정보</div>
+          <span class="skill-detail-weapon" id="skill-detail-weapon">연동 무기</span>
+        </div>
+        <button class="modal-close-btn" id="skill-detail-close-btn">✕</button>
+      </div>
+      <div class="skill-detail-body" id="skill-detail-body">
+        <!-- JS 동적 렌더링 -->
+      </div>
+      <div class="skill-detail-footer">
+        <button class="action-btn btn-back" id="skill-detail-confirm-btn" style="padding: 10px 24px; font-size: 14px;">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- [신규 모달 1] 공격 타입 vs 방어 장갑 상성표 모달 -->
+  <div id="armor-table-modal" class="hidden">
+    <div class="guide-modal-box">
+      <div class="guide-modal-header">
+        <div style="font-size: 18px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
+          <span>🛡️ 공격 타입 vs 방어 장갑 상성표</span>
+        </div>
+        <button class="modal-close-btn" id="armor-table-close-btn">✕</button>
+      </div>
+      <div class="guide-modal-body">
+        <div style="font-size: 13px; color: #94a3b8; margin-bottom: 12px; line-height: 1.5;">
+          • 공격 속성과 피격 대상의 장갑 속성에 따라 피해량이 증감합니다.<br>
+          • <b style="color:#ef4444;">Weak (특효 200%)</b> | <b style="color:#22c55e;">Effective (유리 150%)</b> | <b style="color:#ffffff;">Normal (보통 100%)</b> | <b style="color:#94a3b8;">Resist (반감 50%)</b>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="guide-matrix-table">
+            <thead>
+              <tr>
+                <th style="background:#0f172a; color:#cbd5e1;">방어타입 \ 공격타입</th>
+                <th style="color:#94a3b8;">일반<br><small style="font-weight:normal;">(회색)</small></th>
+                <th style="color:#ef4444;">폭발<br><small style="font-weight:normal;">(빨강)</small></th>
+                <th style="color:#eab308;">관통<br><small style="font-weight:normal;">(노랑)</small></th>
+                <th style="color:#22c55e;">분해<br><small style="font-weight:normal;">(초록)</small></th>
+                <th style="color:#38bdf8;">신비<br><small style="font-weight:normal;">(파랑)</small></th>
+                <th style="color:#c084fc;">진동<br><small style="font-weight:normal;">(보라)</small></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th>일반장갑</th>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+              </tr>
+              <tr>
+                <th style="color:#ef4444;">경장갑</th>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+                <td><span class="matrix-badge weak">Weak 200%</span></td>
+                <td><span class="matrix-badge resist">Resist 50%</span></td>
+                <td><span class="matrix-badge resist">Resist 50%</span></td>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+              </tr>
+              <tr>
+                <th style="color:#eab308;">중장갑</th>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+                <td><span class="matrix-badge weak">Weak 200%</span></td>
+                <td><span class="matrix-badge effective">Effective 150%</span></td>
+                <td><span class="matrix-badge resist">Resist 50%</span></td>
+                <td><span class="matrix-badge resist">Resist 50%</span></td>
+              </tr>
+              <tr>
+                <th style="color:#22c55e;">복합장갑</th>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+                <td><span class="matrix-badge weak">Weak 200%</span></td>
+                <td><span class="matrix-badge resist">Resist 50%</span></td>
+                <td><span class="matrix-badge resist">Resist 50%</span></td>
+              </tr>
+              <tr>
+                <th style="color:#38bdf8;">특수장갑</th>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+                <td><span class="matrix-badge resist">Resist 50%</span></td>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+                <td><span class="matrix-badge weak">Weak 200%</span></td>
+                <td><span class="matrix-badge effective">Effective 150%</span></td>
+              </tr>
+              <tr>
+                <th style="color:#c084fc;">탄력장갑</th>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+                <td><span class="matrix-badge resist">Resist 50%</span></td>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+                <td><span class="matrix-badge normal">Normal 100%</span></td>
+                <td><span class="matrix-badge weak">Weak 200%</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="guide-modal-footer">
+        <button class="action-btn btn-back" id="armor-table-confirm-btn" style="padding: 8px 20px; font-size: 13px;">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- [신규 모달 2] 전투 세부 스탯 가이드 모달 (간단 요약 / 정밀 공식 탭) -->
+  <div id="stats-guide-modal" class="hidden">
+    <div class="guide-modal-box" style="width: 740px;">
+      <div class="guide-modal-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 18px; font-weight: 800; color: #facc15;">📊 전투 세부 스탯 가이드</span>
+          <!-- 탭 전환 버튼 -->
+          <div class="guide-tab-group">
+            <button class="guide-tab-btn active" id="tab-stats-simple">간단 요약</button>
+            <button class="guide-tab-btn" id="tab-stats-complex">정밀 공식</button>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="stats-guide-close-btn">✕</button>
+      </div>
+      <div class="guide-modal-body">
+        <!-- 탭 1: 간단 요약 패널 -->
+        <div id="panel-stats-simple">
+          <div class="guide-stat-card">
+            <div class="stat-card-title" style="color: #38bdf8;">🛡️ 1. 방어력 (Defense)</div>
+            <div class="stat-card-content">
+              • <b>방어력 1,000 = 받는 피해 절반 (50% 감소)</b><br>
+              • 방어력 0: 피해 100% (기본값) | 방어력 250: 80%만 받음 | 방어력 500: 67%만 받음
+            </div>
+          </div>
+          <div class="guide-stat-card">
+            <div class="stat-card-title" style="color: #22c55e;">🎯 2. 명중 vs 회피 (Accuracy & Evasion)</div>
+            <div class="stat-card-content">
+              • <b>내 명중이 상대 회피보다 높거나 같으면 100% 무조건 명중</b><br>
+              • 상대 회피가 내 명중보다 1,000 높을 때 명중률 50% (빗나가면 <span style="color:#94a3b8;">MISS</span> 발생)<br>
+              • 기본 상태는 명중 0 vs 회피 0으로 모두 100% 명중합니다.
+            </div>
+          </div>
+          <div class="guide-stat-card">
+            <div class="stat-card-title" style="color: #facc15;">⚡ 3. 치명 확률 & 치명 대미지 (Critical)</div>
+            <div class="stat-card-content">
+              • <b>기본 치명타 확률: 20%</b> (최대 80% 상한)<br>
+              • <b>기본 치명타 피해: 3.0배 (300%)</b> ([빛이여!] 버프 발동 시 4.55배 극딜)<br>
+              • 치명 수치가 상대 치명 저항보다 높을수록 치명타가 더 자주 터집니다.
+            </div>
+          </div>
+          <div class="guide-stat-card">
+            <div class="stat-card-title" style="color: #c084fc;">🎲 4. 안정 수치 (Damage Stability)</div>
+            <div class="stat-card-content">
+              • 무기에 표기된 피해량은 <b>최대 대미지</b>입니다.<br>
+              • 기본 안정 수치(1,500) 기준 실제 대미지는 <b>80% ~ 100% 사이에서 랜덤</b>하게 적중합니다.<br>
+              • 안정 수치가 높을수록 최소 대미지가 100%에 가까워져 안정적인 극딜이 가능합니다.
+            </div>
+          </div>
+          <div class="guide-stat-card">
+            <div class="stat-card-title" style="color: #f43f5e;">⛓️ 5. 군중 제어 강화 / 저항 (CC Power & Resist)</div>
+            <div class="stat-card-content">
+              • 기절, 사슬 결속 등의 지속 시간과 발동 확률에 영향을 줍니다.<br>
+              • 상대 군중 제어 저항이 50 높으면 지속시간 및 확률이 절반으로 단축됩니다.
+            </div>
+          </div>
+        </div>
+
+        <!-- 탭 2: 정밀 공식 패널 -->
+        <div id="panel-stats-complex" class="hidden">
+          <div class="guide-stat-card">
+            <div class="stat-card-title" style="color: #38bdf8;">📐 1. 방어력 피해 감소율 공식</div>
+            <div class="stat-card-formula">받는 피해 배율 = 1,000 ÷ (방어력 + 1,000)</div>
+            <div class="stat-card-content">• 방어력이 1,000일 때 1,000 / 2,000 = 0.50 (50% 경감).</div>
+          </div>
+          <div class="guide-stat-card">
+            <div class="stat-card-title" style="color: #22c55e;">📐 2. 명중률 판정 공식</div>
+            <div class="stat-card-formula">명중률 = 1,000 ÷ (max(0, 대상 회피 − 공격자 명중) + 1,000)</div>
+            <div class="stat-card-content">• 명중 ≥ 회피 시 1,000 / 1,000 = 100% 적중. 회피 − 명중 = 500이면 1,000 / 1,500 = 66.7%.</div>
+          </div>
+          <div class="guide-stat-card">
+            <div class="stat-card-title" style="color: #facc15;">📐 3. 치명타 확률 & 치명 대미지 배율 공식</div>
+            <div class="stat-card-formula">치명타 확률 = min(0.80, (치명 수치 − 대상 치명 저항) ÷ (치명 수치 − 대상 치명 저항 + 1,000)) + 추가확률</div>
+            <div class="stat-card-formula">치명타 피해 배율 = max(1.0, (공격자 치명대미지% − 대상 치명대미지저항%) ÷ 100)</div>
+            <div class="stat-card-content">
+              • 기본 치명 350 vs 저항 100: (250 / 1,250) = 20%<br>
+              • 기본 치명대미지 350% vs 저항 50%: (350 − 50) = 300% (3.0배)
+            </div>
+          </div>
+          <div class="guide-stat-card">
+            <div class="stat-card-title" style="color: #c084fc;">📐 4. 안정 수치 난수 보정값 공식</div>
+            <div class="stat-card-formula">최소 대미지 비율 = (안정 수치 ÷ (안정 수치 + 1,000)) + 0.20 (안정률)</div>
+            <div class="stat-card-content">
+              • 안정 1,500 기준: (1,500 / 2,500) + 0.20 = 0.60 + 0.20 = 0.80 (80%)<br>
+              • 실제 적중 대미지 = 표기 대미지 × (0.80 ~ 1.00 난수)
+            </div>
+          </div>
+          <div class="guide-stat-card">
+            <div class="stat-card-title" style="color: #f43f5e;">📐 5. 군중 제어(CC) 증감 공식</div>
+            <div class="stat-card-formula">최종 수치 = 기본값 × (100 + 군중제어강화 − 대상군중제어저항) ÷ 100</div>
+          </div>
+        </div>
+      </div>
+      <div class="guide-modal-footer">
+        <button class="action-btn btn-back" id="stats-guide-confirm-btn" style="padding: 8px 20px; font-size: 13px;">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="top-hud" class="hidden">
+    <div style="display: flex; gap: 12px; align-items: flex-start;">
+      <!-- 1. 내 플레이어 종합 상태 패널 -->
+      <div id="player-status" class="panel">
+        <div class="status-title">
+          <span id="myPlayerTitle">🛡️ 1P 스트라이커</span>
+          <span class="badge" id="playerHpBadge">HP: 65,000</span>
+        </div>
+        <!-- HP 바 -->
+        <div class="hp-bar-bg" style="margin-bottom: 6px;">
+          <div id="playerHpBar" class="hp-bar-fill"></div>
+          <div id="playerHpText" class="hp-text">65,000 / 65,000</div>
+        </div>
+        <!-- 코스트 바 (최대 15, 2.5초마다 +1) -->
+        <div style="font-size: 11px; color: #38bdf8; display: flex; justify-content: space-between; margin-bottom: 2px;">
+          <span>⚡ <b>전술 코스트</b></span>
+          <span id="costText" style="font-family: monospace; font-weight: bold;">6 / 15</span>
+        </div>
+        <div style="width: 100%; height: 8px; background: #334155; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
+          <div id="costBar" style="width: 40%; height: 100%; background: linear-gradient(90deg, #38bdf8, #818cf8); transition: width 0.1s linear;"></div>
+        </div>
+        <!-- 현재 무기 & 탄약 상태 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(15,23,42,0.6); padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
+          <div>
+            <span id="currentWeaponName" style="font-weight: 800; font-size: 13px; color: #facc15;">MG (종막의 디스트로이어)</span>
+            <span id="reloadStatusBadge" style="font-size: 10px; margin-left: 6px; color: #22c55e;">[장전 완료]</span>
+          </div>
+          <div style="font-family: monospace; font-weight: bold; font-size: 13px;">
+            <span id="ammoCountText" style="color: #ffffff;">40</span> / <span id="magCountText" style="color: #94a3b8;">∞ 탄창</span>
+          </div>
+        </div>
+        <div class="sub-info" style="margin-top: 6px;">
+          <span id="aimModeStatusText">조준: <b style="color:#38bdf8;">자동 [Shift]</b></span>
+          <span id="dashStatusText">대시: <b style="color:#22c55e;">준비완료</b></span>
+          <span id="runStatusText">달리기: <b style="color:#94a3b8;">OFF (;키)</b></span>
+          <span id="skill1StatusText">스킬1: <b style="color:#06b6d4;">[K]</b></span>
+          <span id="skill2StatusText">스킬2: <b style="color:#38bdf8;">[L]</b></span>
+          <span id="specialStatusText">특수: <b style="color:#64748b;">[S]</b></span>
+          <span id="posDisplay">X: 300</span>
+        </div>
+      </div>
+
+      <!-- 2. 동료 스트라이커 종합 상태 패널 (2인 협동 모드 시 표시) -->
+      <div id="peer-status-panel" class="panel hidden" style="border-color: #ef4444; width: 230px;">
+        <div class="status-title">
+          <span id="peerPlayerTitle" style="color: #ef4444;">🛡️ 2P 스트라이커</span>
+          <span class="badge" id="peerHpBadge" style="background: #ef4444;">HP: 65,000</span>
+        </div>
+        <div class="hp-bar-bg" style="margin-bottom: 6px;">
+          <div id="peerHpBar" class="hp-bar-fill" style="background: linear-gradient(90deg, #dc2626, #ef4444);"></div>
+          <div id="peerHpText" class="hp-text">65,000 / 65,000</div>
+        </div>
+        <div style="font-size: 11px; color: #f87171; display: flex; justify-content: space-between; margin-bottom: 2px;">
+          <span>⚡ <b>전술 코스트</b></span>
+          <span id="peerCostText" style="font-family: monospace; font-weight: bold;">6 / 15</span>
+        </div>
+        <div style="width: 100%; height: 8px; background: #334155; border-radius: 4px; overflow: hidden; margin-bottom: 6px;">
+          <div id="peerCostBar" style="width: 40%; height: 100%; background: linear-gradient(90deg, #f87171, #ef4444); transition: width 0.1s linear;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(15,23,42,0.6); padding: 4px 8px; border-radius: 6px; font-size: 11px;">
+          <span id="peerWeaponName" style="font-weight: 800; color: #facc15;">MG</span>
+          <span id="peerAmmoText" style="color: #ffffff;">40 / 7탄창</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 카이텐저 전체 총합 보스 체력바 (1페이즈 상단 중앙) -->
+    <div id="kaiten-boss-panel" class="panel">
+      <div class="boss-title-row">
+        <span class="boss-name"><span style="color: #ef4444; font-weight: 800;">🍣 KAITENZERS</span> (카이텐저 연합)</span>
+        <span id="kaiten-total-hp-text" class="boss-hp-numbers">5,000,000 / 5,000,000 [100.0%]</span>
+      </div>
+      <div class="boss-hp-track">
+        <div id="kaiten-total-hp-fill" class="boss-hp-fill" style="width: 100%;"></div>
+        <!-- 20% 도주선 마커 -->
+        <div class="boss-retreat-line" title="20% 도주 기준선">
+          <span class="retreat-marker-label">20% 도주선</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- [신규 2페이즈] KAITEN FX Mk.0 종합 보스 패널 (HP + ATG + 3개 파츠) -->
+    <div id="kaiten-fx-panel" class="panel hidden" style="border-color: #ef4444; min-width: 460px;">
+      <div class="boss-title-row">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="boss-name" style="color: #ef4444; font-weight: 900; letter-spacing: 1px;">🤖 KAITEN FX Mk.0</span>
+          <span id="fx-active-part-badge" style="font-size: 11px; padding: 2px 7px; border-radius: 4px; font-weight: bold; background: #ec4899; color: #fff;">오른팔 [20s]</span>
+        </div>
+        <span id="fx-boss-hp-text" class="boss-hp-numbers" style="color: #fca5a5;">7,500,000 / 7,500,000 [100.0%]</span>
+      </div>
+      <!-- 보스 본체 HP 바 -->
+      <div class="boss-hp-track" style="margin-bottom: 5px;">
+        <div id="fx-boss-hp-fill" class="boss-hp-fill" style="background: linear-gradient(90deg, #dc2626, #f87171); width: 100%;"></div>
+      </div>
+      <!-- 보스 ATG 게이지 (45s 완충 궁극기) -->
+      <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10.5px; margin-bottom: 2px;">
+        <span style="color: #facc15; font-weight: 800;">⚡ ATG GAUGE (궁극기 충전)</span>
+        <span id="fx-atg-text" style="color: #fef08a; font-family: monospace; font-weight: bold;">0% / 100% [45.0s]</span>
+      </div>
+      <div style="width: 100%; height: 7px; background: #1e293b; border-radius: 3px; overflow: hidden; margin-bottom: 6px; border: 1px solid rgba(250, 204, 21, 0.3);">
+        <div id="fx-atg-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #eab308, #facc15); transition: width 0.1s linear;"></div>
+      </div>
+      <!-- 3대 파츠 내구도 미니 바 -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; font-size: 10px;">
+        <div id="fx-part-card-pink" style="background: rgba(15,23,42,0.8); padding: 3px 6px; border-radius: 4px; border: 1px solid #ec4899;">
+          <div style="display: flex; justify-content: space-between; color: #f472b6; font-weight: bold;">
+            <span>오른팔(새우)</span>
+            <span id="fx-part-hp-pink">100%</span>
+          </div>
+          <div style="width: 100%; height: 3.5px; background: #334155; border-radius: 2px; margin-top: 2px; overflow: hidden;">
+            <div id="fx-part-fill-pink" style="width: 100%; height: 100%; background: #ec4899;"></div>
+          </div>
+        </div>
+        <div id="fx-part-card-red" style="background: rgba(15,23,42,0.8); padding: 3px 6px; border-radius: 4px; border: 1px solid #ef4444;">
+          <div style="display: flex; justify-content: space-between; color: #f87171; font-weight: bold;">
+            <span>가슴(참치)</span>
+            <span id="fx-part-hp-red">100%</span>
+          </div>
+          <div style="width: 100%; height: 3.5px; background: #334155; border-radius: 2px; margin-top: 2px; overflow: hidden;">
+            <div id="fx-part-fill-red" style="width: 100%; height: 100%; background: #ef4444;"></div>
+          </div>
+        </div>
+        <div id="fx-part-card-green" style="background: rgba(15,23,42,0.8); padding: 3px 6px; border-radius: 4px; border: 1px solid #22c55e;">
+          <div style="display: flex; justify-content: space-between; color: #4ade80; font-weight: bold;">
+            <span>왼팔(실드)</span>
+            <span id="fx-part-hp-green">100%</span>
+          </div>
+          <div style="width: 100%; height: 3.5px; background: #334155; border-radius: 2px; margin-top: 2px; overflow: hidden;">
+            <div id="fx-part-fill-green" style="width: 100%; height: 100%; background: #22c55e;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 카이텐저 5인 상태 패널 (신규 보스 바로 대체되어 숨김) -->
+    <div id="kaiten-status" class="panel hidden"></div>
+  </div>
+
+  <canvas id="gameCanvas"></canvas>
+  <canvas id="minimap" class="hidden"></canvas>
+
+  <!-- 게임 엔진 스크립트 모듈 순차 로드 -->
+  <script src="js/constants.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/network.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
