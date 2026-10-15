@@ -4689,7 +4689,17 @@
           return;
         }
 
-        // [FOX 45식: 철벽의 방어] 기절 중에는 점프/이동 불가
+        // 점프 물리 연산 (중력) - 기절 중이어도 공중에 있다면 자연스럽게 바닥으로 착지!
+        if (k.jumpY > 0 || k.vy > 0) {
+          k.jumpY += k.vy;
+          k.vy -= 0.65; // 중력 가속도
+          if (k.jumpY <= 0) {
+            k.jumpY = 0;
+            k.vy = 0;
+          }
+        }
+
+        // [FOX 45식: 철벽의 방어] 기절 중에는 추가 점프 및 지상 이동 불가
         if (k.stunTimer && k.stunTimer > 0) {
           return;
         }
@@ -4702,16 +4712,6 @@
           if (k.jumpY <= 0) {
             k.vy = 12 + Math.random() * 4; // 점프 초속
             addDamageText(k.x + k.size / 2, groundY - k.size - 10, 'JUMP!', '#94a3b8');
-          }
-        }
-
-        // 점프 물리 연산 (중력)
-        if (k.jumpY > 0 || k.vy > 0) {
-          k.jumpY += k.vy;
-          k.vy -= 0.65; // 중력 가속도
-          if (k.jumpY <= 0) {
-            k.jumpY = 0;
-            k.vy = 0;
           }
         }
 
@@ -5133,13 +5133,13 @@
         // C. [실전 전투 AI & 물리 이동 & 미니건 평타 패턴]
         if (kaitenFx.isSpawned && !kaitenFx.isDead && kaitenFx.introState === 'ready') {
           // [FOX 45식: 철벽의 방어 기절 타이머]
-          if (kaitenFx.stunTimer > 0) {
+          const isFxStunned = (kaitenFx.stunTimer > 0);
+          if (isFxStunned) {
             kaitenFx.stunTimer -= dt;
             if (kaitenFx.stunTimer <= 0) {
               kaitenFx.stunTimer = 0;
               addDamageText(kaitenFx.x + kaitenFx.width / 2, groundY - 240, '✅ KAITEN FX 기절 회복', '#22c55e');
             }
-            return; // 기절 중 이동, 평타, 스킬 전부 일시 정지!
           }
 
           // [FOX 45식: 공세 전환 치명 대미지 저항률 감소 디버프 타이머]
@@ -5160,6 +5160,7 @@
             }
           }
 
+          if (!isFxStunned) {
           // 1) 플레이어 방향 자동 지향 (facing: 1 또는 -1)
           const fxCenterX = kaitenFx.x + kaitenFx.width / 2;
           kaitenFx.facing = playerCenterX < fxCenterX ? -1 : 1;
@@ -5486,6 +5487,7 @@
         }
         }
       }
+    }
 
       // 4. 탄환 이동 및 판정
       for (let i = bullets.length - 1; i >= 0; i--) {

@@ -3690,8 +3690,10 @@
       if (currentMode === 'duo' && remotePlayer.isActive) {
         const rScreenX = remotePlayer.x - camera.x;
         const rScreenY = remotePlayer.y;
-        const rCenterX = remotePlayer.x + remotePlayer.width / 2;
-        const rCenterY = remotePlayer.y + remotePlayer.height / 2;
+        const rWorldCenterX = remotePlayer.x + remotePlayer.width / 2;
+        const rWorldCenterY = remotePlayer.y + remotePlayer.height / 2;
+        const rScreenCenterX = rScreenX + remotePlayer.width / 2;
+        const rScreenCenterY = rScreenY + remotePlayer.height / 2;
 
         // 동료 그림자
         ctx.fillStyle = 'rgba(0,0,0,0.3)';
@@ -3857,15 +3859,15 @@
           const rAuraRadius = remotePlayer.width * (rBerserk ? 1.6 : (rPhase === 2 ? 1.4 : 1.25));
 
           const rAura = ctx.createRadialGradient(
-            rCenterX, rCenterY, remotePlayer.width * 0.2,
-            rCenterX, rCenterY, rAuraRadius
+            rScreenCenterX, rScreenCenterY, remotePlayer.width * 0.2,
+            rScreenCenterX, rScreenCenterY, rAuraRadius
           );
           rAura.addColorStop(0, '#ffffff');
           rAura.addColorStop(0.3, rBerserk ? 'rgba(168, 85, 247, 0.65)' : 'rgba(217, 70, 239, 0.5)');
           rAura.addColorStop(1, 'rgba(147, 51, 234, 0)');
           ctx.fillStyle = rAura;
           ctx.beginPath();
-          ctx.arc(rCenterX, rCenterY, rAuraRadius, 0, Math.PI * 2);
+          ctx.arc(rScreenCenterX, rScreenCenterY, rAuraRadius, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.font = 'bold 12px monospace';
@@ -3884,13 +3886,13 @@
         if (remotePlayer.isImmortalActive) {
           ctx.save();
           const rAuraRadius = remotePlayer.width * 1.5;
-          const rAura = ctx.createRadialGradient(rCenterX, rCenterY, remotePlayer.width * 0.2, rCenterX, rCenterY, rAuraRadius);
+          const rAura = ctx.createRadialGradient(rScreenCenterX, rScreenCenterY, remotePlayer.width * 0.2, rScreenCenterX, rScreenCenterY, rAuraRadius);
           rAura.addColorStop(0, '#ffffff');
           rAura.addColorStop(0.3, 'rgba(239, 68, 68, 0.7)');
           rAura.addColorStop(1, 'rgba(185, 28, 28, 0)');
           ctx.fillStyle = rAura;
           ctx.beginPath();
-          ctx.arc(rCenterX, rCenterY, rAuraRadius, 0, Math.PI * 2);
+          ctx.arc(rScreenCenterX, rScreenCenterY, rAuraRadius, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.font = 'bold 12px monospace';
@@ -3910,7 +3912,7 @@
           ctx.shadowColor = '#00ffff';
           ctx.shadowBlur = 12;
           ctx.beginPath();
-          ctx.arc(rCenterX, rCenterY, rShieldRadius, 0, Math.PI * 2);
+          ctx.arc(rScreenCenterX, rScreenCenterY, rShieldRadius, 0, Math.PI * 2);
           ctx.stroke();
 
           ctx.font = 'bold 11px monospace';
@@ -3923,13 +3925,13 @@
         if (remotePlayer.isColorActive) {
           ctx.save();
           const rAuraRadius = remotePlayer.width * 1.4;
-          const rAura = ctx.createRadialGradient(rCenterX, rCenterY, remotePlayer.width * 0.2, rCenterX, rCenterY, rAuraRadius);
+          const rAura = ctx.createRadialGradient(rScreenCenterX, rScreenCenterY, remotePlayer.width * 0.2, rScreenCenterX, rScreenCenterY, rAuraRadius);
           rAura.addColorStop(0, '#475569');
           rAura.addColorStop(0.5, 'rgba(30, 41, 59, 0.6)');
           rAura.addColorStop(1, 'rgba(15, 23, 42, 0)');
           ctx.fillStyle = rAura;
           ctx.beginPath();
-          ctx.arc(rCenterX, rCenterY, rAuraRadius, 0, Math.PI * 2);
+          ctx.arc(rScreenCenterX, rScreenCenterY, rAuraRadius, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.font = 'bold 11px monospace';
@@ -3939,7 +3941,7 @@
         }
 
         // 동료 무기 외형 렌더링
-        drawPlayerWeapon(rScreenX, rScreenY, rCenterX, rCenterY, groundY, remotePlayer);
+        drawPlayerWeapon(rScreenX, rScreenY, rWorldCenterX, rWorldCenterY, groundY, remotePlayer);
 
         // 동료 HP 바
         const rHpPct = Math.max(0, remotePlayer.hp / (remotePlayer.maxHp || 10000));
