@@ -597,7 +597,9 @@
 
       // 스킬 & 버프 진행 상태
       shieldActive: false,
-      shieldHitCount: 0, // 메인스킬 1,2 15회 피격 카운터
+      shieldHitCount: 0, // 메인스킬 1,2 25회 피격 카운터
+      shieldVisualTimer: 0, // 3초 플라즈마 보호막 비주얼 타이머
+      chestHatchTimer: 0,   // 가슴 해치 오픈 타이머
       isFiringSkill: false,
       skillTimer: 0,
       isSlashing: false, // 파이널 고등어 슬래쉬 발동 중

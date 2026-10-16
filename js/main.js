@@ -5238,6 +5238,16 @@
           // 맵 경계 제한 (200 ~ WORLD_WIDTH - 250)
           kaitenFx.x = Math.max(200, Math.min(WORLD_WIDTH - 250, kaitenFx.x));
 
+          // 2.5) 플라즈마 실드 3초 비주얼 타이머 & 가슴 해치 오픈 타이머 갱신
+          if (kaitenFx.shieldVisualTimer > 0) {
+            kaitenFx.shieldVisualTimer -= dt;
+            if (kaitenFx.shieldVisualTimer < 0) kaitenFx.shieldVisualTimer = 0;
+          }
+          if (kaitenFx.chestHatchTimer > 0) {
+            kaitenFx.chestHatchTimer -= dt;
+            if (kaitenFx.chestHatchTimer < 0) kaitenFx.chestHatchTimer = 0;
+          }
+
           // 3) [원작 메카 평타]: 0.5초 동안 미니건 15발 고속 난사 패턴
           if (!kaitenFx.isFiringSkill && !kaitenFx.isSlashing) {
             if (kaitenFx.isFiringNormal) {
@@ -5246,9 +5256,9 @@
                 kaitenFx.normalBurstTimer = 0;
                 kaitenFx.normalBurstCount--;
 
-                // 미니건 발사 위치 (뒷팔 어깨/팔 미니건 총구 위치)
-                const armMuzzleX = fxCenterX + (kaitenFx.facing * 50);
-                const armMuzzleY = groundY - 165;
+                // 미니건 발사 위치: 전방으로 쭉 뻗은 오른팔 총열 끝 (가슴/어깨 높이 245)
+                const armMuzzleX = fxCenterX + (kaitenFx.facing * 125);
+                const armMuzzleY = groundY - 245;
                 const tPos = getEnemyTargetPos(armMuzzleX, armMuzzleY);
                 const mDx = tPos.x - armMuzzleX;
                 const mDy = tPos.y - armMuzzleY;
@@ -5263,7 +5273,7 @@
                   y: armMuzzleY,
                   vx: (mDx / mDist) * bulletSpeed + spread,
                   vy: (mDy / mDist) * bulletSpeed + spread,
-                  dmg: Math.round(280 * (kaitenFx.atkDebuffTimer > 0 ? (1.0 - (kaitenFx.atkDebuffRatio || 0.30)) : 1.0)), // 15발 난사 시 총 약 4,200 피해
+                  dmg: Math.round(280 * (kaitenFx.atkDebuffTimer > 0 ? (1.0 - (kaitenFx.atkDebuffRatio || 0.30)) : 1.0)),
                   color: '#fbbf24',
                   size: 5,
                   life: 140
@@ -5303,19 +5313,14 @@
           }
 
           // 4) [원작 핵심 기믹]: 20초 파츠 순환 사이클 ([무한히 타오르는 뜨거운 마음])
-          //    순환 순서: 핑크(오른팔) ➔ 레드(가슴) ➔ 그린(왼팔) ➔ 반복
-          //    ★ [원작 고증]: 파괴(Broken)된 파츠는 사이클에서 완전히 '건너뛰기(Skip)'!
-          //    ★ 3개 파츠가 전부 파괴되면 파츠 스킬 시스템이 영구 무력화(None)됨.
           const cycleOrder = ['pink', 'red', 'green'];
           const intactParts = cycleOrder.filter(p => !kaitenFx.parts[p].isBroken);
 
           if (intactParts.length === 0) {
-            // 모든 파츠 파괴됨 -> 파츠 순환 및 스킬 완전 영구 정지!
             kaitenFx.activePart = 'none';
             kaitenFx.shieldActive = false;
             kaitenFx.isFiringSkill = false;
           } else {
-            // 아직 살아있는 파츠가 있다면 현재 파츠가 파괴되었을 때 즉시 다음 생존 파츠로 긴급 전환
             if (kaitenFx.activePart === 'none' || (kaitenFx.parts[kaitenFx.activePart] && kaitenFx.parts[kaitenFx.activePart].isBroken)) {
               kaitenFx.activePart = intactParts[0];
               kaitenFx.partCycleTimer = 0;
@@ -5324,12 +5329,10 @@
               if (kaitenFx.activePart !== 'green') kaitenFx.shieldActive = false;
             }
 
-            // 20초 주기 타이머 갱신
             kaitenFx.partCycleTimer += dt;
             if (kaitenFx.partCycleTimer >= kaitenFx.partCycleDuration) {
               kaitenFx.partCycleTimer = 0;
 
-              // 현재 파츠 다음의 '생존한' 파츠 탐색 (파괴된 파츠 자동 건너뛰기!)
               const curIdx = cycleOrder.indexOf(kaitenFx.activePart);
               let nextPart = null;
               for (let step = 1; step <= cycleOrder.length; step++) {
@@ -5359,11 +5362,9 @@
               kaitenFx.partSkillTriggered = true;
               const activeP = kaitenFx.parts[kaitenFx.activePart];
 
-              // 파츠가 파괴(Break)된 상태라면 스킬 시전 불발 & 그로기 안내
               if (activeP.isBroken) {
                 addDamageText(fxCenterX, groundY - 240, `⚠️ [스킬 취소] ${activeP.name} 파괴 상태로 스킬 불발!`, '#94a3b8');
               } else {
-                // 파츠 스킬 발동!
                 if (kaitenFx.activePart === 'pink') {
                   // [스킬 1 - 핑크]: 무한회전ㆍ슈퍼 새우 머신건 (평타 3배의 45발 폭풍 난사)
                   kaitenFx.isFiringSkill = true;
@@ -5371,16 +5372,18 @@
                   kaitenFx.skillBurstTimer = 0;
                   addDamageText(fxCenterX, groundY - 250, '🦐 [무한회전ㆍ슈퍼 새우 머신건] 45발 폭풍 난사!', '#ec4899');
                 } else if (kaitenFx.activePart === 'red') {
-                  // [스킬 2 - 레드]: 무한회전ㆍ하이퍼 정어리 미사일 (전방위 12발 유도 미사일 일제 폭격)
+                  // [스킬 2 - 레드]: 무한회전ㆍ하이퍼 정어리 미사일 (가슴 해치 오픈 + 8발 호밍 미사일)
                   kaitenFx.isFiringSkill = true;
-                  kaitenFx.missileVolleyCount = 12;
+                  kaitenFx.missileVolleyCount = 8; // 8발 순차 발사
                   kaitenFx.missileVolleyTimer = 0;
-                  addDamageText(fxCenterX, groundY - 250, '🐟 [무한회전ㆍ하이퍼 정어리 미사일] 12발 일제 폭격!', '#ef4444');
+                  kaitenFx.chestHatchTimer = 2.6;  // 가슴 해치 오픈 애니메이션
+                  addDamageText(fxCenterX, groundY - 250, '🐟 [무한회전ㆍ하이퍼 정어리 미사일] 해치 오픈! 8연발 락온 사출!', '#ef4444');
                 } else if (kaitenFx.activePart === 'green') {
-                  // [스킬 3 - 그린]: 무한회전ㆍ울트라 뚜껑 실드 (대미지 50% 방어막 전개, 스킬 15회 피격 시 파괴)
+                  // [스킬 3 - 그린]: 무한회전ㆍ울트라 뚜껑 실드 (3초간 플라즈마 보호막 전개, 스킬 25회 피격 대미지 감소)
                   kaitenFx.shieldActive = true;
                   kaitenFx.shieldHitCount = 0;
-                  addDamageText(fxCenterX, groundY - 250, '🛡️ [무한회전ㆍ울트라 뚜껑 실드] 50% 뎀감 실드 전개!', '#22c55e');
+                  kaitenFx.shieldVisualTimer = 3.0; // 3초간 파란색 플라즈마 보호막 전개
+                  addDamageText(fxCenterX, groundY - 250, '🛡️ [무한회전ㆍ울트라 뚜껑 실드] 플라즈마 배리어 3초 전개 (25회 방어)!', '#22c55e');
                 }
               }
             }
@@ -5395,8 +5398,9 @@
                 kaitenFx.skillBurstTimer = 0;
                 kaitenFx.skillBurstCount--;
 
-                const armMuzzleX = fxCenterX + (kaitenFx.facing * 50);
-                const armMuzzleY = groundY - 165;
+                // 전방으로 쭉 뻗은 오른팔 총구 위치 (가슴/어깨 높이 245)
+                const armMuzzleX = fxCenterX + (kaitenFx.facing * 125);
+                const armMuzzleY = groundY - 245;
                 const tPos = getEnemyTargetPos(armMuzzleX, armMuzzleY);
                 const mDx = tPos.x - armMuzzleX;
                 const mDy = tPos.y - armMuzzleY;
@@ -5422,18 +5426,18 @@
               }
             }
 
-            // [레드 스킬: 12발 정어리 미사일 순차 발사]
+            // [레드 스킬: 8발 정어리 미사일 순차 발사]
             if (kaitenFx.activePart === 'red' && kaitenFx.missileVolleyCount > 0) {
               kaitenFx.missileVolleyTimer += dt;
-              if (kaitenFx.missileVolleyTimer >= 0.12) { // 120ms마다 1발씩 발사
+              if (kaitenFx.missileVolleyTimer >= 0.11) { // 110ms마다 1발씩 발사
                 kaitenFx.missileVolleyTimer = 0;
                 kaitenFx.missileVolleyCount--;
 
-                const chestX = fxCenterX + (kaitenFx.facing * 20);
-                const chestY = groundY - 210;
-                const tPos = getEnemyTargetPos(chestX, chestY);
-                // 위로 솟구쳤다가 플레이어를 추적하는 호밍 궤적
-                const launchAngle = -Math.PI * 0.5 + (Math.random() - 0.5) * 0.8;
+                const chestX = fxCenterX + (kaitenFx.facing * 35);
+                const chestY = groundY - 250; // 열린 가슴 해치 위치
+                const baseAngle = kaitenFx.facing > 0 ? 0 : Math.PI;
+                // 전방으로 랜덤한 각도로 흩뿌려짐 (-45도 ~ +30도)
+                const spreadAngle = baseAngle + ((Math.random() - 0.5) * 55) * (Math.PI / 180);
                 const launchSpeed = 8 + Math.random() * 4;
 
                 spawnEnemyBullet({
@@ -5441,14 +5445,18 @@
                   isEnemyBullet: true,
                   x: chestX,
                   y: chestY,
-                  vx: Math.cos(launchAngle) * launchSpeed,
-                  vy: Math.sin(launchAngle) * launchSpeed,
-                  targetX: tPos.x,
-                  targetY: tPos.y,
-                  dmg: Math.round(950 * (kaitenFx.atkDebuffTimer > 0 ? (1.0 - (kaitenFx.atkDebuffRatio || 0.30)) : 1.0)), // 유도 미사일 폭발 피해
+                  vx: Math.cos(spreadAngle) * launchSpeed,
+                  vy: Math.sin(spreadAngle) * launchSpeed - 1.5,
+                  state: 'launch',
+                  stateTimer: 0,
+                  lockonDelay: 0.22,
+                  lockonDuration: 0.5,
+                  targetChosen: false,
+                  targetEntity: null,
+                  dmg: Math.round(1100 * (kaitenFx.atkDebuffTimer > 0 ? (1.0 - (kaitenFx.atkDebuffRatio || 0.30)) : 1.0)),
                   color: '#ef4444',
                   size: 11,
-                  life: 200,
+                  life: 240,
                   tailTimer: 0
                 });
 
@@ -5601,15 +5609,97 @@
             });
           }
         } else if (b.type === 'fx_sardine_missile') {
-          // [하이퍼 정어리 미사일 호밍 물리]: 공중으로 포물선을 그리다 플레이어를 향해 쇄도!
+          // [하이퍼 정어리 미사일: 3단계 락온 & 확률 타겟팅 물리]
           b.tailTimer = (b.tailTimer || 0) + 1;
-          const mDx = playerCenterX - b.x;
-          const mDy = playerCenterY - b.y;
-          const mDist = Math.hypot(mDx, mDy) || 1;
-          b.vx += (mDx / mDist) * 0.45;
-          b.vy += (mDy / mDist) * 0.35;
-          b.vx = Math.max(-13, Math.min(13, b.vx));
-          b.vy = Math.max(-11, Math.min(11, b.vy));
+          b.stateTimer = (b.stateTimer || 0) + dt;
+
+          if (b.state === 'launch') {
+            // 1단계 (사출 직후 0.22초): 전방으로 랜덤하게 흩뿌려지며 서서히 감속
+            b.vx *= 0.95;
+            b.vy *= 0.95;
+            if (b.stateTimer >= b.lockonDelay) {
+              b.state = 'lockon';
+              b.stateTimer = 0;
+            }
+          } else if (b.state === 'lockon') {
+            // 2단계 (0.5초 락온): 속도가 급격히 줄어들며 공중에 부유하듯 정지 & 타깃 조준!
+            b.vx *= 0.76;
+            b.vy *= 0.76;
+
+            // 락온 시작 시 1회 대상 결정 (75% 가장 가까움, 20% 가장 멂, 5% 전방 랜덤)
+            if (!b.targetChosen) {
+              b.targetChosen = true;
+              const p1Dist = Math.hypot(player.x - b.x, (groundY - player.height / 2) - b.y);
+              const hasP2 = (currentMode === 'duo' && remotePlayer && remotePlayer.isActive);
+              const p2Dist = hasP2 ? Math.hypot(remotePlayer.x - b.x, (remotePlayer.y + remotePlayer.height / 2) - b.y) : Infinity;
+
+              let closestTarget = player;
+              let farthestTarget = player;
+              if (hasP2) {
+                if (p2Dist < p1Dist) {
+                  closestTarget = remotePlayer;
+                  farthestTarget = player;
+                } else {
+                  closestTarget = player;
+                  farthestTarget = remotePlayer;
+                }
+              }
+
+              const roll = Math.random();
+              if (roll < 0.75) {
+                // 75% 확률: 가장 가까운 플레이어
+                b.targetEntity = closestTarget;
+              } else if (roll < 0.95 && hasP2) {
+                // 20% 확률: 가장 멀리 있는 플레이어 (솔로면 가까운 플레이어)
+                b.targetEntity = farthestTarget;
+              } else {
+                // 5% 확률: 랜덤 방향 (단, 하늘 위는 안 됨! 수평~하향 방향)
+                b.targetEntity = null;
+                const fxFacing = (typeof kaitenFx !== 'undefined') ? kaitenFx.facing : -1;
+                // 각도: -0.2 rad ~ +0.6 rad (전방 수평에서 지면 방향)
+                const randAngle = (fxFacing > 0 ? 0 : Math.PI) + (Math.random() * 0.8 - 0.2);
+                b.strayDir = {
+                  x: Math.cos(randAngle),
+                  y: Math.max(0.12, Math.sin(randAngle)) // 절대 하늘 위(음수) 불가!
+                };
+              }
+            }
+
+            // 0.5초 락온 후 'homing' 상태로 전환하며 강력 재가속!
+            if (b.stateTimer >= b.lockonDuration) {
+              b.state = 'homing';
+              b.stateTimer = 0;
+              if (b.targetEntity) {
+                const tCenterX = b.targetEntity.x + (b.targetEntity.width / 2);
+                const tCenterY = (b.targetEntity === player ? (groundY - player.height / 2) : (b.targetEntity.y + b.targetEntity.height / 2));
+                const hDx = tCenterX - b.x;
+                const hDy = tCenterY - b.y;
+                const hDist = Math.hypot(hDx, hDy) || 1;
+                b.vx = (hDx / hDist) * 16.5;
+                b.vy = (hDy / hDist) * 16.5;
+              } else if (b.strayDir) {
+                b.vx = b.strayDir.x * 16.5;
+                b.vy = b.strayDir.y * 16.5;
+              }
+            }
+          } else {
+            // 3단계 (유도 돌격): 타깃을 향해 궤도를 예리하게 꺾으며 급가속 돌진!
+            if (b.targetEntity) {
+              const tCenterX = b.targetEntity.x + (b.targetEntity.width / 2);
+              const tCenterY = (b.targetEntity === player ? (groundY - player.height / 2) : (b.targetEntity.y + b.targetEntity.height / 2));
+              const hDx = tCenterX - b.x;
+              const hDy = tCenterY - b.y;
+              const hDist = Math.hypot(hDx, hDy) || 1;
+              b.vx += (hDx / hDist) * 0.85;
+              b.vy += (hDy / hDist) * 0.75;
+              const curSpeed = Math.hypot(b.vx, b.vy);
+              if (curSpeed > 17.5) {
+                b.vx = (b.vx / curSpeed) * 17.5;
+                b.vy = (b.vy / curSpeed) * 17.5;
+              }
+            }
+          }
+
           b.angle = Math.atan2(b.vy, b.vx);
 
           if (b.tailTimer % 2 === 0 && specialParticles.length < 80) {

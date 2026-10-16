@@ -2484,31 +2484,68 @@
         // [레이어 1: 뒤편 파츠 (Far / Background)]
         // ---------------------------------------------------------------------
 
-        // 1-1. [뒷다리: 옐로우 계란말이 (오른다리, 골반에서 바닥까지 튼튼하게 연결)]
+        // 1-1. [뒷다리: 옐로우 계란말이 (오른다리 - 골반 ➔ 무릎 관절 ➔ 발목 관절 계층 연결)]
         ctx.save();
-        // 발끝 바닥 정합: Y 기준점 -86에 배치 시 발굽 바닥(y=+86)이 정확히 y=0(지면)에 접지
         ctx.translate(32 - walkSwing * 0.8, -86 - walkLiftB);
         ctx.scale(0.9, 0.9); // 뒤편 원근감
 
-        // 골반 연결 허벅지 프레임
+        // 골반 힙 볼 조인트
         ctx.fillStyle = '#0f172a';
-        ctx.fillRect(-14, -68, 28, 20);
+        ctx.beginPath();
+        ctx.arc(0, -68, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 2;
+        ctx.stroke();
 
-        // 계란말이 허벅지~정강이 아머 (길고 육중한 사각 덩어리)
+        // 대퇴부 허벅지 상단 프레임
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-14, -68, 28, 26);
+
+        // 계란말이 허벅지 아머
         const eggGlow = boss.activePart === 'pink';
         ctx.fillStyle = eggGlow ? '#fde047' : '#eab308';
-        ctx.fillRect(-20, -50, 42, 86);
+        ctx.fillRect(-20, -50, 42, 42);
         ctx.strokeStyle = '#0f172a';
         ctx.lineWidth = 2.2;
-        ctx.strokeRect(-20, -50, 42, 86);
-        // 계란 김 띠
+        ctx.strokeRect(-20, -50, 42, 42);
+
+        // 무릎 메카 관절 (Knee Disc Joint)
+        const kneeBendB = isMoving ? Math.max(0, Math.sin(walkCycle)) * 0.18 : 0;
+        ctx.save();
+        ctx.translate(0, -8);
+        ctx.rotate(kneeBendB);
+
+        // 무릎 볼 조인트 원판
         ctx.fillStyle = '#0f172a';
-        ctx.fillRect(-20, -10, 42, 14);
+        ctx.beginPath();
+        ctx.arc(0, 0, 11, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillRect(-3, -3, 6, 6);
+
+        // 정강이 하단 아머 & 계란 김 띠
+        ctx.fillStyle = eggGlow ? '#fde047' : '#eab308';
+        ctx.fillRect(-20, 0, 42, 44);
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2.2;
+        ctx.strokeRect(-20, 0, 42, 44);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-20, 10, 42, 14);
+
+        // 발목 볼 조인트
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(0, 44, 9, 0, Math.PI * 2);
+        ctx.fill();
 
         // 메카 발목 슈즈 (옆모습)
         ctx.fillStyle = '#e2e8f0';
-        ctx.fillRect(-18, 36, 38, 22);
-        ctx.strokeRect(-18, 36, 38, 22);
+        ctx.fillRect(-18, 44, 38, 20);
+        ctx.strokeRect(-18, 44, 38, 20);
 
         // 게타 나막신 발판 (바닥 접지 높이 맞춤)
         ctx.fillStyle = '#0f172a';
@@ -2519,18 +2556,23 @@
         ctx.fillStyle = '#78350f';
         ctx.fillRect(-14, 76, 8, 10);
         ctx.fillRect(10, 76, 8, 10);
-        ctx.restore();
+        ctx.restore(); // 무릎 관절 복원
+        ctx.restore(); // 뒷다리 복원
 
         // 상체 전체 호흡/보행 밥핑 적용
         ctx.save();
         ctx.translate(0, bodyBobY);
 
-        // 1-2. [뒷팔: 핑크 새우 초밥 어깨 & 미니건 (뒤편 어깨 위로 웅장하게 솟음)]
+        // 1-2. [뒷팔: 핑크 새우 초밥 어깨 & 미니건 (어깨 ➔ 팔꿈치 관절 ➔ 사격 시 전방 팔 뻗기!)]
         const isPinkBroken = boss.parts.pink.isBroken;
         const isPinkActive = boss.activePart === 'pink' && !isPinkBroken;
+        const isFiringGatling = boss.isFiringNormal || (boss.isFiringSkill && boss.activePart === 'pink');
 
         ctx.save();
-        ctx.translate(35, -190);
+        // 머신건 사격 시: 팔을 앞으로 쭉 뻗는 조준 사격 자세 (Forward Gun Extension)
+        const armShoulderX = isFiringGatling ? 16 : 35;
+        const armShoulderY = isFiringGatling ? -186 : -190;
+        ctx.translate(armShoulderX, armShoulderY);
         ctx.scale(0.92, 0.92);
 
         if (isPinkActive) {
@@ -2538,6 +2580,15 @@
           ctx.lineWidth = 3.5;
           ctx.strokeRect(-24, -40, 50, 92);
         }
+
+        // 어깨 볼 조인트
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(0, 0, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 2;
+        ctx.stroke();
 
         // 새우 꼬리 지느러미 (등 뒤로 휘어져 올라간 핑크 꼬리!)
         ctx.fillStyle = isPinkBroken ? '#64748b' : '#f472b6';
@@ -2561,7 +2612,7 @@
         ctx.closePath();
         ctx.fill();
 
-        // 어깨 새우 마디 장갑
+        // 어깨 상완 새우 마디 장갑
         ctx.fillStyle = '#f8fafc';
         ctx.fillRect(-18, -26, 38, 34);
         ctx.strokeRect(-18, -26, 38, 34);
@@ -2569,36 +2620,69 @@
         ctx.fillRect(-14, -22, 30, 8);
         ctx.fillRect(-14, -8, 30, 8);
 
-        // 하완 & 개틀링 미니건 총구 (옆을 향해 전방 조준!)
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(-14, 10, 32, 34);
-        ctx.strokeRect(-14, 10, 32, 34);
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(-12, 42, 26, 20); // 주먹
-        // 전방 돌출 총열
-        ctx.fillStyle = '#64748b';
-        ctx.fillRect(-34, 18, 22, 14);
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(-42, 19, 8, 12);
+        // 팔꿈치 관절 (Elbow Joint) - 사격 시 전방 수평으로 쭉 뻗어 조준!
+        ctx.save();
+        const forearmAngle = isFiringGatling ? -0.28 : 0.08;
+        ctx.translate(-8, 14);
+        ctx.rotate(forearmAngle);
 
-        // 머신건 사격 화염
-        if (boss.isFiringNormal || (boss.isFiringSkill && boss.activePart === 'pink')) {
+        // 팔꿈치 볼 조인트 원판
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(0, 0, 9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        // 하완 팔뚝 & 개틀링 미니건 총구 (사격 시 전방으로 길게 연장 돌출!)
+        const gunLength = isFiringGatling ? 52 : 24;
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(-14, 0, 32, 34);
+        ctx.strokeRect(-14, 0, 32, 34);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-12, 32, 26, 20); // 주먹
+
+        // 전방 돌출 6연장 총열
+        ctx.fillStyle = '#64748b';
+        ctx.fillRect(-14 - gunLength, 12, gunLength, 16);
+        ctx.strokeStyle = '#0f172a';
+        ctx.strokeRect(-14 - gunLength, 12, gunLength, 16);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-20 - gunLength, 13, 8, 14); // 머즐 팁
+
+        // 머신건 사격 총구 화염 (Muzzle Flash)
+        if (isFiringGatling) {
           ctx.save();
+          const muzzleTipX = -24 - gunLength;
+          const muzzleTipY = 20;
           ctx.fillStyle = '#fde047';
           ctx.shadowColor = '#f59e0b';
-          ctx.shadowBlur = 14;
+          ctx.shadowBlur = 18;
           ctx.beginPath();
-          ctx.arc(-50, 25, 11 + Math.random() * 5, 0, Math.PI * 2);
+          ctx.arc(muzzleTipX, muzzleTipY, 13 + Math.random() * 6, 0, Math.PI * 2);
           ctx.fill();
+
+          // 섬광 십자 스파이크
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.moveTo(muzzleTipX - 16, muzzleTipY);
+          ctx.lineTo(muzzleTipX + 16, muzzleTipY);
+          ctx.moveTo(muzzleTipX, muzzleTipY - 16);
+          ctx.lineTo(muzzleTipX, muzzleTipY + 16);
+          ctx.stroke();
           ctx.restore();
         }
-        ctx.restore();
+        ctx.restore(); // 팔꿈치 복원
+        ctx.restore(); // 오른팔 복원
 
         // ---------------------------------------------------------------------
-        // [레이어 2: 몸통 코어 (75도 참치 블록 옆모습)]
+        // [레이어 2: 몸통 코어 (75도 참치 블록 & 가슴 미사일 해치)]
         // ---------------------------------------------------------------------
         const isRedBroken = boss.parts.red.isBroken;
         const isRedActive = boss.activePart === 'red' && !isRedBroken;
+        const isHatchOpen = (boss.chestHatchTimer && boss.chestHatchTimer > 0);
 
         ctx.save();
         ctx.translate(0, -172);
@@ -2610,8 +2694,8 @@
           ctx.strokeRect(-62 - pulse/2, -66 - pulse/2, 110 + pulse, 98 + pulse);
         }
 
-        // 2-1. [75도 핵심]: 참치 몸통의 거대한 옆면 (Side Face - 깊은 측면 프로필)
-        ctx.fillStyle = isRedBroken ? '#334155' : '#b91c1c'; // 참치 옆구리 붉은 살
+        // 2-1. [75도 핵심]: 참치 몸통의 거대한 옆면 (Side Face)
+        ctx.fillStyle = isRedBroken ? '#334155' : '#b91c1c';
         ctx.fillRect(-36, -60, 72, 85);
         ctx.strokeStyle = '#0f172a';
         ctx.lineWidth = 2.5;
@@ -2627,11 +2711,40 @@
           ctx.stroke();
         }
 
-        // 2-2. 전방 가슴 앞면 (Front Rim - 75도 각도로 살짝 감겨 보이는 붉은 앞면 테두리)
+        // 2-2. 전방 가슴 해치 내부: 미사일 사일로 베이 (해치 오픈 시 노출!)
+        if (isHatchOpen) {
+          ctx.save();
+          ctx.fillStyle = '#020617';
+          ctx.fillRect(-52, -48, 26, 62);
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 1.8;
+          ctx.strokeRect(-52, -48, 26, 62);
+
+          // 8발 사일로 튜브 구멍들
+          for (let row = 0; row < 4; row++) {
+            for (let col = 0; col < 2; col++) {
+              ctx.fillStyle = '#ef4444';
+              ctx.beginPath();
+              ctx.arc(-46 + col * 12, -40 + row * 14, 3.5, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = '#fde047';
+              ctx.fillRect(-47 + col * 12, -41 + row * 14, 2, 2);
+            }
+          }
+          ctx.restore();
+        }
+
+        // 2-3. 전방 가슴 앞면 (Front Rim - 해치 오픈 시 앞/위로 젖혀짐!)
+        ctx.save();
+        if (isHatchOpen) {
+          ctx.translate(-54, -55);
+          ctx.rotate(-0.35); // 위쪽으로 철컥 젖혀진 해치 합판!
+          ctx.translate(54, 55);
+        }
         ctx.fillStyle = isRedBroken ? '#475569' : '#ef4444';
         ctx.beginPath();
         ctx.moveTo(-36, -60);
-        ctx.lineTo(-54, -55); // 앞으로 꺾여 나오는 림
+        ctx.lineTo(-54, -55);
         ctx.lineTo(-54, 30);
         ctx.lineTo(-36, 25);
         ctx.closePath();
@@ -2646,8 +2759,9 @@
         ctx.beginPath();
         ctx.arc(-54, -12, 18, -Math.PI * 0.45, Math.PI * 0.45);
         ctx.stroke();
+        ctx.restore(); // 해치 패널 회전 복원
 
-        // 2-3. 원형 접시 버클 (옆면에서 비스듬히 보이는 타원형 버클)
+        // 2-4. 원형 접시 버클 (옆면 타원형)
         ctx.fillStyle = '#f8fafc';
         ctx.beginPath();
         ctx.ellipse(-28, 12, 8, 15, 0, 0, Math.PI * 2);
@@ -2656,12 +2770,12 @@
         ctx.lineWidth = 2.5;
         ctx.stroke();
 
-        // 몸통 하부 메카 골반 프레임 (다리와 빈틈없이 완벽 결합)
+        // 몸통 하부 메카 골반 프레임
         ctx.fillStyle = '#0f172a';
         ctx.fillRect(-38, 25, 76, 22);
         ctx.fillStyle = '#1e293b';
         ctx.fillRect(-34, 28, 68, 16);
-        ctx.restore();
+        ctx.restore(); // 몸통 복원
 
         // ---------------------------------------------------------------------
         // [레이어 3: 머리 헤드 (75도 측면 셰프 페이스)]
@@ -2693,21 +2807,21 @@
         ctx.moveTo(-16, -6);
         ctx.lineTo(8, -6);
         ctx.lineTo(6, 12);
-        ctx.lineTo(-20, 8); // 날카로운 턱
+        ctx.lineTo(-20, 8);
         ctx.closePath();
         ctx.fill();
         ctx.strokeStyle = '#0f172a';
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // 듀얼 아이 센서 (옆면 각도 바이저)
+        // 듀얼 아이 센서
         const eyeFlash = boss.introState === 'eye_flash' || Math.sin(now * 0.005) > 0.8;
         ctx.fillStyle = eyeFlash ? '#ffffff' : (boss.atg >= 100 ? '#facc15' : '#38bdf8');
         ctx.shadowColor = boss.atg >= 100 ? '#facc15' : '#38bdf8';
         ctx.shadowBlur = eyeFlash ? 16 : 8;
         ctx.fillRect(-18, -2, 12, 5.5);
         ctx.shadowBlur = 0;
-        ctx.restore();
+        ctx.restore(); // 머리 복원
 
         ctx.restore(); // 상체 밥핑 복원
 
@@ -2715,22 +2829,30 @@
         // [레이어 4: 앞쪽 파츠 (Near / Foreground - 플레이어를 향해 전진!)]
         // ---------------------------------------------------------------------
 
-        // 4-1. [앞다리: 블랙 연어알 군함말이 (왼다리, 골반에 착 붙어 전방을 향해 길게 뻗음!)]
+        // 4-1. [앞다리: 블랙 연어알 군함말이 (왼다리 - 골반 ➔ 무릎 관절 ➔ 발목 관절 계층 연결)]
         ctx.save();
-        // 발끝 바닥 정합: Y 기준점 -86에 배치 시 발굽 바닥(y=+86)이 정확히 y=0(지면)에 접지
         ctx.translate(-24 + walkSwing, -86 - walkLiftF);
         ctx.scale(1.05, 1.05); // 앞다리 원근
 
-        // 골반 연결 상부 대퇴부 조인트
+        // 골반 힙 볼 조인트
         ctx.fillStyle = '#0f172a';
-        ctx.fillRect(-16, -72, 32, 22);
+        ctx.beginPath();
+        ctx.arc(0, -72, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 2.2;
+        ctx.stroke();
 
-        // 정강이~허벅지 군함말이 검은 아머 (길고 웅장하게 연장)
+        // 골반 연결 상부 대퇴부 프레임
         ctx.fillStyle = '#0f172a';
-        ctx.fillRect(-24, -54, 50, 92);
+        ctx.fillRect(-16, -72, 32, 26);
+
+        // 허벅지 군함말이 검은 아머 상단
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-24, -54, 50, 46);
         ctx.strokeStyle = '#334155';
         ctx.lineWidth = 2.5;
-        ctx.strokeRect(-24, -54, 50, 92);
+        ctx.strokeRect(-24, -54, 50, 46);
 
         // 군함말이 금박 곡선 테두리
         ctx.strokeStyle = '#facc15';
@@ -2739,28 +2861,58 @@
         ctx.arc(-24, -10, 24, -Math.PI * 0.45, Math.PI * 0.45);
         ctx.stroke();
 
-        // [원작 핵심]: 측면에 뚜렷하게 노출된 굵은 붉은 연어알(이쿠라) 캡슐 2개와 검은 띠
+        // 무릎 메카 관절 (Knee Disc Joint)
+        const kneeBendF = isMoving ? Math.max(0, -Math.sin(walkCycle)) * 0.22 : 0;
+        ctx.save();
+        ctx.translate(0, -8);
+        ctx.rotate(kneeBendF);
+
+        // 무릎 볼 조인트 원판
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(0, 0, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillRect(-3, -3, 6, 6);
+
+        // 정강이 군함말이 아머 하단
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-24, 0, 50, 44);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(-24, 0, 50, 44);
+
+        // 측면 노출 연어알(이쿠라) 캡슐 2개와 검은 띠
         const eelGlow = boss.activePart === 'green';
         for (let i = 0; i < 2; i++) {
           const capX = -6 + i * 15;
           ctx.fillStyle = eelGlow ? '#f87171' : '#dc2626';
           ctx.beginPath();
-          ctx.roundRect(capX - 5, -46, 11, 74, 5);
+          ctx.roundRect(capX - 5, -36, 11, 64, 5);
           ctx.fill();
           ctx.strokeStyle = '#7f1d1d';
           ctx.lineWidth = 1.8;
           ctx.stroke();
           // 반사광
           ctx.fillStyle = '#fef2f2';
-          ctx.fillRect(capX - 3, -40, 3, 34);
+          ctx.fillRect(capX - 3, -30, 3, 28);
         }
         ctx.fillStyle = '#0f172a';
-        ctx.fillRect(-24, -12, 50, 14); // 감싼 띠
+        ctx.fillRect(-24, -4, 50, 14);
+
+        // 발목 볼 조인트
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(0, 44, 10, 0, Math.PI * 2);
+        ctx.fill();
 
         // 앞발 거대 화이트 메카 슈즈
         ctx.fillStyle = '#f8fafc';
-        ctx.fillRect(-24, 38, 48, 24);
-        ctx.strokeRect(-24, 38, 48, 24);
+        ctx.fillRect(-24, 44, 48, 20);
+        ctx.strokeRect(-24, 44, 48, 20);
 
         // 게타 나막신 (바닥 접지 높이 맞춤)
         ctx.fillStyle = '#0f172a';
@@ -2768,7 +2920,6 @@
         ctx.fillStyle = '#ca8a04';
         ctx.fillRect(-26, 58, 52, 10);
         ctx.strokeRect(-26, 58, 52, 10);
-        // 게타 나무 굽 2개
         ctx.fillStyle = '#78350f';
         ctx.fillRect(-20, 76, 9, 10);
         ctx.fillRect(14, 76, 9, 10);
@@ -2778,18 +2929,23 @@
           ctx.lineWidth = 3;
           ctx.strokeRect(-26, -56, 54, 96);
         }
-        ctx.restore();
+        ctx.restore(); // 무릎 관절 복원
+        ctx.restore(); // 앞다리 복원
 
         // 앞팔 및 실드 (상체 밥핑 연동)
         ctx.save();
         ctx.translate(0, bodyBobY);
 
-        // 4-2. [앞팔: 그린 오이롤 & 거대 회전초밥 접시 실드 (전방으로 방패 가드!)]
+        // 4-2. [앞팔: 그린 오이롤 & 거대 회전초밥 접시 실드 (어깨 ➔ 팔꿈치 ➔ 3초 플라즈마 보호막 전개!)]
         const isGreenBroken = boss.parts.green.isBroken;
         const isGreenActive = boss.activePart === 'green' && !isGreenBroken;
+        const isShieldVisual = (boss.shieldVisualTimer && boss.shieldVisualTimer > 0);
 
         ctx.save();
-        ctx.translate(-52, -170);
+        // 실드 전개 시: 왼팔을 플레이어 쪽으로 강하게 내미는 방어 자세 (Shield Guard Pose)
+        const shieldArmX = isShieldVisual ? -68 : -52;
+        const shieldArmY = isShieldVisual ? -164 : -170;
+        ctx.translate(shieldArmX, shieldArmY);
         ctx.scale(1.1, 1.1); // 앞팔 원근 확대
 
         if (isGreenActive) {
@@ -2797,6 +2953,15 @@
           ctx.lineWidth = 3.5;
           ctx.strokeRect(-28, -34, 54, 88);
         }
+
+        // 어깨 볼 조인트
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(0, 0, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#16a34a';
+        ctx.lineWidth = 2.2;
+        ctx.stroke();
 
         // 오이 김말이 롤 어깨 블록 (측면 입체 롤)
         ctx.fillStyle = isGreenBroken ? '#475569' : '#16a34a';
@@ -2810,13 +2975,28 @@
         ctx.arc(-2, -11, 9, 0, Math.PI * 2);
         ctx.fill();
 
-        // 하완 팔뚝 & 주먹 (적을 향해 전방 돌출!)
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(-20, 8, 36, 34);
-        ctx.strokeRect(-20, 8, 36, 34);
+        // 팔꿈치 관절 (Elbow Joint) - 실드 발동 시 앞으로 쑥 꺾여 가드!
+        ctx.save();
+        const shieldElbowAngle = isShieldVisual ? -0.22 : 0;
+        ctx.translate(-8, 14);
+        ctx.rotate(shieldElbowAngle);
+
+        // 팔꿈치 볼 조인트 원판
         ctx.fillStyle = '#0f172a';
-        ctx.fillRect(-24, 42, 30, 22);
-        ctx.strokeRect(-24, 42, 30, 22);
+        ctx.beginPath();
+        ctx.arc(0, 0, 9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        // 하완 팔뚝 & 주먹
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(-18, 0, 36, 34);
+        ctx.strokeRect(-18, 0, 36, 34);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-22, 34, 30, 22);
+        ctx.strokeRect(-22, 34, 30, 22);
 
         // [원작 회전초밥 접시 원형 쉴드 (75도 측면 각도로 전방을 방어!)]
         ctx.save();
@@ -2829,7 +3009,7 @@
         ctx.ellipse(4, 0, 16, 46, 0.1, 0, Math.PI * 2);
         ctx.fill();
 
-        // 외곽 거대 회전초밥 접시 (75도 각도로 바라본 얇은 측면 타원)
+        // 외곽 거대 회전초밥 접시
         ctx.fillStyle = shieldGlow ? '#dbeafe' : '#f1f5f9';
         ctx.beginPath();
         ctx.ellipse(0, 0, 15, 45, 0.1, 0, Math.PI * 2);
@@ -2851,20 +3031,39 @@
         ctx.ellipse(0, 0, 4, 8, 0.1, 0, Math.PI * 2);
         ctx.fill();
 
-        // 실드 가드 에너지 돔
-        if (shieldGlow) {
-          ctx.strokeStyle = '#00ffff';
-          ctx.shadowColor = '#38bdf8';
-          ctx.shadowBlur = 18;
-          ctx.lineWidth = 3.5;
+        // [3초 동안 발동하는 푸른빛 플라즈마 보호막 (파란색 에너지 배리어)]
+        if (isShieldVisual) {
+          const plasmaPulse = Math.sin(now * 0.015) * 5;
+          ctx.save();
+          ctx.shadowColor = '#00ffff';
+          ctx.shadowBlur = 24;
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 4;
+          // 거대한 전면 플라즈마 에너지 돔
           ctx.beginPath();
-          ctx.ellipse(0, 0, 22, 56, 0.1, 0, Math.PI * 2);
+          ctx.ellipse(-14, 0, 28 + plasmaPulse, 85 + plasmaPulse, 0.08, -Math.PI * 0.5, Math.PI * 0.5);
           ctx.stroke();
-          ctx.shadowBlur = 0;
+
+          // 내부 파란색 반투명 플라즈마 쉴드 막
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.32)';
+          ctx.fill();
+
+          // 플라즈마 에너지 아크 (전기 스파크)
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          for (let p = 0; p < 4; p++) {
+            const arcY = -60 + p * 40 + (Math.random() - 0.5) * 8;
+            ctx.beginPath();
+            ctx.moveTo(-14, arcY);
+            ctx.lineTo(-30 - Math.random() * 12, arcY + (Math.random() - 0.5) * 16);
+            ctx.stroke();
+          }
+          ctx.restore();
         }
-        ctx.restore(); // 1. 실드 복원
-        ctx.restore(); // 2. 앞팔 복원
-        ctx.restore(); // 3. 앞팔 bodyBobY 상체 밥핑 복원
+        ctx.restore(); // 접시 쉴드 복원
+        ctx.restore(); // 팔꿈치 복원
+        ctx.restore(); // 앞팔 복원
+        ctx.restore(); // 앞팔 bodyBobY 상체 밥핑 복원
 
         // ---------------------------------------------------------------------
         // [레이어 5: 궁극기 대검 (등 뒤 거대 사시미 대검)]
