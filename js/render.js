@@ -3622,7 +3622,8 @@
     }
 
     // =========================================================================
-    // [신규 연출] 1페이즈 카이텐저 오프닝 컷신 렌더러 (건물 옥상 -> 도약/착지 -> 무기회전 -> 포징 -> 5색폭발)
+    // [신규 연출] 1페이즈 카이텐저 오프닝 컷신 렌더러 (실제 kaitenzers 5인 엔티티 직접 활용)
+    // 옥상 대기 -> 도약/착지 -> 무기 회전 -> 포징 -> 5색 대폭발 (대사 자막 없음)
     // =========================================================================
     function drawPhase1Cutscene(groundY) {
       const cut = window.phase1Cutscene;
@@ -3630,242 +3631,208 @@
 
       const t = cut.timer;
       const state = cut.state;
+      const roofY = groundY - 220;
 
-      // 1. [건물 옥상 씬] ('rooftop')
-      if (state === 'rooftop') {
-        // 도심지 고층 건물 옥상 단면 및 난간
-        const roofY = groundY - 140;
+      // 1. [건물 옥상 씬 배경] ('rooftop' 또는 'jump' 초반)
+      if (state === 'rooftop' || (state === 'jump' && t < 0.8)) {
         ctx.save();
+        // 옥상 건물 바디
         ctx.fillStyle = '#0f172a';
-        ctx.fillRect(0, roofY, canvas.width, canvas.height - roofY);
-        // 옥상 테두리 안전바 난간
+        ctx.fillRect(800 - camera.x, roofY, 1200, canvas.height - roofY + 300);
         ctx.strokeStyle = '#334155';
         ctx.lineWidth = 4;
+        ctx.strokeRect(800 - camera.x, roofY, 1200, canvas.height - roofY + 300);
+
+        // 옥상 테두리 난간
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.moveTo(0, roofY);
-        ctx.lineTo(canvas.width, roofY);
+        ctx.moveTo(800 - camera.x, roofY);
+        ctx.lineTo(2000 - camera.x, roofY);
         ctx.stroke();
 
-        // 옥상 난간 세로 지지대들
         ctx.lineWidth = 2;
-        for (let x = 60; x < canvas.width; x += 100) {
+        for (let bx = 850; bx < 1980; bx += 90) {
           ctx.beginPath();
-          ctx.moveTo(x, roofY - 24);
-          ctx.lineTo(x, roofY);
+          ctx.moveTo(bx - camera.x, roofY - 24);
+          ctx.lineTo(bx - camera.x, roofY);
           ctx.stroke();
         }
         ctx.beginPath();
-        ctx.moveTo(0, roofY - 24);
-        ctx.lineTo(canvas.width, roofY - 24);
+        ctx.moveTo(800 - camera.x, roofY - 24);
+        ctx.lineTo(2000 - camera.x, roofY - 24);
         ctx.stroke();
 
-        // 옥상 위 환풍기/실외기 실루엣
+        // 옥상 환풍 실린더
         ctx.fillStyle = '#1e293b';
-        ctx.fillRect(80, roofY - 45, 60, 45);
-        ctx.fillRect(canvas.width - 160, roofY - 50, 70, 50);
-
-        // 옥상 위 5인방 서 있는 모습: [블랙, 핑크, 레드(중심), 그린, 옐로]
-        const members = [
-          { id: 'black', color: '#1e293b', border: '#0f172a', name: '블랙', x: canvas.width / 2 - 140 },
-          { id: 'pink', color: '#f472b6', border: '#db2777', name: '핑크', x: canvas.width / 2 - 70 },
-          { id: 'red', color: '#ef4444', border: '#b91c1c', name: '레드', x: canvas.width / 2 },
-          { id: 'green', color: '#22c55e', border: '#15803d', name: '그린', x: canvas.width / 2 + 70 },
-          { id: 'yellow', color: '#eab308', border: '#a16207', name: '옐로', x: canvas.width / 2 + 140 }
-        ];
-
-        members.forEach(m => {
-          const mY = roofY - 24 - 36;
-          // 바람에 펄럭이는 머리띠
-          ctx.strokeStyle = m.color;
-          ctx.lineWidth = 3;
-          ctx.beginPath();
-          ctx.moveTo(m.x + 18, mY + 6);
-          ctx.quadraticCurveTo(m.x + 32 + Math.sin(t * 12) * 5, mY + 4, m.x + 44 + Math.sin(t * 12) * 8, mY + 12);
-          ctx.stroke();
-
-          // 캐릭터 몸체
-          ctx.fillStyle = m.color;
-          ctx.fillRect(m.x - 18, mY, 36, 36);
-          ctx.strokeStyle = m.border;
-          ctx.lineWidth = 2;
-          ctx.strokeRect(m.x - 18, mY, 36, 36);
-
-          // 눈/마스크 바이저
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(m.x - 10, mY + 8, 20, 6);
-        });
-
-        // 상단 자막
-        ctx.fillStyle = '#facc15';
-        ctx.font = '900 20px monospace';
-        ctx.textAlign = 'center';
-        ctx.shadowColor = '#000000';
-        ctx.shadowBlur = 8;
-        ctx.fillText('🏢 [ROOFTOP] "전원 목표 지점 포착! 카이텐저, 강하하라!"', canvas.width / 2, 80);
+        ctx.fillRect(860 - camera.x, roofY - 50, 70, 50);
+        ctx.fillRect(1880 - camera.x, roofY - 55, 80, 55);
         ctx.restore();
       }
 
-      // 2. [순차 도약 및 착지 / 무기회전 / 포징 / 폭발]
-      if (state !== 'rooftop') {
-        const rangers = cut.rangers || [];
-        const now = performance.now();
+      // 2. [실제 카이텐저 5인방 렌더링]: [블랙, 핑크, 레드(중심), 그린, 옐로]
+      const order = ['black', 'pink', 'red', 'green', 'yellow'];
+      order.forEach(id => {
+        const k = kaitenzers.find(item => item.id === id);
+        if (!k) return;
 
-        rangers.forEach((r, idx) => {
-          const screenX = r.x - camera.x;
-          const rY = r.y;
+        const kScreenX = k.x - camera.x;
+        const currentY = groundY - (k.jumpY || 0) - k.size;
 
-          // (A) 도약 중 또는 착지 상태 드로잉
-          ctx.save();
+        ctx.save();
 
-          // 착지 그림자
-          if (r.isLanded) {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-            ctx.beginPath();
-            ctx.ellipse(screenX, groundY, 24, 7, 0, 0, Math.PI * 2);
-            ctx.fill();
-          }
+        // (A) 지면 착지 그림자 & 착지 모래먼지
+        if (k.jumpY <= 2) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+          ctx.beginPath();
+          ctx.ellipse(kScreenX + k.size / 2, groundY, k.size * 0.65, 6, 0, 0, Math.PI * 2);
+          ctx.fill();
 
-          // 착지 순간 모래먼지 스파크
-          if (r.landSmokeTimer > 0) {
+          if (k.landSmokeTimer && k.landSmokeTimer > 0) {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
             for (let s = -1; s <= 1; s += 2) {
               ctx.beginPath();
-              ctx.arc(screenX + s * 22, groundY - 6, 12 * (r.landSmokeTimer / 0.3), 0, Math.PI * 2);
+              ctx.arc(kScreenX + k.size / 2 + s * 24, groundY - 6, 14 * (k.landSmokeTimer / 0.35), 0, Math.PI * 2);
               ctx.fill();
             }
           }
+        }
 
-          // 몸체 렌더링
-          ctx.translate(screenX, rY);
-          ctx.fillStyle = r.color;
-          ctx.fillRect(-18, -36, 36, 36);
-          ctx.strokeStyle = r.border || '#000000';
+        // (B) 카이텐저 실제 본체 (정사각형 컬러 블록 + 고유 테두리)
+        ctx.fillStyle = k.color;
+        ctx.fillRect(kScreenX, currentY, k.size, k.size);
+        ctx.strokeStyle = k.border || '#000000';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(kScreenX, currentY, k.size, k.size);
+
+        // 눈/바이저
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(kScreenX + 6, currentY + 8, k.size - 12, 6);
+
+        // 펄럭이는 머리띠 (옥상 대기 중 바람 연출)
+        if (state === 'rooftop') {
+          ctx.strokeStyle = k.color;
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(kScreenX + k.size, currentY + 6);
+          ctx.quadraticCurveTo(kScreenX + k.size + 14 + Math.sin(t * 10) * 5, currentY + 4, kScreenX + k.size + 26 + Math.sin(t * 10) * 8, currentY + 12);
+          ctx.stroke();
+        }
+
+        // (C) 실제 무기 렌더링 & 시계방향 회전 연출
+        ctx.save();
+        const dir = (k.facing >= 0) ? 1 : -1;
+        const anchorX = kScreenX + (dir > 0 ? k.size * 0.72 : k.size * 0.28);
+        const anchorY = currentY + k.size * 0.58;
+
+        ctx.translate(anchorX, anchorY);
+
+        let wAngle = 0;
+        if (state === 'rooftop') {
+          wAngle = 0.2;
+        } else if (state === 'jump') {
+          wAngle = -0.4;
+        } else if (state === 'land') {
+          // 착지 직후 1.0초 정적: 무기를 왼쪽에 파지
+          wAngle = -Math.PI * 0.85;
+        } else if (state === 'weapon_spin') {
+          // 0.7초간 무기를 왼쪽에서 시계방향 360도 회전시켜 오른쪽으로 촥!
+          const prog = Math.min(1, t / 0.7);
+          const ease = prog * prog * (3 - 2 * prog);
+          wAngle = -Math.PI * 0.85 + (ease * Math.PI * 2);
+          // 회전 궤적 빛의 링
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
           ctx.lineWidth = 2;
-          ctx.strokeRect(-18, -36, 36, 36);
+          ctx.beginPath();
+          ctx.arc(0, 0, 24, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (state === 'red_pose') {
+          if (k.id === 'red') {
+            // 레드 솔로 리더 포즈: 검을 대각선 위로 번쩍 치켜듦!
+            wAngle = -Math.PI * 0.45;
+          } else {
+            wAngle = 0.2;
+          }
+        } else if (state === 'team_pose' || state === 'explosion') {
+          // 전원 단체 결전 포징 완성!
+          if (k.id === 'red') wAngle = -Math.PI * 0.45;
+          else if (k.id === 'pink') wAngle = -0.35;
+          else if (k.id === 'green') wAngle = 0.45;
+          else if (k.id === 'black') wAngle = -0.75;
+          else if (k.id === 'yellow') wAngle = 0.75;
+        }
 
-          // 눈 바이저
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(-10, -28, 20, 6);
+        ctx.rotate(wAngle);
 
-          // (B) 무기 렌더링 & 시계방향 회전 애니메이션
+        // 실제 무기 외형 렌더링 (각 멤버별 고유 총기/도검)
+        ctx.fillStyle = '#0f172a';
+        if (k.role === 'AR' || k.id === 'red') {
+          ctx.fillRect(-3, -22, 6, 26);
+          ctx.fillStyle = k.color;
+          ctx.fillRect(-5, -12, 10, 8);
+        } else if (k.id === 'yellow') {
+          ctx.fillRect(-2.5, -28, 5, 34); // 저격총 긴 총열
+          ctx.fillStyle = '#eab308';
+          ctx.fillRect(-4.5, -10, 9, 8);
+        } else if (k.id === 'green') {
+          ctx.fillRect(-4, -18, 8, 22); // 산탄총 굵은 총신
+          ctx.fillStyle = '#22c55e';
+          ctx.fillRect(-5, -8, 10, 6);
+        } else {
+          ctx.fillRect(-3, -16, 6, 20); // SMG / HG
+          ctx.fillStyle = k.color;
+          ctx.fillRect(-4, -6, 8, 6);
+        }
+        ctx.restore();
+
+        // 레드 단독 오라 ('red_pose')
+        if (state === 'red_pose' && k.id === 'red') {
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(kScreenX - 4, currentY - 4, k.size + 8, k.size + 8);
+        }
+
+        ctx.restore();
+      });
+
+      // 3. [등 뒤 5색 대폭발 연출] ('explosion')
+      if (state === 'explosion') {
+        const expProg = Math.min(1, t / 1.4);
+        const expAlpha = Math.max(0, 1 - expProg * 0.85);
+
+        order.forEach(id => {
+          const k = kaitenzers.find(item => item.id === id);
+          if (!k) return;
+
+          const screenX = k.x - camera.x;
           ctx.save();
-          let wAngle = 0;
-          let wOffsetX = 14;
-          let wOffsetY = -18;
+          ctx.translate(screenX + k.size / 2, groundY - 45);
 
-          if (state === 'land') {
-            // 전원 착지 직후: 무기 왼쪽에 파지
-            wAngle = -0.3;
-            wOffsetX = -14;
-          } else if (state === 'weapon_spin') {
-            // 0.5초 뒤: 무기를 왼쪽(-180도)에서 시계방향으로 360도 회전시켜 오른쪽(+30도)으로 이동!
-            const prog = Math.min(1, cut.timer / 0.4);
-            const ease = prog * prog * (3 - 2 * prog);
-            wAngle = -Math.PI + ease * (Math.PI * 2);
-            wOffsetX = -14 + ease * 28;
-            // 회전 광채 궤적 링
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-            ctx.lineWidth = 2;
+          for (let i = 0; i < 7; i++) {
+            const ang = (i / 7) * Math.PI * 2;
+            const dist = 35 + expProg * 85;
+            const rad = 28 + Math.sin(i * 1.5) * 14 + expProg * 40;
+            const fx = Math.cos(ang) * dist;
+            const fy = Math.sin(ang) * dist * 0.7 - (expProg * 50);
+
+            const grad = ctx.createRadialGradient(fx, fy, 4, fx, fy, rad);
+            grad.addColorStop(0, `rgba(255, 255, 255, ${expAlpha})`);
+            grad.addColorStop(0.4, k.color);
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+            ctx.fillStyle = grad;
             ctx.beginPath();
-            ctx.arc(0, -18, 22, 0, Math.PI * 2);
-            ctx.stroke();
-          } else if (state === 'red_pose') {
-            if (r.id === 'red') {
-              // 레드는 리더 솔로 포즈: 검을 대각선 위로 번쩍 치켜듦!
-              wAngle = -0.75;
-              wOffsetX = 18;
-              wOffsetY = -26;
-            } else {
-              wAngle = 0.2;
-              wOffsetX = 14;
-            }
-          } else if (state === 'team_pose' || state === 'explosion') {
-            // 전원 단체 결전 포징!
-            if (r.id === 'red') {
-              wAngle = -0.75;
-              wOffsetX = 18;
-              wOffsetY = -26;
-            } else if (r.id === 'pink') {
-              wAngle = -0.2;
-              wOffsetX = -16;
-            } else if (r.id === 'green') {
-              wAngle = 0.5;
-              wOffsetX = 16;
-            } else if (r.id === 'black') {
-              wAngle = -0.8;
-              wOffsetX = 14;
-            } else if (r.id === 'yellow') {
-              wAngle = 0.8;
-              wOffsetX = 18;
-            }
+            ctx.arc(fx, fy, rad, 0, Math.PI * 2);
+            ctx.fill();
           }
-
-          ctx.translate(wOffsetX, wOffsetY);
-          ctx.rotate(wAngle);
-          // 공용 무기 총신/도검
-          ctx.fillStyle = '#0f172a';
-          ctx.fillRect(-3, -16, 6, 22);
-          ctx.fillStyle = r.color;
-          ctx.fillRect(-4, -6, 8, 8);
-          ctx.restore();
-
-          // 리더 오라 (레드 솔로 포즈 시)
-          if (state === 'red_pose' && r.id === 'red') {
-            ctx.strokeStyle = '#ef4444';
-            ctx.lineWidth = 3;
-            ctx.strokeRect(-22, -40, 44, 44);
-          }
-
           ctx.restore();
         });
-
-        // (C) 등 뒤 5색 대폭발 연출 ('explosion')
-        if (state === 'explosion') {
-          const expProg = Math.min(1, cut.timer / 0.8);
-          const expAlpha = Math.max(0, 1 - expProg * 0.85);
-
-          rangers.forEach(r => {
-            const screenX = r.x - camera.x;
-            ctx.save();
-            ctx.translate(screenX, groundY - 50);
-
-            // 5색 거대 폭발 원형 구름
-            for (let i = 0; i < 6; i++) {
-              const ang = (i / 6) * Math.PI * 2;
-              const dist = 30 + expProg * 75;
-              const rad = 25 + Math.sin(i * 1.5) * 12 + expProg * 35;
-              const fx = Math.cos(ang) * dist;
-              const fy = Math.sin(ang) * dist * 0.7 - (expProg * 40);
-
-              const grad = ctx.createRadialGradient(fx, fy, 4, fx, fy, rad);
-              grad.addColorStop(0, `rgba(255, 255, 255, ${expAlpha})`);
-              grad.addColorStop(0.35, r.color);
-              grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-              ctx.fillStyle = grad;
-              ctx.beginPath();
-              ctx.arc(fx, fy, rad, 0, Math.PI * 2);
-              ctx.fill();
-            }
-            ctx.restore();
-          });
-
-          // 폭발 타이틀 배너
-          ctx.save();
-          ctx.textAlign = 'center';
-          ctx.font = '900 26px sans-serif';
-          ctx.fillStyle = '#fde047';
-          ctx.shadowColor = '#ef4444';
-          ctx.shadowBlur = 18;
-          ctx.fillText('💥 "무한초밥전대 카이텐저, 집결 완료!" 💥', canvas.width / 2, 75);
-          ctx.restore();
-        }
       }
     }
 
     // =========================================================================
-    // [신규 연출] 2페이즈 합체 컷씬 렌더러
-    // (패배 순차 컷 -> 무기 치켜들기 -> 하늘 5부품 강하 -> 도킹 -> 안광 위압포즈 -> 암전 번개 -> 보스 타이틀)
+    // [신규 연출] 2페이즈 합체 컷씬 렌더러 (실제 본체 활용, 대사 자막 전면 제거)
+    // 패배 순차 컷 -> 무기 치켜들기 -> 하늘 5부품 강하 -> 도킹 -> 안광 위압포즈 -> 암전 번개 -> 보스 타이틀
     // =========================================================================
     function drawPhase2Cutscene(groundY) {
       const cut = window.phase2Cutscene;
@@ -3873,126 +3840,99 @@
 
       const state = cut.state;
       const t = cut.timer;
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
 
-      // 1. [패배한 카이텐저 순차 컷 포커스] ('defeated_cuts')
+      // 1. [패배한 카이텐저 실제 본체 순차 컷 포커스] ('defeated_cuts', 대사 자막 없음)
       if (state === 'defeated_cuts') {
-        const cutIdx = cut.cutIndex || 0; // 0: 레드 비틀거림, 1: 옐로&핑크 쓰러짐, 2: 그린&블랙 쓰러짐
+        const cutIdx = cut.cutIndex || 0;
         ctx.save();
 
-        // 시네마틱 레터박스 상하 48px
+        // 시네마틱 레터박스 상하 52px
         ctx.fillStyle = '#050811';
-        ctx.fillRect(0, 0, canvas.width, 48);
-        ctx.fillRect(0, canvas.height - 48, canvas.width, 48);
-
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
+        ctx.fillRect(0, 0, canvas.width, 52);
+        ctx.fillRect(0, canvas.height - 52, canvas.width, 52);
 
         if (cutIdx === 0) {
-          // [컷 1]: 중심 레드 비틀비틀 휘청거림 클로즈업
-          const stagger = Math.sin(t * 14) * 8;
+          // [컷 1]: 중심 레드 실제 본체 비틀거림 클로즈업
+          const stagger = Math.sin(t * 12) * 8;
           ctx.save();
           ctx.translate(centerX + stagger, centerY);
-          ctx.scale(2.2, 2.2);
+          ctx.scale(2.4, 2.4);
 
-          // 레드 몸체
           ctx.fillStyle = '#ef4444';
           ctx.fillRect(-18, -36, 36, 36);
           ctx.strokeStyle = '#b91c1c';
           ctx.lineWidth = 2;
           ctx.strokeRect(-18, -36, 36, 36);
 
-          // 금간 바이저 & 땀방울
+          // 눈 바이저
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(-10, -28, 20, 6);
-          ctx.fillStyle = '#38bdf8';
-          ctx.beginPath();
-          ctx.arc(14, -32, 3, 0, Math.PI * 2);
-          ctx.fill();
-
           ctx.restore();
-
-          // 대사 자막
-          ctx.font = 'bold 18px monospace';
-          ctx.fillStyle = '#f87171';
-          ctx.textAlign = 'center';
-          ctx.fillText('🔴 레드: "큭... 이 녀석들, 생각보다 강하잖아...!"', centerX, canvas.height - 20);
         } else if (cutIdx === 1) {
-          // [컷 2]: 옐로와 핑크가 바닥에 쓰러져 있는 장면
+          // [컷 2]: 옐로 & 핑크 실제 쓰러진 본체 클로즈업
           ctx.save();
           ctx.translate(centerX, centerY);
-          ctx.scale(1.8, 1.8);
+          ctx.scale(2.0, 2.0);
 
           // 핑크 다운
           ctx.fillStyle = '#f472b6';
-          ctx.fillRect(-70, -10, 42, 16);
+          ctx.fillRect(-75, -8, 42, 16);
           ctx.strokeStyle = '#db2777';
-          ctx.strokeRect(-70, -10, 42, 16);
+          ctx.strokeRect(-75, -8, 42, 16);
 
           // 옐로 다운
           ctx.fillStyle = '#eab308';
-          ctx.fillRect(28, -10, 42, 16);
+          ctx.fillRect(30, -8, 42, 16);
           ctx.strokeStyle = '#a16207';
-          ctx.strokeRect(28, -10, 42, 16);
-
+          ctx.strokeRect(30, -8, 42, 16);
           ctx.restore();
-
-          ctx.font = 'bold 18px monospace';
-          ctx.fillStyle = '#fde047';
-          ctx.textAlign = 'center';
-          ctx.fillText('💖 핑크 & 💛 옐로: "리더... 더는 버틸 수가 없어...!"', centerX, canvas.height - 20);
         } else if (cutIdx === 2) {
-          // [컷 3]: 그린과 블랙이 무기를 짚고 쓰러져 있는 장면
+          // [컷 3]: 그린 & 블랙 실제 쓰러진 본체 클로즈업
           ctx.save();
           ctx.translate(centerX, centerY);
-          ctx.scale(1.8, 1.8);
+          ctx.scale(2.0, 2.0);
 
           // 블랙 다운
           ctx.fillStyle = '#1e293b';
-          ctx.fillRect(-70, -10, 42, 16);
+          ctx.fillRect(-75, -8, 42, 16);
           ctx.strokeStyle = '#0f172a';
-          ctx.strokeRect(-70, -10, 42, 16);
+          ctx.strokeRect(-75, -8, 42, 16);
 
           // 그린 다운
           ctx.fillStyle = '#22c55e';
-          ctx.fillRect(28, -10, 42, 16);
+          ctx.fillRect(30, -8, 42, 16);
           ctx.strokeStyle = '#15803d';
-          ctx.strokeRect(28, -10, 42, 16);
-
+          ctx.strokeRect(30, -8, 42, 16);
           ctx.restore();
-
-          ctx.font = 'bold 18px monospace';
-          ctx.fillStyle = '#4ade80';
-          ctx.textAlign = 'center';
-          ctx.fillText('💚 그린 & 🖤 블랙: "결국... 그 비장의 수단을 쓸 수밖에 없는 건가...!"', centerX, canvas.height - 20);
         }
 
         ctx.restore();
       }
 
-      // 2. [전원 무기 치켜들기] ('weapon_raise')
+      // 2. [전원 무기 치켜들기] ('weapon_raise', 대사 없음)
       if (state === 'weapon_raise') {
         ctx.save();
-        // 시네마틱 레터박스
         ctx.fillStyle = '#050811';
-        ctx.fillRect(0, 0, canvas.width, 45);
-        ctx.fillRect(0, canvas.height - 45, canvas.width, 45);
+        ctx.fillRect(0, 0, canvas.width, 48);
+        ctx.fillRect(0, canvas.height - 48, canvas.width, 48);
 
-        const centerX = canvas.width / 2;
         const rangers = [
-          { id: 'black', color: '#1e293b', x: centerX - 140 },
-          { id: 'pink', color: '#f472b6', x: centerX - 70 },
+          { id: 'black', color: '#1e293b', x: centerX - 150 },
+          { id: 'pink', color: '#f472b6', x: centerX - 75 },
           { id: 'red', color: '#ef4444', x: centerX },
-          { id: 'green', color: '#22c55e', x: centerX + 70 },
-          { id: 'yellow', color: '#eab308', x: centerX + 140 }
+          { id: 'green', color: '#22c55e', x: centerX + 75 },
+          { id: 'yellow', color: '#eab308', x: centerX + 150 }
         ];
 
-        const rProg = Math.min(1, t / 0.6); // 0 -> 1 무기 올림 애니메이션
+        const rProg = Math.min(1, t / 0.8);
 
         rangers.forEach(m => {
           ctx.save();
           ctx.translate(m.x, groundY - 20);
 
-          // 몸체
+          // 본체
           ctx.fillStyle = m.color;
           ctx.fillRect(-18, -36, 36, 36);
           ctx.strokeStyle = '#0f172a';
@@ -4002,10 +3942,9 @@
           // 무기: 오른쪽에서 시계방향으로 회전하여 머리 위 하늘 높이 번쩍 치켜듦!
           let armAngle = 0;
           if (m.id === 'red') {
-            armAngle = (Math.PI * 0.4) + (rProg * Math.PI * 1.1); // 우측 -> 시계방향 -> 상단 수직
+            armAngle = (Math.PI * 0.4) + (rProg * Math.PI * 1.1);
           } else {
-            // 다른 4명은 레드의 신호 뒤 함께 들어올림
-            const subProg = Math.max(0, (t - 0.4) / 0.5);
+            const subProg = Math.max(0, (t - 0.5) / 0.7);
             armAngle = (Math.PI * 0.2) + (subProg * Math.PI * 1.3);
           }
 
@@ -4013,72 +3952,63 @@
           ctx.translate(0, -22);
           ctx.rotate(armAngle);
           ctx.fillStyle = '#0f172a';
-          ctx.fillRect(-3, -24, 6, 28);
+          ctx.fillRect(-3, -26, 6, 30);
           ctx.fillStyle = m.color;
-          ctx.fillRect(-5, -12, 10, 10);
+          ctx.fillRect(-5, -14, 10, 10);
           ctx.restore();
 
           ctx.restore();
         });
 
-        // 대사 배너
-        ctx.font = '900 22px monospace';
-        ctx.fillStyle = '#ef4444';
-        ctx.textAlign = 'center';
-        ctx.shadowColor = '#facc15';
-        ctx.shadowBlur = 10;
-        ctx.fillText('📢 레드: "비장의 카드를 꺼낼 때다! 전원, 긴급 기동 합체 시퀀스 승인!!!"', centerX, canvas.height - 18);
         ctx.restore();
       }
 
-      // 3. [하늘에서 5개 부품 동시 강하 & 순차 도킹] ('sky_fall', 'docking', 'eye_flash_pose', 'lightning_strike', 'boss_title')
+      // 3. [하늘에서 5개 부품 동시 강하 & 도킹 & 위압포즈 & 암전 번개 & 타이틀]
       if (['sky_fall', 'docking', 'eye_flash_pose', 'lightning_strike', 'boss_title'].includes(state)) {
         ctx.save();
 
-        const centerX = canvas.width / 2;
-        const robotCenterY = groundY - 140;
+        const robotCenterY = groundY - 145;
 
-        // 도킹 단계별 오프셋 연산
         let armROfsX = 0, armROfsY = 0;
         let armLOfsX = 0, armLOfsY = 0;
         let legOfsY = 0;
         let bodyOfsY = 0;
 
         if (state === 'sky_fall') {
-          // 하늘에서 처음부터 함께 배치되어 아래로 하강
-          const fallEase = Math.min(1, t / 1.0);
-          bodyOfsY = -240 * (1 - fallEase);
-          armROfsX = 90;
-          armROfsY = -40;
-          armLOfsX = -90;
-          armLOfsY = -40;
-          legOfsY = 60;
+          // 하늘에서 처음부터 함께 배치되어 아래로 고속 하강 (머리+가슴 일체)
+          const fallEase = Math.min(1, t / 1.8);
+          bodyOfsY = -280 * (1 - fallEase);
+          armROfsX = 95;
+          armROfsY = -45;
+          armLOfsX = -95;
+          armLOfsY = -45;
+          legOfsY = 65;
         } else if (state === 'docking') {
-          const step = cut.dockStep || 0; // 0: 우측팔, 1: 좌측팔, 2: 양다리
+          const step = cut.dockStep || 0;
           const sT = cut.subTimer || 0;
-          const prog = Math.min(1, sT / 0.35);
+          const prog = Math.min(1, sT / 0.6);
 
           if (step === 0) {
             // 우측팔(새우) 결합
-            armROfsX = 90 * (1 - prog);
-            armROfsY = -40 * (1 - prog);
-            armLOfsX = -90;
-            armLOfsY = -40;
-            legOfsY = 60;
+            armROfsX = 95 * (1 - prog);
+            armROfsY = -45 * (1 - prog);
+            armLOfsX = -95;
+            armLOfsY = -45;
+            legOfsY = 65;
           } else if (step === 1) {
-            // 우측팔 결합 완료, 좌측팔(오이) 결합
+            // 좌측팔(오이) 결합
             armROfsX = 0; armROfsY = 0;
-            armLOfsX = -90 * (1 - prog);
-            armLOfsY = -40 * (1 - prog);
-            legOfsY = 60;
+            armLOfsX = -95 * (1 - prog);
+            armLOfsY = -45 * (1 - prog);
+            legOfsY = 65;
           } else {
-            // 양팔 결합 완료, 양다리 하부 결합
+            // 양다리 결합
             armROfsX = 0; armROfsY = 0;
             armLOfsX = 0; armLOfsY = 0;
-            legOfsY = 60 * (1 - prog);
+            legOfsY = 65 * (1 - prog);
           }
         } else {
-          // 모든 부품 완전히 결합 완료
+          // 전 부품 도킹 완료
           armROfsX = 0; armROfsY = 0;
           armLOfsX = 0; armLOfsY = 0;
           legOfsY = 0;
@@ -4091,55 +4021,55 @@
           ctx.fillStyle = '#000000';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-          // 뒤쪽 거대 노란색 번개 벼락 2~3줄기 콰르르릉!
-          const flashAlpha = Math.sin(t * 30) > 0 ? 1.0 : 0.45;
+          // 거대 노란색 번개 벼락 2~3줄기 콰르르릉!
+          const flashAlpha = Math.sin(t * 26) > 0 ? 1.0 : 0.5;
           ctx.strokeStyle = `rgba(250, 204, 21, ${flashAlpha})`;
           ctx.shadowColor = '#ffffff';
           ctx.shadowBlur = 35;
-          ctx.lineWidth = 6;
+          ctx.lineWidth = 7;
 
-          // 메인 번개 줄기 1 (좌측)
+          // 메인 벼락 1
           ctx.beginPath();
-          ctx.moveTo(centerX - 180, 0);
-          ctx.lineTo(centerX - 140, 90);
-          ctx.lineTo(centerX - 210, 160);
-          ctx.lineTo(centerX - 130, 240);
-          ctx.lineTo(centerX - 160, groundY);
+          ctx.moveTo(centerX - 190, 0);
+          ctx.lineTo(centerX - 145, 95);
+          ctx.lineTo(centerX - 220, 170);
+          ctx.lineTo(centerX - 135, 250);
+          ctx.lineTo(centerX - 170, groundY);
           ctx.stroke();
 
-          // 메인 번개 줄기 2 (우측)
+          // 메인 벼락 2
           ctx.beginPath();
-          ctx.moveTo(centerX + 160, 0);
-          ctx.lineTo(centerX + 210, 110);
-          ctx.lineTo(centerX + 140, 190);
-          ctx.lineTo(centerX + 230, 270);
-          ctx.lineTo(centerX + 180, groundY);
+          ctx.moveTo(centerX + 170, 0);
+          ctx.lineTo(centerX + 220, 115);
+          ctx.lineTo(centerX + 145, 195);
+          ctx.lineTo(centerX + 240, 280);
+          ctx.lineTo(centerX + 185, groundY);
           ctx.stroke();
 
-          // 중앙 배경 관통 벼락
-          ctx.lineWidth = 8;
+          // 중앙 굵은 코어 벼락
+          ctx.lineWidth = 9;
           ctx.strokeStyle = `rgba(255, 255, 255, ${flashAlpha})`;
           ctx.beginPath();
-          ctx.moveTo(centerX + 20, 0);
-          ctx.lineTo(centerX - 30, 100);
-          ctx.lineTo(centerX + 40, 180);
-          ctx.lineTo(centerX, 250);
+          ctx.moveTo(centerX + 25, 0);
+          ctx.lineTo(centerX - 35, 110);
+          ctx.lineTo(centerX + 45, 190);
+          ctx.lineTo(centerX, 270);
           ctx.stroke();
           ctx.shadowBlur = 0;
         }
 
         // -----------------------------------------------------------------
-        // [KAITEN FX Mk.0 정면 합체 도킹 부품 렌더러]
+        // [KAITEN FX Mk.0 정면 도킹 렌더러]
         // -----------------------------------------------------------------
         ctx.save();
         ctx.translate(centerX, robotCenterY + bodyOfsY);
-        ctx.scale(1.5, 1.5); // 거대 메카 스케일
+        ctx.scale(1.5, 1.5);
 
         // (1) 양쪽 다리 [계란 오른다리 & 김 왼다리]
         ctx.save();
         ctx.translate(0, 48 + legOfsY);
 
-        // 오른다리 (옐로 계란초밥 아머 + 화이트 나막신/발)
+        // 오른다리 (옐로 계란초밥)
         ctx.save();
         ctx.translate(28, 0);
         ctx.fillStyle = '#eab308';
@@ -4147,9 +4077,8 @@
         ctx.strokeStyle = '#a16207';
         ctx.lineWidth = 2;
         ctx.strokeRect(-16, 0, 32, 44);
-        ctx.fillStyle = '#1e293b'; // 검은 김 밴드
+        ctx.fillStyle = '#1e293b';
         ctx.fillRect(-17, 18, 34, 10);
-        // 발/게타
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(-18, 44, 38, 14);
         ctx.strokeRect(-18, 44, 38, 14);
@@ -4157,7 +4086,7 @@
         ctx.fillRect(-22, 58, 46, 6);
         ctx.restore();
 
-        // 왼다리 (블랙 김군함말이 아머 + 레드 연어알 + 화이트 나막신)
+        // 왼다리 (블랙 김군함말이)
         ctx.save();
         ctx.translate(-28, 0);
         ctx.fillStyle = '#1e293b';
@@ -4165,13 +4094,11 @@
         ctx.strokeStyle = '#0f172a';
         ctx.lineWidth = 2;
         ctx.strokeRect(-16, 0, 32, 44);
-        // 연어알 장식
         ctx.fillStyle = '#ef4444';
         ctx.beginPath();
         ctx.arc(-6, 22, 5, 0, Math.PI * 2);
         ctx.arc(6, 22, 5, 0, Math.PI * 2);
         ctx.fill();
-        // 발/게타
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(-20, 44, 38, 14);
         ctx.strokeRect(-20, 44, 38, 14);
@@ -4181,16 +4108,16 @@
 
         ctx.restore(); // 다리 끝
 
-        // (2) 몸통 + 머리 (처음부터 일체로 결합되어 있음!)
+        // (2) 몸통 + 머리 (처음부터 일체로 결합된 상태!)
         ctx.save();
-        // [몸통]: 붉은 사각 참치 외장 & 흰색 원호 무늬 & 허리 원형 버클 (유저 이미지 고증)
+        // 붉은 사각 참치 외장 & 흰색 원호 무늬
         ctx.fillStyle = '#dc2626';
         ctx.fillRect(-42, -54, 84, 96);
         ctx.strokeStyle = '#991b1b';
         ctx.lineWidth = 2.5;
         ctx.strokeRect(-42, -54, 84, 96);
 
-        // 가슴 흰색 원호 무늬 2줄
+        // 가슴 흰색 원호 무늬
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 4;
         ctx.beginPath();
@@ -4209,7 +4136,7 @@
         ctx.fill();
         ctx.stroke();
 
-        // [머리]: 참치 셰프 마스크 & 흰색 중앙 스트라이프 & 바이저
+        // 머리: 참치 셰프 마스크
         ctx.save();
         ctx.translate(0, -74);
         ctx.fillStyle = '#dc2626';
@@ -4219,7 +4146,6 @@
         ctx.strokeStyle = '#991b1b';
         ctx.lineWidth = 2;
         ctx.stroke();
-        // 흰색 중앙 스트라이프
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(-5, -18, 10, 32);
 
@@ -4228,7 +4154,7 @@
         ctx.fillStyle = hasEyeFlash ? '#ffffff' : '#38bdf8';
         if (hasEyeFlash) {
           ctx.shadowColor = '#00ffff';
-          ctx.shadowBlur = 24;
+          ctx.shadowBlur = 25;
         }
         ctx.fillRect(-15, -4, 30, 8);
         ctx.shadowBlur = 0;
@@ -4238,27 +4164,24 @@
           ctx.strokeStyle = '#ffffff';
           ctx.lineWidth = 3;
           ctx.beginPath();
-          ctx.moveTo(-35, 0); ctx.lineTo(35, 0);
-          ctx.moveTo(0, -25); ctx.lineTo(0, 25);
+          ctx.moveTo(-38, 0); ctx.lineTo(38, 0);
+          ctx.moveTo(0, -28); ctx.lineTo(0, 28);
           ctx.stroke();
         }
         ctx.restore();
 
         ctx.restore(); // 몸통+머리 끝
 
-        // (3) 오른팔 (새우 - 우측 결합) & 왼팔 (오이/실드 - 좌측 결합)
-        // [포즈 모드]: 'eye_flash_pose' 또는 'lightning_strike' 또는 'boss_title' 일 때
-        // => 유저 첨부 이미지 완벽 고증: 양 주먹을 쥐고 팔을 앞으로 묵직하게 각지게 내미는 시그니처 위압 포즈!
+        // (3) 오른팔 (새우) & 왼팔 (오이/실드)
+        // [유저 첨부 이미지 포즈]: 양 주먹을 쥐고 팔을 앞으로 묵직하게 각지게 내미는 시그니처 위압 포즈!
         const isWeiapPose = ['eye_flash_pose', 'lightning_strike', 'boss_title'].includes(state);
 
-        // [오른팔 (새우)]
+        // 오른팔 (새우)
         ctx.save();
         ctx.translate(42 + armROfsX, -16 + armROfsY);
         if (isWeiapPose) {
-          // 사진 포즈: 팔꿈치를 굽혀 주먹을 약간 전방 중앙으로 내미는 박력 넘치는 앵글
           ctx.rotate(-0.25);
         }
-        // 어깨 새우 꼬리
         ctx.fillStyle = '#f472b6';
         ctx.beginPath();
         ctx.moveTo(0, -22);
@@ -4266,36 +4189,30 @@
         ctx.quadraticCurveTo(24, -14, 10, -8);
         ctx.closePath();
         ctx.fill();
-        // 어깨 장갑
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(-4, -14, 32, 26);
         ctx.strokeStyle = '#0f172a';
         ctx.strokeRect(-4, -14, 32, 26);
-        // 하완 & 전방 불끈 쥔 주먹 (유저 이미지 싱크로)
         ctx.fillStyle = '#1e293b';
         ctx.fillRect(8, 12, 26, 26);
         ctx.fillStyle = '#0f172a';
         ctx.fillRect(12, 38, 22, 18);
         ctx.restore();
 
-        // [왼팔 (오이 & 원형 실드)]
+        // 왼팔 (오이 & 원형 실드)
         ctx.save();
         ctx.translate(-42 + armLOfsX, -16 + armLOfsY);
         if (isWeiapPose) {
-          // 사진 포즈: 왼팔도 주먹 쥐고 가슴 앞으로 당당하게 각진 포징
           ctx.rotate(0.25);
         }
-        // 어깨 오이롤
         ctx.fillStyle = '#16a34a';
         ctx.fillRect(-28, -16, 32, 28);
         ctx.strokeStyle = '#0f172a';
         ctx.strokeRect(-28, -16, 32, 28);
-        // 하완 & 주먹
         ctx.fillStyle = '#1e293b';
         ctx.fillRect(-34, 12, 26, 26);
         ctx.fillStyle = '#0f172a';
         ctx.fillRect(-34, 38, 22, 18);
-        // 어깨 외측 원형 접시 실드
         ctx.save();
         ctx.translate(-22, 14);
         ctx.fillStyle = '#f8fafc';
@@ -4308,29 +4225,27 @@
         ctx.restore();
         ctx.restore();
 
-        ctx.restore(); // 로봇 전체 끝
+        ctx.restore(); // 로봇 끝
 
-        // (4) [보스 타이틀 명판 ('boss_title')]
+        // (4) [보스 타이틀 명판 ('boss_title', 대사 없음)]
         if (state === 'boss_title') {
           ctx.save();
-          // 레터박스
           ctx.fillStyle = '#050811';
-          ctx.fillRect(0, 0, canvas.width, 52);
-          ctx.fillRect(0, canvas.height - 52, canvas.width, 52);
+          ctx.fillRect(0, 0, canvas.width, 54);
+          ctx.fillRect(0, canvas.height - 54, canvas.width, 54);
 
-          // 타이틀 텍스트
           ctx.textAlign = 'center';
           ctx.font = '900 32px sans-serif';
           ctx.fillStyle = '#ef4444';
           ctx.shadowColor = '#dc2626';
           ctx.shadowBlur = 24;
-          ctx.fillText('⚡ TOTAL ASSAULT : KAITEN FX Mk.0 ⚡', canvas.width / 2, 38);
+          ctx.fillText('⚡ TOTAL ASSAULT : KAITEN FX Mk.0 ⚡', canvas.width / 2, 39);
 
-          ctx.font = 'bold 15px monospace';
+          ctx.font = 'bold 14px monospace';
           ctx.fillStyle = '#fde047';
           ctx.shadowColor = '#000000';
           ctx.shadowBlur = 6;
-          ctx.fillText('무한초밥전대 카이텐저 최종 결전 병기 -- 긴급 결전 시퀀스 돌입!', canvas.width / 2, canvas.height - 20);
+          ctx.fillText('무한초밥전대 카이텐저 최종 결전 병기', canvas.width / 2, canvas.height - 21);
           ctx.restore();
         }
 
