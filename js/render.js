@@ -4059,170 +4059,279 @@
         }
 
         // -----------------------------------------------------------------
-        // [KAITEN FX Mk.0 정면 도킹 렌더러]
+        // [KAITEN FX Mk.0 인게임 정품 실체 렌더러 (100% 동일 모델 & 1.45x 스케일)]
         // -----------------------------------------------------------------
         ctx.save();
-        ctx.translate(centerX, robotCenterY + bodyOfsY);
-        ctx.scale(1.5, 1.5);
+        ctx.translate(centerX, groundY + bodyOfsY);
+        ctx.scale(1.45, 1.45); // 인게임 실전 KAITEN FX Mk.0와 100% 동일한 1.45배 거대 스케일
+
+        // (0) 지면 접지 그림자
+        if (bodyOfsY > -60) {
+          ctx.save();
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 90, 16, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
 
         // (1) 양쪽 다리 [계란 오른다리 & 김 왼다리]
+        // 1-A. 오른다리 (옐로우 계란초밥 - 고관절 ➔ 계란 아머 ➔ 검은 김 띠 ➔ 게타 나막신)
         ctx.save();
-        ctx.translate(0, 48 + legOfsY);
-
-        // 오른다리 (옐로 계란초밥)
-        ctx.save();
-        ctx.translate(28, 0);
+        ctx.translate(34, -86 + legOfsY);
+        // 고관절 연결 조인트
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-14, -62, 28, 22);
+        // 계란말이 장갑 (인게임 정품 크기 및 배색)
         ctx.fillStyle = '#eab308';
-        ctx.fillRect(-16, 0, 32, 44);
-        ctx.strokeStyle = '#a16207';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(-16, 0, 32, 44);
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(-17, 18, 34, 10);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(-18, 44, 38, 14);
-        ctx.strokeRect(-18, 44, 38, 14);
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(-22, 58, 46, 6);
-        ctx.restore();
-
-        // 왼다리 (블랙 김군함말이)
-        ctx.save();
-        ctx.translate(-28, 0);
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(-16, 0, 32, 44);
+        ctx.fillRect(-20, -42, 40, 80);
         ctx.strokeStyle = '#0f172a';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(-16, 0, 32, 44);
-        ctx.fillStyle = '#ef4444';
-        ctx.beginPath();
-        ctx.arc(-6, 22, 5, 0, Math.PI * 2);
-        ctx.arc(6, 22, 5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(-20, 44, 38, 14);
-        ctx.strokeRect(-20, 44, 38, 14);
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(-24, 58, 46, 6);
+        ctx.lineWidth = 2.2;
+        ctx.strokeRect(-20, -42, 40, 80);
+        // 검은 김 띠
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-20, -10, 40, 14);
+        // 화이트 메카 슈즈
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(-18, 38, 36, 20);
+        ctx.strokeStyle = '#0f172a';
+        ctx.strokeRect(-18, 38, 36, 20);
+        // 게타 나막신 밑창
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-22, 64, 44, 12);
+        ctx.fillStyle = '#ca8a04';
+        ctx.fillRect(-20, 58, 40, 10);
+        ctx.strokeStyle = '#0f172a';
+        ctx.strokeRect(-20, 58, 40, 10);
+        // 게타 나무 굽 (바닥 접지 높이)
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(-14, 76, 8, 10);
+        ctx.fillRect(10, 76, 8, 10);
         ctx.restore();
 
-        ctx.restore(); // 다리 끝
+        // 1-B. 왼다리 (블랙 군함말이 - 고관절 ➔ 군함 아머 ➔ 연어알 캡슐 ➔ 황금 파도 ➔ 게타 나막신)
+        ctx.save();
+        ctx.translate(-34, -86 + legOfsY);
+        // 고관절 연결 조인트
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-14, -62, 28, 22);
+        // 군함말이 아머
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-20, -42, 40, 80);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 2.2;
+        ctx.strokeRect(-20, -42, 40, 80);
+        // 황금빛 파도 아크 문양
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(-20, -10, 24, -Math.PI * 0.45, Math.PI * 0.45);
+        ctx.stroke();
+        // 이쿠라 연어알 캡슐
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.roundRect(-10, -36, 9, 68, 4);
+        ctx.roundRect(1, -36, 9, 68, 4);
+        ctx.fill();
+        // 화이트 메카 슈즈
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(-18, 38, 36, 20);
+        ctx.strokeStyle = '#0f172a';
+        ctx.strokeRect(-18, 38, 36, 20);
+        // 게타 나막신 밑창
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-22, 64, 44, 12);
+        ctx.fillStyle = '#ca8a04';
+        ctx.fillRect(-20, 58, 40, 10);
+        ctx.strokeStyle = '#0f172a';
+        ctx.strokeRect(-20, 58, 40, 10);
+        // 게타 나무 굽
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(-14, 76, 8, 10);
+        ctx.fillRect(10, 76, 8, 10);
+        ctx.restore();
 
         // (2) 몸통 + 머리 (처음부터 일체로 결합된 상태!)
+        // 2-A. 몸통 코어 (레드 참치 - 부채꼴 흰색 원호 문양 & 중심 원형 엠블럼)
         ctx.save();
-        // 붉은 사각 참치 외장 & 흰색 원호 무늬
+        ctx.translate(0, -160);
         ctx.fillStyle = '#dc2626';
-        ctx.fillRect(-42, -54, 84, 96);
-        ctx.strokeStyle = '#991b1b';
+        ctx.fillRect(-48, -55, 96, 76);
+        ctx.strokeStyle = '#0f172a';
         ctx.lineWidth = 2.5;
-        ctx.strokeRect(-42, -54, 84, 96);
-
-        // 가슴 흰색 원호 무늬
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 4;
+        ctx.strokeRect(-48, -55, 96, 76);
+        // 참치 살결 측면 음영
+        ctx.fillStyle = '#b91c1c';
+        ctx.fillRect(-48, -55, 14, 76);
+        ctx.fillRect(34, -55, 14, 76);
+        // 상반신 흰색 부채꼴 원호 문양 3중선
+        ctx.strokeStyle = '#f8fafc';
+        ctx.lineWidth = 4.5;
+        for (let r = 0; r < 3; r++) {
+          ctx.beginPath();
+          ctx.arc(0, -10, 24 + r * 14, Math.PI * 0.85, Math.PI * 2.15);
+          ctx.stroke();
+        }
+        // 중앙 분할선
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(0, -18, 28, Math.PI * 1.1, Math.PI * 1.9);
+        ctx.moveTo(0, -55);
+        ctx.lineTo(0, 21);
         ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(0, -18, 18, Math.PI * 1.1, Math.PI * 1.9);
-        ctx.stroke();
-
-        // 복부 원형 금장 버클
+        // 하단 중심 원형 엠블럼 버클
         ctx.fillStyle = '#f8fafc';
-        ctx.strokeStyle = '#b91c1c';
+        ctx.beginPath();
+        ctx.arc(0, 8, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#dc2626';
         ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(0, 22, 14, 0, Math.PI * 2);
-        ctx.fill();
         ctx.stroke();
+        // 골반 하부 프레임
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-42, 21, 84, 18);
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(-36, 24, 72, 12);
+        ctx.restore();
 
-        // 머리: 참치 셰프 마스크
+        // 2-B. 머리 (참치 셰프 투구 & 안광 플래시)
         ctx.save();
-        ctx.translate(0, -74);
-        ctx.fillStyle = '#dc2626';
+        ctx.translate(0, -225);
+        // 목 조인트
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-12, 10, 24, 10);
+        // 투구 돔
+        ctx.fillStyle = '#f8fafc';
         ctx.beginPath();
-        ctx.ellipse(0, 0, 24, 18, 0, 0, Math.PI * 2);
+        ctx.arc(0, -6, 22, Math.PI, 0);
         ctx.fill();
-        ctx.strokeStyle = '#991b1b';
+        ctx.strokeStyle = '#0f172a';
         ctx.lineWidth = 2;
         ctx.stroke();
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(-5, -18, 10, 32);
+        // 붉은 볏 중심선
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(-8, -28, 16, 22);
+        // 마스크
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(-16, -6, 32, 18);
+        ctx.strokeStyle = '#0f172a';
+        ctx.strokeRect(-16, -6, 32, 18);
 
         // 눈 바이저 & 안광 플래시
-        const hasEyeFlash = ['eye_flash_pose', 'lightning_strike', 'boss_title'].includes(state);
-        ctx.fillStyle = hasEyeFlash ? '#ffffff' : '#38bdf8';
-        if (hasEyeFlash) {
+        const isEyeActive = ['eye_flash_pose', 'lightning_strike', 'boss_title'].includes(state);
+        ctx.fillStyle = isEyeActive ? '#ffffff' : '#38bdf8';
+        if (isEyeActive) {
           ctx.shadowColor = '#00ffff';
           ctx.shadowBlur = 25;
         }
-        ctx.fillRect(-15, -4, 30, 8);
+        ctx.fillRect(-11, -2, 9, 5);
+        ctx.fillRect(2, -2, 9, 5);
         ctx.shadowBlur = 0;
 
-        // 안광 십자광 크로스 이펙트 ('eye_flash_pose')
-        if (state === 'eye_flash_pose') {
+        // 안광 십자광 크로스 이펙트 ('eye_flash_pose', 'lightning_strike', 'boss_title')
+        if (isEyeActive) {
           ctx.strokeStyle = '#ffffff';
           ctx.lineWidth = 3;
           ctx.beginPath();
-          ctx.moveTo(-38, 0); ctx.lineTo(38, 0);
-          ctx.moveTo(0, -28); ctx.lineTo(0, 28);
+          ctx.moveTo(-18, 0.5); ctx.lineTo(2, 0.5);
+          ctx.moveTo(-7, -9); ctx.lineTo(-7, 10);
+          ctx.moveTo(2, 0.5); ctx.lineTo(22, 0.5);
+          ctx.moveTo(7, -9); ctx.lineTo(7, 10);
           ctx.stroke();
         }
         ctx.restore();
 
-        ctx.restore(); // 몸통+머리 끝
+        // (3) 양쪽 팔 [핑크 새우 오른팔 & 그린 오이/실드 왼팔]
+        // [시그니처 위압 포즈]: 사진 포즈(양 주먹 쥐고 전방으로 뻗은 위압 포즈) 완벽 재현!
+        const isSignaturePose = ['eye_flash_pose', 'lightning_strike', 'boss_title'].includes(state);
 
-        // (3) 오른팔 (새우) & 왼팔 (오이/실드)
-        // [유저 첨부 이미지 포즈]: 양 주먹을 쥐고 팔을 앞으로 묵직하게 각지게 내미는 시그니처 위압 포즈!
-        const isWeiapPose = ['eye_flash_pose', 'lightning_strike', 'boss_title'].includes(state);
-
-        // 오른팔 (새우)
+        // 3-A. 오른팔 (핑크 새우)
         ctx.save();
-        ctx.translate(42 + armROfsX, -16 + armROfsY);
-        if (isWeiapPose) {
-          ctx.rotate(-0.25);
+        ctx.translate(68 + armROfsX, -165 + armROfsY);
+        if (isSignaturePose) {
+          ctx.rotate(-0.18); // 팔꿈치를 구부리며 주먹을 카메라 쪽으로 내민 각도
         }
+        // 새우 꼬리 지느러미
         ctx.fillStyle = '#f472b6';
         ctx.beginPath();
-        ctx.moveTo(0, -22);
-        ctx.quadraticCurveTo(28, -44, 44, -34);
-        ctx.quadraticCurveTo(24, -14, 10, -8);
+        ctx.moveTo(-10, -28);
+        ctx.quadraticCurveTo(10, -56, 32, -48);
+        ctx.quadraticCurveTo(16, -26, 4, -20);
         ctx.closePath();
         ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(-4, -14, 32, 26);
         ctx.strokeStyle = '#0f172a';
-        ctx.strokeRect(-4, -14, 32, 26);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        // 상완 화이트 아머
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(-14, -20, 32, 28);
+        ctx.strokeRect(-14, -20, 32, 28);
+        // 전완 개틀링 하우징
         ctx.fillStyle = '#1e293b';
-        ctx.fillRect(8, 12, 26, 26);
+        ctx.fillRect(-12, 10, 34, 30);
+        ctx.strokeStyle = '#0f172a';
+        ctx.strokeRect(-12, 10, 34, 30);
+        // 전방을 향해 불끈 쥔 거대 주먹
         ctx.fillStyle = '#0f172a';
-        ctx.fillRect(12, 38, 22, 18);
+        ctx.fillRect(-14, 40, 38, 24);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-14, 40, 38, 24);
+        // 주먹 화이트 너클 플레이트
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(-12, 42, 34, 7);
         ctx.restore();
 
-        // 왼팔 (오이 & 원형 실드)
+        // 3-B. 왼팔 (그린 오이 & 회전초밥 접시 쉴드)
         ctx.save();
-        ctx.translate(-42 + armLOfsX, -16 + armLOfsY);
-        if (isWeiapPose) {
-          ctx.rotate(0.25);
+        ctx.translate(-68 + armLOfsX, -165 + armLOfsY);
+        if (isSignaturePose) {
+          ctx.rotate(0.18); // 대칭으로 팔꿈치 굽혀 주먹 전방 전개
         }
+        // 오이 롤 어깨 블록
         ctx.fillStyle = '#16a34a';
-        ctx.fillRect(-28, -16, 32, 28);
+        ctx.fillRect(-18, -26, 36, 30);
         ctx.strokeStyle = '#0f172a';
-        ctx.strokeRect(-28, -16, 32, 28);
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(-34, 12, 26, 26);
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(-34, 38, 22, 18);
-        ctx.save();
-        ctx.translate(-22, 14);
-        ctx.fillStyle = '#f8fafc';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-18, -26, 36, 30);
+        // 오이 심 단면
+        ctx.fillStyle = '#86efac';
         ctx.beginPath();
-        ctx.ellipse(0, 0, 20, 32, 0.2, 0, Math.PI * 2);
+        ctx.arc(0, -11, 8, 0, Math.PI * 2);
         ctx.fill();
+        // 상완 화이트 아머
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(-18, 6, 32, 26);
         ctx.strokeStyle = '#0f172a';
-        ctx.lineWidth = 2.5;
+        ctx.strokeRect(-18, 6, 32, 26);
+        // 전완 하우징
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(-22, 12, 34, 28);
+        ctx.strokeRect(-22, 12, 34, 28);
+        // 회전초밥 원형 접시 쉴드 (팔 외측에 장착)
+        ctx.save();
+        ctx.translate(-24, 20);
+        ctx.fillStyle = '#f1f5f9';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 22, 42, -0.15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#1e3a8a';
+        ctx.lineWidth = 3;
         ctx.stroke();
+        ctx.fillStyle = '#eab308';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 6, 12, -0.15, 0, Math.PI * 2);
+        ctx.fill();
         ctx.restore();
+        // 전방을 향해 불끈 쥔 거대 주먹
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-24, 40, 38, 24);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-24, 40, 38, 24);
+        // 주먹 화이트 너클 플레이트
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(-22, 42, 34, 7);
         ctx.restore();
 
         ctx.restore(); // 로봇 끝

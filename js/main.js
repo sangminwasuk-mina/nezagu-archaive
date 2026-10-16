@@ -970,6 +970,9 @@
           if (typeof kaitenFx !== 'undefined') {
             kaitenFx.isSpawned = true;
             kaitenFx.isActive = true;
+            kaitenFx.x = Math.round(WORLD_WIDTH * 0.5 - kaitenFx.width / 2);
+            kaitenFx.y = 0;
+            kaitenFx.facing = -1;
             kaitenFx.introState = 'ready';
             kaitenFx.normalAttackTimer = 1.0;
           }
@@ -4942,7 +4945,8 @@
         camera.x = centerK - canvas.width / 2;
       } else if (window.phase2Cutscene && window.phase2Cutscene.active) {
         // 2페이즈 컷신: 맵 중앙 보스 출현 지점 포커스
-        camera.x = Math.round(canvas.width / 2 - canvas.width / 2);
+        const fxCenter = (typeof kaitenFx !== 'undefined' ? kaitenFx.x + kaitenFx.width / 2 : WORLD_WIDTH * 0.5);
+        camera.x = Math.round(fxCenter - canvas.width / 2);
       } else {
         camera.zoom += (1.0 - (camera.zoom || 1.0)) * 0.1;
         camera.y += (0 - (camera.y || 0)) * 0.1;
@@ -4993,6 +4997,15 @@
         keys.up = false;
         keys.down = false;
         if (player.abiNormalCharging) player.abiNormalCharging = false;
+
+        // KAITEN FX Mk.0 출현 위치 맵 중앙으로 정렬
+        if (typeof kaitenFx !== 'undefined') {
+          kaitenFx.x = Math.round(WORLD_WIDTH * 0.5 - kaitenFx.width / 2);
+          kaitenFx.y = 0;
+          kaitenFx.facing = -1;
+          kaitenFx.isSpawned = false;
+          kaitenFx.isDead = false;
+        }
 
         // [신규 2페이즈 합체 컷씬 발동]
         window.phase2Cutscene = {
