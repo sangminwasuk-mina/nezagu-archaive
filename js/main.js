@@ -643,6 +643,24 @@
       }
     }
 
+    // [적 잔여 투사체 및 적 폭발 소거 함수] - const bullets/explosions 불변 배열 안전 조작
+    function clearEnemyProjectiles() {
+      if (typeof bullets !== 'undefined') {
+        for (let i = bullets.length - 1; i >= 0; i--) {
+          if (bullets[i] && bullets[i].isEnemyBullet) {
+            bullets.splice(i, 1);
+          }
+        }
+      }
+      if (typeof explosions !== 'undefined') {
+        for (let i = explosions.length - 1; i >= 0; i--) {
+          if (explosions[i] && !explosions[i].isFriendly) {
+            explosions.splice(i, 1);
+          }
+        }
+      }
+    }
+
     // [카이텐저 1페이즈]: 5인이 5,000,000 단일 체력바를 균등 공유하는 피해 처리 함수
     function applyKaitenzerSharedDamage(dmg) {
       if (typeof kaitenzers === 'undefined') return 0;
@@ -4626,8 +4644,7 @@
         });
 
         // 1페이즈 적들이 발사해둔 잔여 투사체 및 적 폭발 즉각 전량 소거 (2페이즈 시작 시 피격 방지)
-        bullets = bullets.filter(b => !b.isEnemyBullet);
-        explosions = explosions.filter(exp => exp.isFriendly);
+        clearEnemyProjectiles();
 
         // [화면 암전 시퀀스 1회성 발동]
         window.phaseTransitionState = 'fade_out';
@@ -4640,8 +4657,7 @@
         window.phaseTransitionTimer -= dt;
 
         // 전환 암전 중 잔여 투사체 및 적 폭발 지속 소거
-        bullets = bullets.filter(b => !b.isEnemyBullet);
-        explosions = explosions.filter(exp => exp.isFriendly);
+        clearEnemyProjectiles();
 
         if (window.phaseTransitionState === 'fade_out') {
           // 화면이 서서히 칠흑같이 어두워짐 (0 -> 1)
@@ -5077,8 +5093,7 @@
         if (currentMode === 'duo' && myRole === 'guest_striker') {
           // 2P 게스트: 보스 등장 시네마틱 타이머만 진행 (공격 및 세부 상태는 호스트가 동기화)
           if (kaitenFx.introState !== 'none' && kaitenFx.introState !== 'ready') {
-            bullets = bullets.filter(b => !b.isEnemyBullet);
-            explosions = explosions.filter(exp => exp.isFriendly);
+            clearEnemyProjectiles();
             kaitenFx.introTimer -= dt;
             if (kaitenFx.introTimer <= 0) {
               if (kaitenFx.introState === 'fade_out') {
@@ -5115,8 +5130,7 @@
 
         // B. 등장 시네마틱 단계별 상태 머신 진행
         if (kaitenFx.isSpawned && kaitenFx.introState !== 'none' && kaitenFx.introState !== 'ready') {
-          bullets = bullets.filter(b => !b.isEnemyBullet);
-          explosions = explosions.filter(exp => exp.isFriendly);
+          clearEnemyProjectiles();
           kaitenFx.introTimer -= dt;
 
           if (kaitenFx.introState === 'fade_out') {
