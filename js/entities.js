@@ -604,6 +604,7 @@
       skillTimer: 0,
       isSlashing: false, // 파이널 고등어 슬래쉬 발동 중
       slashTimer: 0,
+      aimAngle: 0, // 플레이어 조준 각도 (-35도 ~ +25도)
 
       // 보행(워킹) 애니메이션 상태
       isMoving: false,

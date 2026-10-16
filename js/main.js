@@ -5248,6 +5248,16 @@
             if (kaitenFx.chestHatchTimer < 0) kaitenFx.chestHatchTimer = 0;
           }
 
+          // 2.6) 플레이어 위치 추적 조준 각도 갱신 (오른팔 개틀링 조준 각도: -35도 ~ +25도)
+          const armMuzzleEstX = fxCenterX + (kaitenFx.facing * 125);
+          const armMuzzleEstY = groundY - 245;
+          const aimTarget = getEnemyTargetPos(armMuzzleEstX, armMuzzleEstY);
+          const aimDx = aimTarget.x - armMuzzleEstX;
+          const aimDy = aimTarget.y - armMuzzleEstY;
+          const rawAimAngle = Math.atan2(aimDy, Math.abs(aimDx));
+          const clampedAim = Math.max(-0.61, Math.min(0.44, rawAimAngle));
+          kaitenFx.aimAngle = (kaitenFx.aimAngle || 0) + (clampedAim - (kaitenFx.aimAngle || 0)) * Math.min(1, dt * 10);
+
           // 3) [원작 메카 평타]: 0.5초 동안 미니건 15발 고속 난사 패턴
           if (!kaitenFx.isFiringSkill && !kaitenFx.isSlashing) {
             if (kaitenFx.isFiringNormal) {
@@ -5259,20 +5269,17 @@
                 // 미니건 발사 위치: 전방으로 쭉 뻗은 오른팔 총열 끝 (가슴/어깨 높이 245)
                 const armMuzzleX = fxCenterX + (kaitenFx.facing * 125);
                 const armMuzzleY = groundY - 245;
-                const tPos = getEnemyTargetPos(armMuzzleX, armMuzzleY);
-                const mDx = tPos.x - armMuzzleX;
-                const mDy = tPos.y - armMuzzleY;
-                const mDist = Math.hypot(mDx, mDy) || 1;
                 const bulletSpeed = 16;
                 const spread = (Math.random() - 0.5) * 1.8; // 약간의 탄퍼짐
+                const shootAngle = kaitenFx.aimAngle || 0;
 
                 spawnEnemyBullet({
                   type: 'fx_minigun',
                   isEnemyBullet: true,
                   x: armMuzzleX,
                   y: armMuzzleY,
-                  vx: (mDx / mDist) * bulletSpeed + spread,
-                  vy: (mDy / mDist) * bulletSpeed + spread,
+                  vx: kaitenFx.facing * Math.cos(shootAngle) * bulletSpeed + spread,
+                  vy: Math.sin(shootAngle) * bulletSpeed + spread,
                   dmg: Math.round(280 * (kaitenFx.atkDebuffTimer > 0 ? (1.0 - (kaitenFx.atkDebuffRatio || 0.30)) : 1.0)),
                   color: '#fbbf24',
                   size: 5,
@@ -5401,10 +5408,7 @@
                 // 전방으로 쭉 뻗은 오른팔 총구 위치 (가슴/어깨 높이 245)
                 const armMuzzleX = fxCenterX + (kaitenFx.facing * 125);
                 const armMuzzleY = groundY - 245;
-                const tPos = getEnemyTargetPos(armMuzzleX, armMuzzleY);
-                const mDx = tPos.x - armMuzzleX;
-                const mDy = tPos.y - armMuzzleY;
-                const mDist = Math.hypot(mDx, mDy) || 1;
+                const shootAngle = kaitenFx.aimAngle || 0;
                 const spread = (Math.random() - 0.5) * 3.2;
 
                 spawnEnemyBullet({
@@ -5412,8 +5416,8 @@
                   isEnemyBullet: true,
                   x: armMuzzleX,
                   y: armMuzzleY,
-                  vx: (mDx / mDist) * 18 + spread,
-                  vy: (mDy / mDist) * 18 + spread,
+                  vx: kaitenFx.facing * Math.cos(shootAngle) * 18 + spread,
+                  vy: Math.sin(shootAngle) * 18 + spread,
                   dmg: Math.round(350 * (kaitenFx.atkDebuffTimer > 0 ? (1.0 - (kaitenFx.atkDebuffRatio || 0.30)) : 1.0)),
                   color: '#f472b6',
                   size: 6,
@@ -5510,27 +5514,29 @@
                 kaitenFx.slashTimer = 0.4;
                 kaitenFx.slashHitDealt = false;
 
-                // 전방으로 뿜어져 나가는 거대 초승달 고등어 검기 참격파 생성
+                // 전방으로 뿜어져 나가는 거대 초승달 고등어 검기 참격파 생성 (카이텐 FX 전체 크기 높이 360px, 푸른색 반달 검격)
                 const slashDir = kaitenFx.facing;
                 spawnEnemyBullet({
                   type: 'fx_mackerel_slash_wave',
                   isEnemyBullet: true,
-                  x: fxCenterX + slashDir * 40,
-                  y: groundY - 120,
-                  vx: slashDir * 24, // 광속으로 날아가는 참격
+                  isPiercing: true,
+                  x: fxCenterX + slashDir * 60,
+                  y: groundY - 180, // 중심 높이 180 -> 높이 360이므로 groundY - 360부터 지면(groundY)까지 완벽 커버!
+                  vx: slashDir * 22,
                   vy: 0,
                   angle: slashDir > 0 ? 0 : Math.PI,
-                  dmg: Math.round(35000 * (kaitenFx.atkDebuffTimer > 0 ? (1.0 - (kaitenFx.atkDebuffRatio || 0.30)) : 1.0)), // 즉사급 초절정 피해
-                  width: 90,
-                  height: 220,
-                  color: '#fde047',
-                  life: 70
+                  dmg: Math.round(38000 * (kaitenFx.atkDebuffTimer > 0 ? (1.0 - (kaitenFx.atkDebuffRatio || 0.30)) : 1.0)), // 즉사급 초절정 피해
+                  width: 120,
+                  height: 360,
+                  color: '#00e5ff',
+                  life: 80,
+                  hitTargets: {}
                 });
 
                 if (typeof triggerScreenShake === 'function') {
-                  triggerScreenShake(20, 0.4);
+                  triggerScreenShake(25, 0.45);
                 }
-                addDamageText(fxCenterX, groundY - 260, '⚡ HYPER MACKEREL SLASH!', '#fde047');
+                addDamageText(fxCenterX, groundY - 260, '⚡ FINAL MACKEREL SLASH!', '#00e5ff');
               }
             } else if (kaitenFx.slashPhase === 'slash') {
               if (kaitenFx.slashTimer <= 0) {
@@ -6200,6 +6206,79 @@
         }
 
         // --- [적 카이텐저의 탄환 -> 플레이어 피격 처리] ---
+        // 0) [무한회전 파이널 고등어 슬래시]: 카이텐 FX 크기(높이 360px, 폭 120px) 거대 검기 참격파 전용 AABB 박스 충돌 판정
+        if (b.type === 'fx_mackerel_slash_wave') {
+          b.hitTargets = b.hitTargets || {};
+          const slashW = b.width || 120;
+          const slashH = b.height || 360;
+          const slashLeft = b.x - slashW * 0.5;
+          const slashRight = b.x + slashW * 0.5;
+          const slashTop = b.y - slashH * 0.5;
+          const slashBottom = b.y + slashH * 0.5;
+
+          // 1P 피격 판정
+          const p1Left = player.x;
+          const p1Right = player.x + player.width;
+          const p1Top = player.y;
+          const p1Bottom = player.y + player.height;
+
+          const hitP1 = !(slashRight < p1Left || slashLeft > p1Right || slashBottom < p1Top || slashTop > p1Bottom);
+          if (hitP1 && !b.hitTargets['p1']) {
+            b.hitTargets['p1'] = true;
+            if (player.isDashing) {
+              addDamageText(player.x + 20, player.y - 15, 'DODGE!', '#38bdf8');
+            } else if (player.isImmortalActive) {
+              addDamageText(player.x + 20, player.y - 15, 'IMMORTAL', '#ef4444');
+            } else {
+              applyDamageToPlayer(b.dmg, '#00e5ff', true);
+              addDamageText(player.x, player.y - 45, '⚡ FINAL MACKEREL SLASH!!', '#00e5ff');
+              if (typeof triggerScreenShake === 'function') triggerScreenShake(26, 0.5);
+              for (let s = 0; s < 18; s++) {
+                specialParticles.push({
+                  type: 'spark',
+                  x: playerCenterX,
+                  y: playerCenterY,
+                  vx: (Math.random() - 0.5) * 14,
+                  vy: (Math.random() - 0.5) * 14,
+                  color: '#00e5ff',
+                  size: Math.random() * 4 + 2,
+                  life: 18,
+                  maxLife: 18,
+                  alpha: 1
+                });
+              }
+            }
+          }
+
+          // 2P 동료 피격 판정 (2인 플레이 시)
+          if (currentMode === 'duo' && typeof remotePlayer !== 'undefined' && remotePlayer.isActive && !remotePlayer.isDead) {
+            const p2Left = remotePlayer.x;
+            const p2Right = remotePlayer.x + remotePlayer.width;
+            const p2Top = remotePlayer.y;
+            const p2Bottom = remotePlayer.y + remotePlayer.height;
+
+            const hitP2 = !(slashRight < p2Left || slashLeft > p2Right || slashBottom < p2Top || slashTop > p2Bottom);
+            if (hitP2 && !b.hitTargets['p2']) {
+              b.hitTargets['p2'] = true;
+              if (remotePlayer.isDashing) {
+                addDamageText(remotePlayer.x + 20, remotePlayer.y - 15, 'DODGE!', '#38bdf8');
+              } else {
+                remotePlayer.hp = Math.max(0, remotePlayer.hp - b.dmg);
+                addDamageText(remotePlayer.x + 20, remotePlayer.y - 20, `💥 -${b.dmg}`, '#00e5ff');
+                if (typeof triggerScreenShake === 'function') triggerScreenShake(24, 0.45);
+                if (typeof sendNetPacket === 'function') {
+                  sendNetPacket({ type: 'player_damage', hp: remotePlayer.hp, amount: b.dmg, color: '#00e5ff' });
+                }
+              }
+            }
+          }
+
+          if (b.life <= 0 || b.x < -300 || b.x > WORLD_WIDTH + 300) {
+            bullets.splice(i, 1);
+          }
+          continue;
+        }
+
         // 플레이어 직격 충돌
         const hit = (
           b.x > player.x &&
