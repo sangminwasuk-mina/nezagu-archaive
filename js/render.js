@@ -2477,29 +2477,29 @@
         let torsoBraceTilt = 0;
 
         if (isShieldVisual) {
-          // [초록 쉴드 전개 시]: 다리를 굽혀 무게중심을 낮추고 묵직하게 가드
+          // [초록 쉴드 전개 시]: 다리를 전방으로 굽혀 무게중심을 낮추고 묵직하게 가드
           crouchY = 14;
-          kneeBrace = 0.28;
+          kneeBrace = -0.32; // 전방(앞쪽)으로 쑥 굽혀지는 정방향 무릎 각도!
           torsoBraceTilt = 0.05;
         } else if (isSlashing) {
           // [파이널 고등어 슬래시]: 3단계 역동적 베기 자세
           if (slashPhase === 'charge') {
             crouchY = 6;
-            kneeBrace = 0.14;
+            kneeBrace = -0.14;
             torsoBraceTilt = -0.08; // 기모으기 상체 뒤로 젖힘
           } else if (slashPhase === 'slash') {
             crouchY = 12;
-            kneeBrace = 0.25;
+            kneeBrace = -0.26;
             torsoBraceTilt = 0.14; // 전방을 향해 호쾌하게 내리베기
           } else if (slashPhase === 'recover') {
             crouchY = 8;
-            kneeBrace = 0.16;
+            kneeBrace = -0.18;
             torsoBraceTilt = 0.06;
           }
         } else if (isHatchOpen) {
           // [레드 미사일 발사 시]: 가슴을 열고 반동을 지탱하는 웅크림
           crouchY = 6;
-          kneeBrace = 0.12;
+          kneeBrace = -0.14;
           torsoBraceTilt = 0;
         }
 
@@ -2633,41 +2633,63 @@
           ctx.lineWidth = 1.8;
           ctx.stroke();
 
-          // 하완 팔뚝 & 개틀링 미니건 총구
-          const gunLength = isFiringGatling ? 52 : (isHatchOpen ? 20 : 24);
-          ctx.fillStyle = '#1e293b';
-          ctx.fillRect(-14, 0, 32, 34);
-          ctx.strokeRect(-14, 0, 32, 34);
-          ctx.fillStyle = '#0f172a';
-          ctx.fillRect(-12, 32, 26, 20); // 주먹
-
-          // 전방 돌출 6연장 총열
-          ctx.fillStyle = '#64748b';
-          ctx.fillRect(-14 - gunLength, 12, gunLength, 16);
+          // [유저 스케치 완벽 반영]: 핑크색 새우 팔뚝 완갑 위에 머신건 총신이 건틀릿 형태로 일체형 결합!
+          // 하단: 핑크 새우 팔뚝 본체
+          ctx.fillStyle = isPinkBroken ? '#64748b' : '#f472b6';
+          ctx.fillRect(-52, 6, 56, 24);
           ctx.strokeStyle = '#0f172a';
-          ctx.strokeRect(-14 - gunLength, 12, gunLength, 16);
-          ctx.fillStyle = '#0f172a';
-          ctx.fillRect(-20 - gunLength, 13, 8, 14); // 머즐 팁
+          ctx.lineWidth = 2.2;
+          ctx.strokeRect(-52, 6, 56, 24);
 
-          // 머신건 사격 총구 화염 (Muzzle Flash)
+          // 새우 살결 줄무늬
+          ctx.fillStyle = isPinkBroken ? '#475569' : '#ec4899';
+          ctx.fillRect(-44, 9, 8, 18);
+          ctx.fillRect(-26, 9, 8, 18);
+
+          // 상단: 팔뚝 위에 견고하게 마운트된 개틀링 건틀릿 하우징
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(-48, -12, 52, 18);
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(-48, -12, 52, 18);
+
+          // 전방 돌출 6연장 총열 (사격 시 회전감 및 길이 연장)
+          const gunLength = isFiringGatling ? 56 : (isHatchOpen ? 22 : 30);
+          ctx.fillStyle = '#64748b';
+          ctx.fillRect(-48 - gunLength, -10, gunLength, 14);
+          ctx.strokeStyle = '#0f172a';
+          ctx.strokeRect(-48 - gunLength, -10, gunLength, 14);
+
+          // 머즐 팁
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(-56 - gunLength, -11, 8, 16);
+
+          // 머신건 사격 총구 화염 (Muzzle Flash - 초경량 연산, 렉 0%)
           if (isFiringGatling) {
             ctx.save();
-            const muzzleTipX = -24 - gunLength;
-            const muzzleTipY = 20;
-            ctx.fillStyle = '#fde047';
-            ctx.shadowColor = '#f59e0b';
-            ctx.shadowBlur = 18;
+            const muzzleTipX = -58 - gunLength;
+            const muzzleTipY = -3;
+
+            // 반투명 외곽 플래시
+            ctx.fillStyle = 'rgba(251, 191, 36, 0.4)';
             ctx.beginPath();
-            ctx.arc(muzzleTipX, muzzleTipY, 13 + Math.random() * 6, 0, Math.PI * 2);
+            ctx.arc(muzzleTipX, muzzleTipY, 22, 0, Math.PI * 2);
             ctx.fill();
 
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 2.2;
+            // 중심 고열 섬광
+            ctx.fillStyle = '#fef08a';
             ctx.beginPath();
-            ctx.moveTo(muzzleTipX - 16, muzzleTipY);
-            ctx.lineTo(muzzleTipX + 16, muzzleTipY);
-            ctx.moveTo(muzzleTipX, muzzleTipY - 16);
-            ctx.lineTo(muzzleTipX, muzzleTipY + 16);
+            ctx.arc(muzzleTipX, muzzleTipY, 12 + Math.random() * 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 십자 섬광 스파이크
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2.4;
+            ctx.beginPath();
+            ctx.moveTo(muzzleTipX - 18, muzzleTipY);
+            ctx.lineTo(muzzleTipX + 18, muzzleTipY);
+            ctx.moveTo(muzzleTipX, muzzleTipY - 18);
+            ctx.lineTo(muzzleTipX, muzzleTipY + 18);
             ctx.stroke();
             ctx.restore();
           }
@@ -2675,20 +2697,23 @@
           // [무한회전 파이널 고등어 블레이드 (손에 쥐고 휘두르는 거대 사시미 대검)]
           if (isSlashing) {
             ctx.save();
-            ctx.translate(-10, 42); // 주먹 손잡이 위치
-            ctx.rotate(0.4);
+            ctx.translate(-24, 18); // 팔뚝 손잡이/주먹 위치
+            ctx.rotate(0.35);
 
-            ctx.shadowColor = '#00e5ff';
-            ctx.shadowBlur = 28;
+            // 외곽 발광 레이어 (shadowBlur 없이 초경량 네온 글로우)
+            ctx.strokeStyle = 'rgba(0, 229, 255, 0.4)';
+            ctx.lineWidth = 12;
+            ctx.beginPath();
+            ctx.moveTo(0, 10);
+            ctx.lineTo(14, -160);
+            ctx.lineTo(0, -180);
+            ctx.lineTo(-11, -160);
+            ctx.lineTo(-6, 10);
+            ctx.closePath();
+            ctx.stroke();
 
-            const bladeGrad = ctx.createLinearGradient(0, -170, 20, 0);
-            bladeGrad.addColorStop(0, '#ffffff');
-            bladeGrad.addColorStop(0.35, '#67e8f9');
-            bladeGrad.addColorStop(0.7, '#00e5ff');
-            bladeGrad.addColorStop(1, '#0284c7');
-            ctx.fillStyle = bladeGrad;
-
-            // 거대 고등어 대검 날 (길이 175px)
+            // 거대 고등어 대검 날 본체
+            ctx.fillStyle = '#00e5ff';
             ctx.beginPath();
             ctx.moveTo(0, 10);
             ctx.lineTo(12, -155);
@@ -2697,22 +2722,31 @@
             ctx.lineTo(-6, 10);
             ctx.closePath();
             ctx.fill();
+
             ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 2.5;
+            ctx.lineWidth = 2.8;
+            ctx.stroke();
+
+            // 백색 예리한 칼날 코어 라인
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 10);
+            ctx.lineTo(0, -170);
             ctx.stroke();
 
             // 황금빛 힐트 & 손잡이
             ctx.fillStyle = '#eab308';
-            ctx.fillRect(-10, 10, 20, 8);
+            ctx.fillRect(-12, 10, 24, 8);
             ctx.fillStyle = '#0f172a';
-            ctx.fillRect(-6, 18, 12, 28);
+            ctx.fillRect(-7, 18, 14, 28);
             ctx.strokeStyle = '#eab308';
-            ctx.strokeRect(-6, 18, 12, 28);
+            ctx.strokeRect(-7, 18, 14, 28);
 
             // 스윙 시 검신 뒤로 남는 푸른빛 잔상 아크 (Slash Trail)
             if (slashPhase === 'slash') {
               ctx.strokeStyle = 'rgba(0, 229, 255, 0.55)';
-              ctx.lineWidth = 10;
+              ctx.lineWidth = 12;
               ctx.beginPath();
               ctx.arc(0, 0, 160, -Math.PI * 0.45, 0.05);
               ctx.stroke();
@@ -2852,12 +2886,14 @@
           if (isShieldVisual) {
             const plasmaPulse = Math.sin(now * 0.015) * 5;
             ctx.save();
-            ctx.shadowColor = '#00ffff';
-            ctx.shadowBlur = 24;
-            ctx.strokeStyle = '#38bdf8';
-            ctx.lineWidth = 4;
+            ctx.strokeStyle = 'rgba(0, 229, 255, 0.35)';
+            ctx.lineWidth = 10;
             ctx.beginPath();
             ctx.ellipse(-14, 0, 28 + plasmaPulse, 85 + plasmaPulse, 0.08, -Math.PI * 0.5, Math.PI * 0.5);
+            ctx.stroke();
+
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 4;
             ctx.stroke();
 
             ctx.fillStyle = 'rgba(56, 189, 248, 0.32)';
@@ -2941,6 +2977,11 @@
         ctx.arc(0, 44, 9, 0, Math.PI * 2);
         ctx.fill();
 
+        ctx.save();
+        ctx.translate(0, 44);
+        ctx.rotate(-kneeBendB); // 발목 각도 보정으로 나막신 바닥 수평 유지
+        ctx.translate(0, -44);
+
         // 메카 발목 슈즈 (옆모습)
         ctx.fillStyle = '#e2e8f0';
         ctx.fillRect(-18, 44, 38, 20);
@@ -2955,13 +2996,16 @@
         ctx.fillStyle = '#78350f';
         ctx.fillRect(-14, 76, 8, 10);
         ctx.fillRect(10, 76, 8, 10);
+        ctx.restore(); // 발목 각도 복원
         ctx.restore(); // 무릎 관절 복원
         ctx.restore(); // 뒷다리 복원
 
         // 1-2. [시선 방향에 따른 배경 팔 드로잉]:
         // 오른쪽을 볼 때는 초록이 뒤로, 왼쪽을 볼 때는 핑크가 뒤로!
+        // 단, 필살기 고등어 슬래시(isSlashing) 도중에는 핑크 검 팔이 무조건 전경(앞)에 와야 검격 모션이 가려지지 않음!
         const isRightFacing = (boss.facing >= 0);
-        if (isRightFacing) {
+        const isPinkForeground = isSlashing || isRightFacing;
+        if (isPinkForeground) {
           drawGreenArm(false); // 초록 팔 배경 드로잉
         } else {
           drawPinkArm(false);  // 핑크 팔 배경 드로잉
@@ -3105,13 +3149,14 @@
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // 듀얼 아이 센서
+        // 듀얼 아이 센서 (shadowBlur 없는 초경량 네온 센서)
         const eyeFlash = boss.introState === 'eye_flash' || Math.sin(now * 0.005) > 0.8;
+        if (eyeFlash) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+          ctx.fillRect(-20, -4, 16, 9.5);
+        }
         ctx.fillStyle = eyeFlash ? '#ffffff' : (boss.atg >= 100 ? '#00e5ff' : '#38bdf8');
-        ctx.shadowColor = boss.atg >= 100 ? '#00e5ff' : '#38bdf8';
-        ctx.shadowBlur = eyeFlash ? 16 : 8;
         ctx.fillRect(-18, -2, 12, 5.5);
-        ctx.shadowBlur = 0;
         ctx.restore(); // 머리 복원
 
         ctx.restore(); // 상체 밥핑 & 틸트 복원
@@ -3196,6 +3241,11 @@
         ctx.arc(0, 44, 10, 0, Math.PI * 2);
         ctx.fill();
 
+        ctx.save();
+        ctx.translate(0, 44);
+        ctx.rotate(-kneeBendF); // 발목 각도 보정으로 나막신 바닥 수평 유지
+        ctx.translate(0, -44);
+
         // 앞발 화이트 메카 슈즈
         ctx.fillStyle = '#f8fafc';
         ctx.fillRect(-24, 44, 48, 20);
@@ -3216,17 +3266,18 @@
           ctx.lineWidth = 3;
           ctx.strokeRect(-26, -56, 54, 96);
         }
+        ctx.restore(); // 발목 각도 복원
         ctx.restore(); // 무릎 관절 복원
         ctx.restore(); // 앞다리 복원
 
         // ---------------------------------------------------------------------
         // [레이어 5: 최상단 전면 팔 드로잉 (Foreground Layer)]
-        // 오른쪽을 볼 때는 핑크가 가장 위로! 왼쪽을 볼 때는 초록이 가장 위로!
+        // 오른쪽 볼 때: 핑크가 가장 위! 왼쪽 볼 때: 초록이 가장 위! (단, 슬래시 필살기 때는 핑크가 항상 최상단)
         // ---------------------------------------------------------------------
-        if (isRightFacing) {
-          drawPinkArm(true);   // 오른쪽 바라볼 때: 핑크 팔이 최상단!
+        if (isPinkForeground) {
+          drawPinkArm(true);   // 핑크 팔 최상단 전경 드로잉!
         } else {
-          drawGreenArm(true);  // 왼쪽 바라볼 때: 초록 팔이 최상단!
+          drawGreenArm(true);  // 초록 팔 최상단 전경 드로잉!
         }
 
         // ---------------------------------------------------------------------
@@ -3261,12 +3312,21 @@
           ctx.strokeStyle = '#eab308';
           ctx.strokeRect(-5, 31, 10, 34);
 
+          // 외곽 글로우 (shadowBlur 없이 초경량 네온 테두리)
+          ctx.strokeStyle = 'rgba(0, 229, 255, 0.45)';
+          ctx.lineWidth = 8;
+          ctx.beginPath();
+          ctx.moveTo(0, 24);
+          ctx.lineTo(9, -150);
+          ctx.lineTo(0, -165);
+          ctx.lineTo(-7, -150);
+          ctx.lineTo(-5, 24);
+          ctx.closePath();
+          ctx.stroke();
+
           ctx.strokeStyle = '#00e5ff';
-          ctx.shadowColor = '#00e5ff';
-          ctx.shadowBlur = 22;
           ctx.lineWidth = 2.5;
           ctx.stroke();
-          ctx.shadowBlur = 0;
           ctx.restore();
         }
 
@@ -5518,9 +5578,14 @@
             const h = b.height || 360;
 
             ctx.save();
-            // 외곽 영롱한 시안/블루 플라즈마 후광
-            ctx.shadowColor = '#00e5ff';
-            ctx.shadowBlur = 36;
+            // 외곽 영롱한 시안/블루 플라즈마 후광 (shadowBlur 없이 초경량 렉 0% 네온 아우라)
+            ctx.strokeStyle = 'rgba(0, 229, 255, 0.4)';
+            ctx.lineWidth = 16;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, w * 0.5 + 4, h * 0.5 + 4, 0, -Math.PI * 0.5, Math.PI * 0.5);
+            ctx.quadraticCurveTo(w * 0.12, 0, 0, -h * 0.5 - 4);
+            ctx.closePath();
+            ctx.stroke();
 
             const waveGrad = ctx.createLinearGradient(-w * 0.5, 0, w * 0.5, 0);
             waveGrad.addColorStop(0, 'rgba(0, 229, 255, 0)');
