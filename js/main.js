@@ -579,45 +579,33 @@
 
       // [서포터 초기화 제거]
 
-      // 2. 레드는 개전 시 단독 등장
-      const red = kaitenzers.find(k => k.id === 'red');
-      red.isSpawned = true;
-      red.isDead = false;
-      red.hp = red.maxHp;
-      red.x = 1550;
-      red.isActive = false;
-      red.burstCount = 0;
-      red.attackTimer = 0;
+      // 2. 카이텐저 5인 전원 개전 즉시 출격
+      const defaultPositions = {
+        black: 1200,
+        red: 1350,
+        green: 1500,
+        pink: 1650,
+        yellow: 1800
+      };
 
-      // 나머지 4명 무작위 셔플 (랜덤 증원 순서)
-      const otherIds = ['black', 'yellow', 'green', 'pink'];
-      for (let i = otherIds.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [otherIds[i], otherIds[j]] = [otherIds[j], otherIds[i]];
-      }
-
-      phase1Members = [otherIds[0], otherIds[1]]; // 레드 HP 10% 감소(HP 90만) 시 등장할 2명
-      phase2Members = [otherIds[2], otherIds[3]]; // 레드 HP 추가 30% 감소(HP 60만) 시 등장할 2명
-      phase1Triggered = false;
-      phase2Triggered = false;
-      isPhase1Retreating = false;
-      phase1RetreatTimer = 0;
-      isPhase2Active = false;
-
-      red.isRetreating = false;
-
-      // 나머지 멤버들은 미등장 대기 상태
-      otherIds.forEach(id => {
-        const k = kaitenzers.find(m => m.id === id);
-        k.isSpawned = false;
+      kaitenzers.forEach(k => {
+        k.isSpawned = true;
         k.isDead = false;
         k.isRetreating = false;
         k.hp = k.maxHp;
+        k.x = defaultPositions[k.id] || 1500;
         k.isActive = false;
-        k.attackTimer = 0;
+        k.burstCount = 0;
+        k.attackTimer = Math.random() * 1.5;
         if (k.id === 'yellow') k.laserState = 'none';
         if (k.id === 'green') k.isOverheated = false;
       });
+
+      phase1Triggered = true;
+      phase2Triggered = true;
+      isPhase1Retreating = false;
+      phase1RetreatTimer = 0;
+      isPhase2Active = false;
 
       // 3. KAITEN FX Mk.0 상태 초기화
       if (typeof kaitenFx !== 'undefined') {
@@ -4608,33 +4596,7 @@
 
       posDisplay.innerText = `X: ${Math.round(player.x)}`;
 
-      // 1-1. 카이텐저 순차 증원 페이즈 판정
-      const red = kaitenzers[0];
-      const redHpRatio = red.hp / red.maxHp;
-
-      // [1차 증원]: 레드의 체력이 10% 감소했을 때 (HP <= 90%) -> 2명 출격
-      if (!phase1Triggered && redHpRatio <= 0.90) {
-        phase1Triggered = true;
-        phase1Members.forEach((id, idx) => {
-          const k = kaitenzers.find(m => m.id === id);
-          k.isSpawned = true;
-          k.x = red.x + 220 + (idx * 180);
-          addDamageText(k.x, groundY - 110, `🚨 [1차 증원] ${k.name}[${k.role}] 출격!`, k.color);
-        });
-      }
-
-      // [2차 증원]: 레드의 체력이 또 30% 감소했을 때 (총 40% 감소, HP <= 60%) -> 나머지 2명 출격
-      if (!phase2Triggered && redHpRatio <= 0.60) {
-        phase2Triggered = true;
-        phase2Members.forEach((id, idx) => {
-          const k = kaitenzers.find(m => m.id === id);
-          k.isSpawned = true;
-          k.x = red.x + 460 + (idx * 180);
-          addDamageText(k.x, groundY - 110, `⚡ [최종 증원] ${k.name}[${k.role}] 전원 집결!`, k.color);
-        });
-      }
-
-      // [타인의 사슬 타이머 제거]
+      // 1-1. 카이텐저 1페이즈: 5인 전원 개전 즉시 참전 상태 유지 (순차 증원 불필요)
 
       // 1-2-B. 카이텐저 1페이즈 단일 공유체력 5,000,000 전소(0 이하) 시 후퇴 및 2페이즈 전환 판정
       const totalKaitenHp = kaitenzers.reduce((sum, k) => sum + (k.isDead ? 0 : Math.max(0, k.hp)), 0);

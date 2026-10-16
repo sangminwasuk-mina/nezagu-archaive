@@ -380,12 +380,12 @@
         critDmg: 350,
         critDmgResist: 50,
         stability: 1500,
-        x: 1850,
+        x: 1200,
         atk: 100,
         maxHp: 1000000,
         hp: 1000000,
         size: 44,
-        isSpawned: false, // 증원 대기
+        isSpawned: true, // 5인 전원 개전 즉시 출격
         isDead: false,
         skillName: '지휘',
         cooldownMax: 18,
@@ -417,12 +417,12 @@
         critDmg: 350,
         critDmgResist: 50,
         stability: 1500,
-        x: 2450,
+        x: 1800,
         atk: 1200,
         maxHp: 1000000,
         hp: 1000000,
         size: 44,
-        isSpawned: false, // 증원 대기
+        isSpawned: true, // 5인 전원 개전 즉시 출격
         isDead: false,
         skillName: '강화공격',
         cooldownMax: 20,
@@ -456,12 +456,12 @@
         critDmg: 350,
         critDmgResist: 50,
         stability: 1500,
-        x: 2050,
+        x: 1500,
         atk: 75,
         maxHp: 1000000,
         hp: 1000000,
         size: 46,
-        isSpawned: false, // 증원 대기
+        isSpawned: true, // 5인 전원 개전 즉시 출격
         isDead: false,
         skillName: '광범위난사',
         cooldownMax: 25,
@@ -494,12 +494,12 @@
         critDmg: 350,
         critDmgResist: 50,
         stability: 1500,
-        x: 2280,
+        x: 1650,
         atk: 2500,
         maxHp: 1000000,
         hp: 1000000,
         size: 48,
-        isSpawned: false, // 증원 대기
+        isSpawned: true, // 5인 전원 개전 즉시 출격
         isDead: false,
         skillName: '스킬 없음',
         cooldownMax: 0,
@@ -517,11 +517,11 @@
       }
     ];
 
-    // 카이텐저 순차 증원 페이즈 관리 변수
+    // 카이텐저 5인 동시 출격 (순차 증원 불필요)
     let phase1Members = ['black', 'green'];
     let phase2Members = ['yellow', 'pink'];
-    let phase1Triggered = false;
-    let phase2Triggered = false;
+    let phase1Triggered = true;
+    let phase2Triggered = true;
 
     // 카이텐저 1페이즈 20% 긴급 후퇴 및 2페이즈 전환 상태 변수
     let isPhase1Retreating = false;
