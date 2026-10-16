@@ -911,43 +911,49 @@
       } else if (cut.state === 'weapon_raise') {
         // 1.8초간 레드가 먼저, 이어 4명이 함께 무기를 머리 위로 번쩍 치켜듦
         if (cut.timer >= 1.8) {
-          // 카메라 위로 상승 & 하늘에서 5개 부품 강하 시작!
+          // [유저 지정 핵심]: 카메라가 하늘 높이 솟구쳐 비행 시작!
           cut.state = 'sky_fall';
           cut.timer = 0;
           cut.subTimer = 0;
-          camera.y = -180;
+          camera.y = -320; // 상공 높이 카메라 솟구침!
         }
       } else if (cut.state === 'sky_fall') {
-        camera.y += (0 - camera.y) * 0.06; // 카메라 부드럽게 지상 복귀
-        // 하늘에서 5개 부품 함께 하강 (1.8초)
+        // 카메라가 하늘 위에서 5개 부품과 함께 고속 비행하며 추적
+        camera.y = -320 + (cut.timer / 1.8) * 80; // -320 -> -240
+        // 하늘에서 5개 부품 함께 비행하며 강하 (1.8초)
         if (cut.timer >= 1.8) {
-          // 순차 도킹 결합 시작!
+          // 비행 중 공중 순차 도킹 결합 시작!
           cut.state = 'docking';
           cut.timer = 0;
           cut.subTimer = 0;
           cut.dockStep = 0; // 0: 우측팔(새우)
-          camera.y = 0;
-          if (typeof triggerScreenShake === 'function') triggerScreenShake(16, 0.4);
+          if (typeof triggerScreenShake === 'function') triggerScreenShake(18, 0.4);
         }
       } else if (cut.state === 'docking') {
-        // 3단계 순차 도킹: 우측팔 (0.6s) -> 좌측팔 (0.6s) -> 양다리 (0.8s)
+        // 상공을 고속 비행하며 3단계 순차 도킹 결합: 우측팔 (0.6s) -> 좌측팔 (0.6s) -> 양다리 (0.8s)
+        const totalDockProg = (cut.dockStep + Math.min(1, cut.subTimer / (cut.dockStep === 2 ? 0.8 : 0.6))) / 3;
+        camera.y = -240 + totalDockProg * 140; // -240 -> -100 (하늘에서 지상 방향으로 박진감 넘치게 하강)
+
         if (cut.dockStep === 0 && cut.subTimer >= 0.6) {
           cut.dockStep = 1;
           cut.subTimer = 0;
-          if (typeof triggerScreenShake === 'function') triggerScreenShake(18, 0.35);
+          if (typeof triggerScreenShake === 'function') triggerScreenShake(20, 0.4);
         } else if (cut.dockStep === 1 && cut.subTimer >= 0.6) {
           cut.dockStep = 2;
           cut.subTimer = 0;
-          if (typeof triggerScreenShake === 'function') triggerScreenShake(20, 0.4);
+          if (typeof triggerScreenShake === 'function') triggerScreenShake(22, 0.45);
         } else if (cut.dockStep === 2 && cut.subTimer >= 0.8) {
-          // 접합 완료 ➔ 안광 번쩍 & 시그니처 위압 포즈 씬으로 전환!
+          // [유저 지정 핵심]: 전 부품 도킹 완료 ➔ 지면에 초강력 착지 & 카메라 지상 복귀 & 화면 대지진!
+          camera.y = 0;
+          if (typeof triggerScreenShake === 'function') triggerScreenShake(40, 1.1);
+          // 안광 번쩍 & 시그니처 위압 포즈 씬으로 전환!
           cut.state = 'eye_flash_pose';
           cut.timer = 0;
           cut.subTimer = 0;
         }
       } else if (cut.state === 'eye_flash_pose') {
-        // 1.4초간 안광 번쩍 + 양팔 들어올리다 사진 포즈(양 주먹 쥐고 앞으로 내민 위압 포즈)
-        if (cut.timer >= 1.4) {
+        // 1.5초간 안광 번쩍 + 사진 포즈(양 주먹 불끈 쥐고 전방으로 뻗은 위압 포즈) 작렬!
+        if (cut.timer >= 1.5) {
           // 암전 번개 씬으로 전환!
           cut.state = 'lightning_strike';
           cut.timer = 0;

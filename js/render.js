@@ -2155,6 +2155,302 @@
     }
 
     // =========================================================================
+    // [카이텐저 5인방 정품 렌더러]: 원작 고증 (접시 가면 + 머리 위 초밥 + 벨트)
+    // - 얼굴: 하얀 원형 회전초밥 접시 가면 + 외곽 주황/골드 테두리
+    // - 머리 위 초밥: 레드(참치), 핑크(새우), 옐로(계란), 그린(캘리포니아 롤), 블랙(군함말이)
+    // - 몸체: 각자 고유 컬러 전대 슈트 + 하얀 넥 카라 + 화이트 벨트 & 원형 버클
+    // =========================================================================
+    function drawAuthenticKaitenzerBody(k, screenX, screenY, options = {}) {
+      const pose = options.pose || 'idle';
+      const scale = options.customScale || 1.0;
+      const s = (k.size || 36);
+      const centerX = screenX + s / 2;
+      const facing = (k.facing >= 0) ? 1 : -1;
+
+      ctx.save();
+
+      if (pose === 'downed') {
+        // [쓰러진 다운 자세]: 아스팔트 바닥에 납작하게 누운 모습
+        const downedW = s * 1.15;
+        const downedH = s * 0.38;
+        const downY = screenY + s - downedH;
+
+        // 슈트 본체
+        ctx.fillStyle = k.color;
+        ctx.fillRect(screenX - 2, downY, downedW, downedH);
+        ctx.strokeStyle = k.border || '#0f172a';
+        ctx.lineWidth = 1.8;
+        ctx.strokeRect(screenX - 2, downY, downedW, downedH);
+
+        // 허리 흰색 벨트 & 은색 버클
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(screenX + downedW * 0.42, downY, 6, downedH);
+        ctx.fillStyle = '#e2e8f0';
+        ctx.beginPath();
+        ctx.arc(screenX + downedW * 0.45, downY + downedH / 2, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 바닥에 비스듬히 누운 접시 가면
+        ctx.save();
+        ctx.translate(screenX + downedW - 6, downY + downedH / 2);
+        ctx.rotate(0.35);
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 8, 9, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ea580c';
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+        ctx.restore();
+
+        // 머리 옆에 떨어진 상징 초밥
+        drawKaitenzerSushiOnHead(k.id, screenX + downedW + 4, downY + downedH - 4, 0.85);
+
+        ctx.restore();
+        return;
+      }
+
+      if (pose === 'stagger') {
+        // [비틀거림 자세]: 한쪽 무릎을 꿇고 상체를 앞으로 숙인 자세
+        ctx.save();
+        ctx.translate(centerX, screenY + s);
+
+        // 꿇은 무릎 & 다리
+        ctx.fillStyle = k.border || '#0f172a';
+        ctx.fillRect(-14, -10, 16, 10);
+        ctx.fillStyle = k.color;
+        ctx.fillRect(-12, -22, 14, 14);
+
+        // 기울어진 상체
+        ctx.rotate(-0.25);
+        ctx.fillStyle = k.color;
+        ctx.fillRect(-12, -34, 24, 18);
+        ctx.strokeStyle = k.border || '#0f172a';
+        ctx.lineWidth = 1.8;
+        ctx.strokeRect(-12, -34, 24, 18);
+
+        // 허리 흰색 벨트 & 버클
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-12, -18, 24, 4);
+        ctx.fillStyle = '#e2e8f0';
+        ctx.beginPath();
+        ctx.arc(0, -16, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // 하얀 넥 카라
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(-6, -34); ctx.lineTo(0, -28); ctx.lineTo(6, -34);
+        ctx.fill();
+
+        // 접시 가면
+        const headY = -43;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.ellipse(0, headY, 9.5, 10.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ea580c';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(234, 88, 12, 0.45)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(0, headY, 6, 7, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 머리 위 초밥
+        drawKaitenzerSushiOnHead(k.id, 0, headY - 12, 1.0);
+
+        ctx.restore();
+        ctx.restore();
+        return;
+      }
+
+      // [일반 스탠딩 / 점프 / 컷씬 포징 자세]
+      const bodyTop = screenY + 12;
+      const bodyH = s - 12;
+
+      // 1. 하체 슈트 및 다리 (2갈래)
+      ctx.fillStyle = k.color;
+      ctx.fillRect(centerX - 10, screenY + 22, 8, s - 22);
+      ctx.fillRect(centerX + 2, screenY + 22, 8, s - 22);
+      ctx.strokeStyle = k.border || '#0f172a';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(centerX - 10, screenY + 22, 8, s - 22);
+      ctx.strokeRect(centerX + 2, screenY + 22, 8, s - 22);
+
+      // 2. 상체 슈트
+      ctx.fillStyle = k.color;
+      ctx.fillRect(centerX - 12, bodyTop, 24, 15);
+      ctx.strokeStyle = k.border || '#0f172a';
+      ctx.lineWidth = 1.8;
+      ctx.strokeRect(centerX - 12, bodyTop, 24, 15);
+
+      // 하얀 넥 카라 (V-Neck)
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(centerX - 6, bodyTop);
+      ctx.lineTo(centerX, bodyTop + 6);
+      ctx.lineTo(centerX + 6, bodyTop);
+      ctx.fill();
+
+      // 3. [유저 지정 핵심]: 허리 흰색 벨트 & 중앙 원형 버클
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(centerX - 12, bodyTop + 11, 24, 4);
+      ctx.fillStyle = '#f8fafc';
+      ctx.beginPath();
+      ctx.arc(centerX, bodyTop + 13, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // 4. 머리 헬멧 돔 & [접시 가면]
+      const headCenterY = screenY + 5;
+      // 헬멧 뒤통수 (슈트 색상)
+      ctx.fillStyle = k.color;
+      ctx.beginPath();
+      ctx.arc(centerX, headCenterY, 11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = k.border || '#0f172a';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // [핵심 고증: 얼굴의 하얀 회전초밥 접시 가면]
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.ellipse(centerX, headCenterY, 8.5, 9.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // 외곽 주황/골드 세라믹 림
+      ctx.strokeStyle = '#ea580c';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+      // 접시 안쪽 동심원 링
+      ctx.strokeStyle = 'rgba(234, 88, 12, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(centerX, headCenterY, 5.5, 6.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 5. [핵심 고증: 머리 위 각 멤버의 상징 초밥]
+      drawKaitenzerSushiOnHead(k.id, centerX, headCenterY - 11, 1.0);
+
+      ctx.restore();
+    }
+
+    // 각 멤버별 머리 위 상징 초밥 렌더러
+    function drawKaitenzerSushiOnHead(id, x, y, scale = 1.0) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+
+      if (id === 'red') {
+        // [레드: 붉은 참치초밥 (Maguro)]
+        ctx.fillStyle = '#f8fafc';
+        ctx.beginPath();
+        ctx.ellipse(0, 2, 8.5, 3.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.ellipse(0, -1, 10, 4.5, -0.05, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#b91c1c';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(-5, -3); ctx.lineTo(-1, 2);
+        ctx.moveTo(1, -4);  ctx.lineTo(5, 1);
+        ctx.stroke();
+      } else if (id === 'pink') {
+        // [핑크: 분홍 새우초밥 (Ebi)]
+        ctx.fillStyle = '#f8fafc';
+        ctx.beginPath();
+        ctx.ellipse(-1, 2, 8, 3.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#f472b6';
+        ctx.beginPath();
+        ctx.ellipse(-1, -1, 9, 4, -0.08, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#db2777';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        ctx.fillStyle = '#ec4899';
+        ctx.beginPath();
+        ctx.moveTo(6, 0);
+        ctx.lineTo(12, -7);
+        ctx.lineTo(9, 1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#fb7185';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-4, -4); ctx.lineTo(-4, 2);
+        ctx.moveTo(1, -4);  ctx.lineTo(1, 2);
+        ctx.stroke();
+      } else if (id === 'yellow') {
+        // [옐로: 계란말이초밥 (Tamago)]
+        ctx.fillStyle = '#f8fafc';
+        ctx.beginPath();
+        ctx.ellipse(0, 2.5, 8, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#facc15';
+        ctx.fillRect(-8.5, -4, 17, 6.5);
+        ctx.strokeStyle = '#ca8a04';
+        ctx.lineWidth = 1.2;
+        ctx.strokeRect(-8.5, -4, 17, 6.5);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-2.5, -4, 5, 8.5);
+      } else if (id === 'green') {
+        // [그린: 캘리포니아 롤 (California Roll - 유저 피드백 반영)]
+        ctx.fillStyle = '#f8fafc';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 9, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath();
+        ctx.arc(-5, -2, 1, 0, Math.PI * 2);
+        ctx.arc(-2, 3, 1, 0, Math.PI * 2);
+        ctx.arc(4, -3, 1, 0, Math.PI * 2);
+        ctx.arc(5, 2, 1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 6, 3.8, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 3.5, 2.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (id === 'black') {
+        // [블랙: 군함말이 (Gunkanmaki)]
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-8, -4, 16, 8.5);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1.2;
+        ctx.strokeRect(-8, -4, 16, 8.5);
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(-6.5, 2, 13, 2.5);
+        ctx.fillStyle = '#ef4444';
+        for (let i = -5; i <= 5; i += 2.5) {
+          ctx.beginPath();
+          ctx.arc(i, -3.5 + (Math.abs(i) % 2) * 1.5, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      ctx.restore();
+    }
+
+    // =========================================================================
     // [1. 등장 합체 시네마틱 전용]: KAITEN FX Mk.0 정면 뷰 (Front View)
     // - 합체 연출 전용: 사방에서 파츠가 날아와 쿵! 결합되는 정면 샷
     // =========================================================================
@@ -3698,26 +3994,8 @@
           }
         }
 
-        // (B) 카이텐저 실제 본체 (정사각형 컬러 블록 + 고유 테두리)
-        ctx.fillStyle = k.color;
-        ctx.fillRect(kScreenX, currentY, k.size, k.size);
-        ctx.strokeStyle = k.border || '#000000';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(kScreenX, currentY, k.size, k.size);
-
-        // 눈/바이저
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(kScreenX + 6, currentY + 8, k.size - 12, 6);
-
-        // 펄럭이는 머리띠 (옥상 대기 중 바람 연출)
-        if (state === 'rooftop') {
-          ctx.strokeStyle = k.color;
-          ctx.lineWidth = 2.5;
-          ctx.beginPath();
-          ctx.moveTo(kScreenX + k.size, currentY + 6);
-          ctx.quadraticCurveTo(kScreenX + k.size + 14 + Math.sin(t * 10) * 5, currentY + 4, kScreenX + k.size + 26 + Math.sin(t * 10) * 8, currentY + 12);
-          ctx.stroke();
-        }
+        // (B) 카이텐저 정품 본체 (원작 고증: 접시 가면 + 머리 위 상징 초밥 + 벨트)
+        drawAuthenticKaitenzerBody(k, kScreenX, currentY, { pose: state, timer: t });
 
         // (C) 실제 무기 렌더링 & 시계방향 회전 연출
         ctx.save();
@@ -3853,58 +4131,119 @@
         ctx.fillRect(0, 0, canvas.width, 52);
         ctx.fillRect(0, canvas.height - 52, canvas.width, 52);
 
+        // [핵심 해결]: 실제 전장 아스팔트 지면 및 파괴 흔적/연기 렌더링 (공중 부유감 100% 제거!)
+        const cutGroundY = canvas.height - 110;
+        // 아스팔트 바닥
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(0, cutGroundY, canvas.width, canvas.height - 52 - cutGroundY);
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, cutGroundY);
+        ctx.lineTo(canvas.width, cutGroundY);
+        ctx.stroke();
+
+        // 아스팔트 균열선 & 파편
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1.5;
+        for (let bx = 120; bx < canvas.width; bx += 180) {
+          ctx.beginPath();
+          ctx.moveTo(bx, cutGroundY);
+          ctx.lineTo(bx + 14, cutGroundY + 18);
+          ctx.lineTo(bx + 28, cutGroundY + 12);
+          ctx.stroke();
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(bx + 35, cutGroundY + 8, 8, 5);
+        }
+
+        // 지면에서 피어오르는 전장 연기
+        ctx.fillStyle = 'rgba(71, 85, 105, 0.35)';
+        for (let sm = 0; sm < 4; sm++) {
+          const smX = centerX - 180 + sm * 120 + Math.sin(t * 2 + sm) * 12;
+          ctx.beginPath();
+          ctx.arc(smX, cutGroundY - 14 - Math.sin(t * 3 + sm) * 8, 22, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
         if (cutIdx === 0) {
-          // [컷 1]: 중심 레드 실제 본체 비틀거림 클로즈업
-          const stagger = Math.sin(t * 12) * 8;
+          // [컷 1]: 중심 레드 아스팔트에 무릎 꿇고 비틀거림 (지면 접지)
+          const stagger = Math.sin(t * 12) * 6;
+          const redK = kaitenzers.find(k => k.id === 'red') || { id: 'red', color: '#ef4444', border: '#b91c1c', size: 36 };
+
           ctx.save();
-          ctx.translate(centerX + stagger, centerY);
-          ctx.scale(2.4, 2.4);
+          // 지면 접지 그림자
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+          ctx.beginPath();
+          ctx.ellipse(centerX + stagger, cutGroundY, 44, 9, 0, 0, Math.PI * 2);
+          ctx.fill();
 
+          ctx.translate(centerX + stagger, cutGroundY);
+          ctx.scale(1.85, 1.85);
+
+          drawAuthenticKaitenzerBody(redK, -redK.size / 2, -redK.size, { pose: 'stagger', timer: t });
+
+          // 바닥에 꽂힌 채 떨리는 돌격소총 (AR)
+          ctx.save();
+          ctx.translate(22, -12);
+          ctx.rotate(0.7);
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(-2, -18, 4, 22);
           ctx.fillStyle = '#ef4444';
-          ctx.fillRect(-18, -36, 36, 36);
-          ctx.strokeStyle = '#b91c1c';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(-18, -36, 36, 36);
+          ctx.fillRect(-3, -10, 6, 6);
+          ctx.restore();
 
-          // 눈 바이저
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(-10, -28, 20, 6);
           ctx.restore();
         } else if (cutIdx === 1) {
-          // [컷 2]: 옐로 & 핑크 실제 쓰러진 본체 클로즈업
-          ctx.save();
-          ctx.translate(centerX, centerY);
-          ctx.scale(2.0, 2.0);
+          // [컷 2]: 옐로 & 핑크 아스팔트 바닥에 완전히 쓰러짐 (지면 접지)
+          const pinkK = kaitenzers.find(k => k.id === 'pink') || { id: 'pink', color: '#f472b6', border: '#db2777', size: 36 };
+          const yellowK = kaitenzers.find(k => k.id === 'yellow') || { id: 'yellow', color: '#eab308', border: '#a16207', size: 36 };
 
           // 핑크 다운
-          ctx.fillStyle = '#f472b6';
-          ctx.fillRect(-75, -8, 42, 16);
-          ctx.strokeStyle = '#db2777';
-          ctx.strokeRect(-75, -8, 42, 16);
+          ctx.save();
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+          ctx.beginPath();
+          ctx.ellipse(centerX - 130, cutGroundY, 42, 8, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.translate(centerX - 130, cutGroundY);
+          ctx.scale(1.6, 1.6);
+          drawAuthenticKaitenzerBody(pinkK, -pinkK.size / 2, -pinkK.size, { pose: 'downed', timer: t });
+          ctx.restore();
 
           // 옐로 다운
-          ctx.fillStyle = '#eab308';
-          ctx.fillRect(30, -8, 42, 16);
-          ctx.strokeStyle = '#a16207';
-          ctx.strokeRect(30, -8, 42, 16);
+          ctx.save();
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+          ctx.beginPath();
+          ctx.ellipse(centerX + 130, cutGroundY, 42, 8, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.translate(centerX + 130, cutGroundY);
+          ctx.scale(1.6, 1.6);
+          drawAuthenticKaitenzerBody(yellowK, -yellowK.size / 2, -yellowK.size, { pose: 'downed', timer: t });
           ctx.restore();
         } else if (cutIdx === 2) {
-          // [컷 3]: 그린 & 블랙 실제 쓰러진 본체 클로즈업
-          ctx.save();
-          ctx.translate(centerX, centerY);
-          ctx.scale(2.0, 2.0);
+          // [컷 3]: 그린 & 블랙 아스팔트 바닥에 완전히 쓰러짐 (지면 접지)
+          const blackK = kaitenzers.find(k => k.id === 'black') || { id: 'black', color: '#1e293b', border: '#0f172a', size: 36 };
+          const greenK = kaitenzers.find(k => k.id === 'green') || { id: 'green', color: '#22c55e', border: '#15803d', size: 36 };
 
           // 블랙 다운
-          ctx.fillStyle = '#1e293b';
-          ctx.fillRect(-75, -8, 42, 16);
-          ctx.strokeStyle = '#0f172a';
-          ctx.strokeRect(-75, -8, 42, 16);
+          ctx.save();
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+          ctx.beginPath();
+          ctx.ellipse(centerX - 130, cutGroundY, 42, 8, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.translate(centerX - 130, cutGroundY);
+          ctx.scale(1.6, 1.6);
+          drawAuthenticKaitenzerBody(blackK, -blackK.size / 2, -blackK.size, { pose: 'downed', timer: t });
+          ctx.restore();
 
           // 그린 다운
-          ctx.fillStyle = '#22c55e';
-          ctx.fillRect(30, -8, 42, 16);
-          ctx.strokeStyle = '#15803d';
-          ctx.strokeRect(30, -8, 42, 16);
+          ctx.save();
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+          ctx.beginPath();
+          ctx.ellipse(centerX + 130, cutGroundY, 42, 8, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.translate(centerX + 130, cutGroundY);
+          ctx.scale(1.6, 1.6);
+          drawAuthenticKaitenzerBody(greenK, -greenK.size / 2, -greenK.size, { pose: 'downed', timer: t });
           ctx.restore();
         }
 
@@ -3932,12 +4271,9 @@
           ctx.save();
           ctx.translate(m.x, groundY - 20);
 
-          // 본체
-          ctx.fillStyle = m.color;
-          ctx.fillRect(-18, -36, 36, 36);
-          ctx.strokeStyle = '#0f172a';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(-18, -36, 36, 36);
+          // 정품 본체 (원작 고증: 접시 가면 + 머리 위 상징 초밥 + 벨트)
+          const liveK = kaitenzers.find(item => item.id === m.id) || { id: m.id, color: m.color, border: '#0f172a', size: 36 };
+          drawAuthenticKaitenzerBody(liveK, -18, -36, { pose: 'idle' });
 
           // 무기: 오른쪽에서 시계방향으로 회전하여 머리 위 하늘 높이 번쩍 치켜듦!
           let armAngle = 0;
@@ -3963,52 +4299,82 @@
         ctx.restore();
       }
 
-      // 3. [하늘에서 5개 부품 동시 강하 & 도킹 & 위압포즈 & 암전 번개 & 타이틀]
+      // 3. [하늘에서 5개 부품 동시 비행 & 공중 도킹 & 시그니처 위압포즈 & 암전 번개 & 타이틀]
       if (['sky_fall', 'docking', 'eye_flash_pose', 'lightning_strike', 'boss_title'].includes(state)) {
         ctx.save();
 
-        const robotCenterY = groundY - 145;
+        // [하늘 비행 연출]: 'sky_fall' 및 'docking' 중 카메라가 상공을 고속 비행하며 추적
+        if (state === 'sky_fall' || state === 'docking') {
+          ctx.save();
+          // 고속 하강 스피드라인 (하늘 상공 비행 느낌 100%)
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+          ctx.lineWidth = 2.2;
+          const spSeed = Math.floor(t * 35);
+          for (let s = 0; s < 28; s++) {
+            const sx = ((s * 67 + spSeed * 43) % canvas.width);
+            const sy = ((s * 97 + spSeed * 79) % canvas.height);
+            const slen = 80 + (s % 6) * 45;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(sx, sy + slen);
+            ctx.stroke();
+          }
+          // 상공 유빙 구름
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
+          for (let c = 0; c < 5; c++) {
+            const cx = ((c * 210 + t * 50) % (canvas.width + 250)) - 120;
+            const cy = ((c * 140 + t * 480) % (canvas.height + 180)) - 90;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 55, 0, Math.PI * 2);
+            ctx.arc(cx + 40, cy - 10, 45, 0, Math.PI * 2);
+            ctx.arc(cx - 38, cy - 5, 48, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
 
-        let armROfsX = 0, armROfsY = 0;
-        let armLOfsX = 0, armLOfsY = 0;
+        // 5개 부품 공중 도킹 오프셋
+        // (원작 및 사진 고증 배치: 화면 좌측 = 핑크 새우팔 & 옐로 계란다리 / 화면 우측 = 그린 롤+쉴드팔 & 블랙 군함다리)
+        let armROfsX = 0, armROfsY = 0; // 화면 좌측(로봇 우완 새우)
+        let armLOfsX = 0, armLOfsY = 0; // 화면 우측(로봇 좌완 그린+쉴드)
         let legOfsY = 0;
         let bodyOfsY = 0;
 
         if (state === 'sky_fall') {
-          // 하늘에서 처음부터 함께 배치되어 아래로 고속 하강 (머리+가슴 일체)
+          // 하늘에서 처음부터 함께 배치되어 카메라와 함께 하강 (머리+가슴 일체)
           const fallEase = Math.min(1, t / 1.8);
-          bodyOfsY = -280 * (1 - fallEase);
-          armROfsX = 95;
+          bodyOfsY = -240 * (1 - fallEase);
+          armROfsX = -110;
           armROfsY = -45;
-          armLOfsX = -95;
+          armLOfsX = 110;
           armLOfsY = -45;
-          legOfsY = 65;
+          legOfsY = 75;
         } else if (state === 'docking') {
           const step = cut.dockStep || 0;
           const sT = cut.subTimer || 0;
           const prog = Math.min(1, sT / 0.6);
 
           if (step === 0) {
-            // 우측팔(새우) 결합
-            armROfsX = 95 * (1 - prog);
+            // 1단계: 우측팔(화면 좌측 새우) 결합
+            armROfsX = -110 * (1 - prog);
             armROfsY = -45 * (1 - prog);
-            armLOfsX = -95;
+            armLOfsX = 110;
             armLOfsY = -45;
-            legOfsY = 65;
+            legOfsY = 75;
           } else if (step === 1) {
-            // 좌측팔(오이) 결합
+            // 2단계: 좌측팔(화면 우측 그린+접시쉴드) 결합
             armROfsX = 0; armROfsY = 0;
-            armLOfsX = -95 * (1 - prog);
+            armLOfsX = 110 * (1 - prog);
             armLOfsY = -45 * (1 - prog);
-            legOfsY = 65;
+            legOfsY = 75;
           } else {
-            // 양다리 결합
+            // 3단계: 양다리 결합
             armROfsX = 0; armROfsY = 0;
             armLOfsX = 0; armLOfsY = 0;
-            legOfsY = 65 * (1 - prog);
+            legOfsY = 75 * (1 - prog);
           }
         } else {
-          // 전 부품 도킹 완료
+          // 전 부품 도킹 완료 (지면 착지)
           armROfsX = 0; armROfsY = 0;
           armLOfsX = 0; armLOfsY = 0;
           legOfsY = 0;
@@ -4021,33 +4387,33 @@
           ctx.fillStyle = '#000000';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-          // 거대 노란색 번개 벼락 2~3줄기 콰르르릉!
-          const flashAlpha = Math.sin(t * 26) > 0 ? 1.0 : 0.5;
+          // 거대 황금 번개 벼락 콰르르릉!
+          const flashAlpha = Math.sin(t * 26) > 0 ? 1.0 : 0.55;
           ctx.strokeStyle = `rgba(250, 204, 21, ${flashAlpha})`;
           ctx.shadowColor = '#ffffff';
-          ctx.shadowBlur = 35;
-          ctx.lineWidth = 7;
+          ctx.shadowBlur = 38;
+          ctx.lineWidth = 8;
 
-          // 메인 벼락 1
+          // 메인 벼락 1 (좌측)
           ctx.beginPath();
-          ctx.moveTo(centerX - 190, 0);
-          ctx.lineTo(centerX - 145, 95);
-          ctx.lineTo(centerX - 220, 170);
-          ctx.lineTo(centerX - 135, 250);
-          ctx.lineTo(centerX - 170, groundY);
+          ctx.moveTo(centerX - 210, 0);
+          ctx.lineTo(centerX - 155, 95);
+          ctx.lineTo(centerX - 235, 175);
+          ctx.lineTo(centerX - 145, 255);
+          ctx.lineTo(centerX - 190, groundY);
           ctx.stroke();
 
-          // 메인 벼락 2
+          // 메인 벼락 2 (우측)
           ctx.beginPath();
-          ctx.moveTo(centerX + 170, 0);
-          ctx.lineTo(centerX + 220, 115);
-          ctx.lineTo(centerX + 145, 195);
-          ctx.lineTo(centerX + 240, 280);
-          ctx.lineTo(centerX + 185, groundY);
+          ctx.moveTo(centerX + 190, 0);
+          ctx.lineTo(centerX + 235, 115);
+          ctx.lineTo(centerX + 155, 195);
+          ctx.lineTo(centerX + 250, 280);
+          ctx.lineTo(centerX + 195, groundY);
           ctx.stroke();
 
           // 중앙 굵은 코어 벼락
-          ctx.lineWidth = 9;
+          ctx.lineWidth = 10;
           ctx.strokeStyle = `rgba(255, 255, 255, ${flashAlpha})`;
           ctx.beginPath();
           ctx.moveTo(centerX + 25, 0);
@@ -4061,137 +4427,184 @@
         // -----------------------------------------------------------------
         // [KAITEN FX Mk.0 인게임 정품 실체 렌더러 (100% 동일 모델 & 1.45x 스케일)]
         // -----------------------------------------------------------------
+        const renderBaseY = (state === 'sky_fall' || state === 'docking') ? (centerY + 60) : groundY;
+
         ctx.save();
-        ctx.translate(centerX, groundY + bodyOfsY);
+        ctx.translate(centerX, renderBaseY + bodyOfsY);
         ctx.scale(1.45, 1.45); // 인게임 실전 KAITEN FX Mk.0와 100% 동일한 1.45배 거대 스케일
 
-        // (0) 지면 접지 그림자
-        if (bodyOfsY > -60) {
+        // [시그니처 위압 포즈 여부]: 사진 포즈(양 주먹 불끈 쥐고 전방으로 뻗은 포즈)
+        const isSignaturePose = ['eye_flash_pose', 'lightning_strike', 'boss_title'].includes(state);
+
+        // (0) 지면 접지 그림자 및 착지 크레이터
+        if (state !== 'sky_fall' && state !== 'docking') {
           ctx.save();
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
           ctx.beginPath();
-          ctx.ellipse(0, 0, 90, 16, 0, 0, Math.PI * 2);
+          ctx.ellipse(0, 0, 110, 18, 0, 0, Math.PI * 2);
           ctx.fill();
+
+          // 지면 착지 균열 & 충격 연기 (eye_flash_pose 초반)
+          if (state === 'eye_flash_pose' && t < 0.6) {
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 2.5;
+            for (let a = 0; a < 6; a++) {
+              const crAng = (a / 6) * Math.PI * 2;
+              ctx.beginPath();
+              ctx.moveTo(Math.cos(crAng) * 35, Math.sin(crAng) * 8);
+              ctx.lineTo(Math.cos(crAng) * 85, Math.sin(crAng) * 15);
+              ctx.stroke();
+            }
+          }
           ctx.restore();
         }
 
-        // (1) 양쪽 다리 [계란 오른다리 & 김 왼다리]
-        // 1-A. 오른다리 (옐로우 계란초밥 - 고관절 ➔ 계란 아머 ➔ 검은 김 띠 ➔ 게타 나막신)
+        // (1) 양쪽 다리 [유저 사진 고증: 화면 좌측 옐로 계란 & 화면 우측 블랙 군함말이, A자형 와이드 스탠스]
+        // 1-A. 화면 좌측 다리 (옐로우 계란초밥 - A자 스탠스로 비스듬히 접지)
         ctx.save();
-        ctx.translate(34, -86 + legOfsY);
+        ctx.translate(-44, -86 + legOfsY);
+        if (isSignaturePose) {
+          ctx.rotate(-0.11); // 와이드 A-Frame 스탠스 각도
+        }
         // 고관절 연결 조인트
         ctx.fillStyle = '#0f172a';
         ctx.fillRect(-14, -62, 28, 22);
         // 계란말이 장갑 (인게임 정품 크기 및 배색)
         ctx.fillStyle = '#eab308';
-        ctx.fillRect(-20, -42, 40, 80);
+        ctx.fillRect(-22, -42, 44, 80);
         ctx.strokeStyle = '#0f172a';
         ctx.lineWidth = 2.2;
-        ctx.strokeRect(-20, -42, 40, 80);
+        ctx.strokeRect(-22, -42, 44, 80);
         // 검은 김 띠
         ctx.fillStyle = '#0f172a';
-        ctx.fillRect(-20, -10, 40, 14);
+        ctx.fillRect(-22, -10, 44, 15);
         // 화이트 메카 슈즈
         ctx.fillStyle = '#f8fafc';
-        ctx.fillRect(-18, 38, 36, 20);
+        ctx.fillRect(-20, 38, 40, 20);
         ctx.strokeStyle = '#0f172a';
-        ctx.strokeRect(-18, 38, 36, 20);
+        ctx.strokeRect(-20, 38, 40, 20);
         // 게타 나막신 밑창
         ctx.fillStyle = '#0f172a';
-        ctx.fillRect(-22, 64, 44, 12);
+        ctx.fillRect(-26, 64, 52, 12);
         ctx.fillStyle = '#ca8a04';
-        ctx.fillRect(-20, 58, 40, 10);
+        ctx.fillRect(-24, 58, 48, 10);
         ctx.strokeStyle = '#0f172a';
-        ctx.strokeRect(-20, 58, 40, 10);
-        // 게타 나무 굽 (바닥 접지 높이)
+        ctx.strokeRect(-24, 58, 48, 10);
+        // 게타 나무 굽 (바닥 접지)
         ctx.fillStyle = '#78350f';
-        ctx.fillRect(-14, 76, 8, 10);
-        ctx.fillRect(10, 76, 8, 10);
+        ctx.fillRect(-16, 76, 9, 10);
+        ctx.fillRect(11, 76, 9, 10);
         ctx.restore();
 
-        // 1-B. 왼다리 (블랙 군함말이 - 고관절 ➔ 군함 아머 ➔ 연어알 캡슐 ➔ 황금 파도 ➔ 게타 나막신)
+        // 1-B. 화면 우측 다리 (블랙 군함말이 - A자 스탠스 & 이쿠라 캡슐 & 황금 파도 & 게타)
         ctx.save();
-        ctx.translate(-34, -86 + legOfsY);
+        ctx.translate(44, -86 + legOfsY);
+        if (isSignaturePose) {
+          ctx.rotate(0.11); // 와이드 A-Frame 스탠스 각도
+        }
         // 고관절 연결 조인트
         ctx.fillStyle = '#0f172a';
         ctx.fillRect(-14, -62, 28, 22);
         // 군함말이 아머
         ctx.fillStyle = '#0f172a';
-        ctx.fillRect(-20, -42, 40, 80);
+        ctx.fillRect(-22, -42, 44, 80);
         ctx.strokeStyle = '#334155';
         ctx.lineWidth = 2.2;
-        ctx.strokeRect(-20, -42, 40, 80);
+        ctx.strokeRect(-22, -42, 44, 80);
         // 황금빛 파도 아크 문양
         ctx.strokeStyle = '#facc15';
         ctx.lineWidth = 2.5;
         ctx.beginPath();
-        ctx.arc(-20, -10, 24, -Math.PI * 0.45, Math.PI * 0.45);
+        ctx.arc(22, -10, 24, Math.PI * 0.55, Math.PI * 1.45);
         ctx.stroke();
-        // 이쿠라 연어알 캡슐
+        // 이쿠라 연어알 캡슐 2개 (원작 사진 고증)
         ctx.fillStyle = '#dc2626';
         ctx.beginPath();
-        ctx.roundRect(-10, -36, 9, 68, 4);
-        ctx.roundRect(1, -36, 9, 68, 4);
+        ctx.roundRect(-8, -36, 10, 68, 5);
+        ctx.roundRect(4, -36, 10, 68, 5);
         ctx.fill();
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-10, -10, 26, 12); // 캡슐 고정 밴드
         // 화이트 메카 슈즈
         ctx.fillStyle = '#f8fafc';
-        ctx.fillRect(-18, 38, 36, 20);
+        ctx.fillRect(-20, 38, 40, 20);
         ctx.strokeStyle = '#0f172a';
-        ctx.strokeRect(-18, 38, 36, 20);
+        ctx.strokeRect(-20, 38, 40, 20);
         // 게타 나막신 밑창
         ctx.fillStyle = '#0f172a';
-        ctx.fillRect(-22, 64, 44, 12);
+        ctx.fillRect(-26, 64, 52, 12);
         ctx.fillStyle = '#ca8a04';
-        ctx.fillRect(-20, 58, 40, 10);
+        ctx.fillRect(-24, 58, 48, 10);
         ctx.strokeStyle = '#0f172a';
-        ctx.strokeRect(-20, 58, 40, 10);
+        ctx.strokeRect(-24, 58, 48, 10);
         // 게타 나무 굽
         ctx.fillStyle = '#78350f';
-        ctx.fillRect(-14, 76, 8, 10);
-        ctx.fillRect(10, 76, 8, 10);
+        ctx.fillRect(-16, 76, 9, 10);
+        ctx.fillRect(11, 76, 9, 10);
         ctx.restore();
 
         // (2) 몸통 + 머리 (처음부터 일체로 결합된 상태!)
-        // 2-A. 몸통 코어 (레드 참치 - 부채꼴 흰색 원호 문양 & 중심 원형 엠블럼)
+        // 2-A. 몸통 코어 (레드 참치 - 사진 고증: 부채꼴 흰색 원호 문양 & 중심 원형 엠블럼 버클)
         ctx.save();
         ctx.translate(0, -160);
+        // 하단 골반 프레임
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-44, 21, 88, 18);
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(-38, 24, 76, 12);
+
+        // 하부 허리/벨트 붉은 블록 & 원형 버클 (사진 고증: 중앙 하얀 원 안에 붉은 링)
         ctx.fillStyle = '#dc2626';
-        ctx.fillRect(-48, -55, 96, 76);
-        ctx.strokeStyle = '#0f172a';
-        ctx.lineWidth = 2.5;
-        ctx.strokeRect(-48, -55, 96, 76);
-        // 참치 살결 측면 음영
-        ctx.fillStyle = '#b91c1c';
-        ctx.fillRect(-48, -55, 14, 76);
-        ctx.fillRect(34, -55, 14, 76);
-        // 상반신 흰색 부채꼴 원호 문양 3중선
-        ctx.strokeStyle = '#f8fafc';
-        ctx.lineWidth = 4.5;
-        for (let r = 0; r < 3; r++) {
-          ctx.beginPath();
-          ctx.arc(0, -10, 24 + r * 14, Math.PI * 0.85, Math.PI * 2.15);
-          ctx.stroke();
-        }
-        // 중앙 분할선
+        ctx.fillRect(-46, -14, 92, 36);
         ctx.strokeStyle = '#0f172a';
         ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(0, -55);
-        ctx.lineTo(0, 21);
-        ctx.stroke();
-        // 하단 중심 원형 엠블럼 버클
+        ctx.strokeRect(-46, -14, 92, 36);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-46, -6, 14, 22);
+        ctx.fillRect(32, -6, 14, 22);
+
+        // 중앙 대형 원형 엠블럼
         ctx.fillStyle = '#f8fafc';
         ctx.beginPath();
-        ctx.arc(0, 8, 14, 0, Math.PI * 2);
+        ctx.arc(0, 4, 15, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = '#dc2626';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 3.5;
         ctx.stroke();
-        // 골반 하부 프레임
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(-42, 21, 84, 18);
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(-36, 24, 72, 12);
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(0, 4, 7, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 상부 가슴 블록 (사진 고증: 좌우 2분할 도어 + 3중 부채꼴 흰색 원호 문양)
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(-52, -74, 104, 62);
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(-52, -74, 104, 62);
+
+        // 참치 살결 측면 음영
+        ctx.fillStyle = '#b91c1c';
+        ctx.fillRect(-52, -74, 12, 62);
+        ctx.fillRect(40, -74, 12, 62);
+
+        // 상반신 흰색 부채꼴 원호 문양 3중선 (사진 고증: 가슴 전면을 덮는 화이트 아크)
+        ctx.strokeStyle = '#f8fafc';
+        ctx.lineWidth = 5;
+        for (let r = 0; r < 3; r++) {
+          ctx.beginPath();
+          ctx.arc(0, -22, 22 + r * 13, Math.PI * 0.85, Math.PI * 2.15);
+          ctx.stroke();
+        }
+
+        // 중앙 분할 세로선
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(0, -74);
+        ctx.lineTo(0, -12);
+        ctx.stroke();
         ctx.restore();
 
         // 2-B. 머리 (참치 셰프 투구 & 안광 플래시)
@@ -4200,7 +4613,7 @@
         // 목 조인트
         ctx.fillStyle = '#0f172a';
         ctx.fillRect(-12, 10, 24, 10);
-        // 투구 돔
+        // 투구 돔 (셰프 모자 형태)
         ctx.fillStyle = '#f8fafc';
         ctx.beginPath();
         ctx.arc(0, -6, 22, Math.PI, 0);
@@ -4219,10 +4632,10 @@
 
         // 눈 바이저 & 안광 플래시
         const isEyeActive = ['eye_flash_pose', 'lightning_strike', 'boss_title'].includes(state);
-        ctx.fillStyle = isEyeActive ? '#ffffff' : '#38bdf8';
+        ctx.fillStyle = isEyeActive ? '#ffffff' : '#facc15';
         if (isEyeActive) {
           ctx.shadowColor = '#00ffff';
-          ctx.shadowBlur = 25;
+          ctx.shadowBlur = 28;
         }
         ctx.fillRect(-11, -2, 9, 5);
         ctx.fillRect(2, -2, 9, 5);
@@ -4231,107 +4644,188 @@
         // 안광 십자광 크로스 이펙트 ('eye_flash_pose', 'lightning_strike', 'boss_title')
         if (isEyeActive) {
           ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 3;
+          ctx.lineWidth = 3.5;
           ctx.beginPath();
-          ctx.moveTo(-18, 0.5); ctx.lineTo(2, 0.5);
-          ctx.moveTo(-7, -9); ctx.lineTo(-7, 10);
-          ctx.moveTo(2, 0.5); ctx.lineTo(22, 0.5);
-          ctx.moveTo(7, -9); ctx.lineTo(7, 10);
+          ctx.moveTo(-22, 0.5); ctx.lineTo(2, 0.5);
+          ctx.moveTo(-7, -12); ctx.lineTo(-7, 13);
+          ctx.moveTo(2, 0.5); ctx.lineTo(26, 0.5);
+          ctx.moveTo(7, -12); ctx.lineTo(7, 13);
           ctx.stroke();
         }
         ctx.restore();
 
-        // (3) 양쪽 팔 [핑크 새우 오른팔 & 그린 오이/실드 왼팔]
-        // [시그니처 위압 포즈]: 사진 포즈(양 주먹 쥐고 전방으로 뻗은 위압 포즈) 완벽 재현!
-        const isSignaturePose = ['eye_flash_pose', 'lightning_strike', 'boss_title'].includes(state);
-
-        // 3-A. 오른팔 (핑크 새우)
+        // (3) 양쪽 팔 [유저 사진 고증: 화면 좌측 핑크 새우 / 화면 우측 그린 롤+접시쉴드, 양 주먹 불끈 쥐고 전방 돌출 포즈!]
+        // 3-A. 화면 좌측 팔 (핑크 새우 오른완)
         ctx.save();
-        ctx.translate(68 + armROfsX, -165 + armROfsY);
-        if (isSignaturePose) {
-          ctx.rotate(-0.18); // 팔꿈치를 구부리며 주먹을 카메라 쪽으로 내민 각도
-        }
-        // 새우 꼬리 지느러미
+        ctx.translate(-76 + armROfsX, -170 + armROfsY);
+
+        // 새우 꼬리 지느러미 (어깨 뒤쪽/위로 솟구침)
         ctx.fillStyle = '#f472b6';
         ctx.beginPath();
-        ctx.moveTo(-10, -28);
-        ctx.quadraticCurveTo(10, -56, 32, -48);
-        ctx.quadraticCurveTo(16, -26, 4, -20);
+        ctx.moveTo(6, -14);
+        ctx.quadraticCurveTo(-26, -48, -44, -32);
+        ctx.quadraticCurveTo(-34, -10, -6, -4);
         ctx.closePath();
         ctx.fill();
         ctx.strokeStyle = '#0f172a';
         ctx.lineWidth = 2;
         ctx.stroke();
-        // 상완 화이트 아머
+
+        // 상완 화이트 아머 블록
         ctx.fillStyle = '#f8fafc';
-        ctx.fillRect(-14, -20, 32, 28);
-        ctx.strokeRect(-14, -20, 32, 28);
-        // 전완 개틀링 하우징
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(-12, 10, 34, 30);
+        ctx.fillRect(-16, -18, 32, 28);
         ctx.strokeStyle = '#0f172a';
-        ctx.strokeRect(-12, 10, 34, 30);
-        // 전방을 향해 불끈 쥔 거대 주먹
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(-14, 40, 38, 24);
-        ctx.strokeStyle = '#334155';
         ctx.lineWidth = 2;
-        ctx.strokeRect(-14, 40, 38, 24);
-        // 주먹 화이트 너클 플레이트
-        ctx.fillStyle = '#f8fafc';
-        ctx.fillRect(-12, 42, 34, 7);
+        ctx.strokeRect(-16, -18, 32, 28);
+
+        if (isSignaturePose) {
+          // [유저 사진 완벽 고증]: 팔꿈치를 바깥으로 90도 꺾고 전완과 거대 주먹을 카메라 정면을 향해 불끈 내밈 (원근 투시)
+          ctx.translate(-14, 20);
+          ctx.rotate(0.18); // 팔꿈치 외측 전개 각도
+
+          // 전완 커프 (다크 네이비 + 화이트 베벨 플레이트)
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(-22, -14, 44, 38);
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(-22, -14, 44, 38);
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillRect(-24, -12, 6, 34);
+          ctx.fillRect(18, -12, 6, 34);
+
+          // [핵심]: 카메라 정면을 향해 불끈 쥔 3D 거대 주먹 (너클 플레이트 + 손가락 마디)
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.roundRect(-26, 22, 52, 40, 8);
+          ctx.fill();
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2.2;
+          ctx.stroke();
+
+          // 화이트 너클 플레이트 (전면 4마디)
+          ctx.fillStyle = '#f8fafc';
+          ctx.beginPath();
+          ctx.roundRect(-23, 25, 46, 12, 4);
+          ctx.fill();
+          ctx.strokeStyle = '#1e293b';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          for (let f = 1; f < 4; f++) {
+            ctx.moveTo(-23 + f * 11.5, 25);
+            ctx.lineTo(-23 + f * 11.5, 37);
+          }
+          ctx.stroke();
+
+          // 쥐어쥔 엄지손가락 하단 마디
+          ctx.fillStyle = '#1e293b';
+          ctx.beginPath();
+          ctx.roundRect(-18, 42, 36, 15, 5);
+          ctx.fill();
+        } else {
+          // 비행 도킹 중 대기 자세
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(-12, 10, 32, 28);
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(-14, 38, 36, 22);
+        }
         ctx.restore();
 
-        // 3-B. 왼팔 (그린 오이 & 회전초밥 접시 쉴드)
+        // 3-B. 화면 우측 팔 (그린 캘리포니아 롤 좌완 + 회전초밥 원형 접시 쉴드)
         ctx.save();
-        ctx.translate(-68 + armLOfsX, -165 + armLOfsY);
-        if (isSignaturePose) {
-          ctx.rotate(0.18); // 대칭으로 팔꿈치 굽혀 주먹 전방 전개
-        }
-        // 오이 롤 어깨 블록
+        ctx.translate(76 + armLOfsX, -170 + armLOfsY);
+
+        // 캘리포니아 롤 어깨 블록 (선명한 초록 외장 + 롤 단면)
         ctx.fillStyle = '#16a34a';
-        ctx.fillRect(-18, -26, 36, 30);
+        ctx.fillRect(-16, -18, 32, 28);
         ctx.strokeStyle = '#0f172a';
         ctx.lineWidth = 2;
-        ctx.strokeRect(-18, -26, 36, 30);
-        // 오이 심 단면
-        ctx.fillStyle = '#86efac';
-        ctx.beginPath();
-        ctx.arc(0, -11, 8, 0, Math.PI * 2);
-        ctx.fill();
-        // 상완 화이트 아머
+        ctx.strokeRect(-16, -18, 32, 28);
+
+        // 롤 단면 (하얀 밥 + 연어 핑크 + 계란 옐로 + 오이 그린 사각 패턴)
         ctx.fillStyle = '#f8fafc';
-        ctx.fillRect(-18, 6, 32, 26);
-        ctx.strokeStyle = '#0f172a';
-        ctx.strokeRect(-18, 6, 32, 26);
-        // 전완 하우징
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(-22, 12, 34, 28);
-        ctx.strokeRect(-22, 12, 34, 28);
-        // 회전초밥 원형 접시 쉴드 (팔 외측에 장착)
-        ctx.save();
-        ctx.translate(-24, 20);
-        ctx.fillStyle = '#f1f5f9';
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 22, 42, -0.15, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#1e3a8a';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-        ctx.fillStyle = '#eab308';
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 6, 12, -0.15, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-        // 전방을 향해 불끈 쥔 거대 주먹
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(-24, 40, 38, 24);
-        ctx.strokeStyle = '#334155';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(-24, 40, 38, 24);
-        // 주먹 화이트 너클 플레이트
-        ctx.fillStyle = '#f8fafc';
-        ctx.fillRect(-22, 42, 34, 7);
+        ctx.fillRect(-10, -14, 20, 20);
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(-6, -10, 6, 12);
+        ctx.fillStyle = '#f472b6';
+        ctx.fillRect(1, -10, 7, 6);
+        ctx.fillStyle = '#facc15';
+        ctx.fillRect(1, -4, 7, 6);
+
+        if (isSignaturePose) {
+          // [유저 사진 완벽 고증]: 팔꿈치를 바깥으로 90도 꺾고 전완과 거대 주먹을 카메라 정면을 향해 불끈 내밈
+          ctx.translate(14, 20);
+          ctx.rotate(-0.18); // 팔꿈치 외측 전개 각도
+
+          // 전완 커프 (다크 네이비 + 화이트 베벨 플레이트)
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(-22, -14, 44, 38);
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(-22, -14, 44, 38);
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillRect(-24, -12, 6, 34);
+          ctx.fillRect(18, -12, 6, 34);
+
+          // [원작 고증]: 전완 외측에 장착된 회전초밥 원형 접시 쉴드 (사진 각도 재현)
+          ctx.save();
+          ctx.translate(28, 4);
+          ctx.rotate(0.24);
+          // 접시 외곽 네이비 림
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 18, 42, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // 접시 세라믹 화이트 면
+          ctx.fillStyle = '#f8fafc';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 14, 36, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // 골드 림 테두리
+          ctx.strokeStyle = '#ca8a04';
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+          ctx.restore();
+
+          // [핵심]: 카메라 정면을 향해 불끈 쥔 3D 거대 주먹 (너클 플레이트 + 손가락 마디)
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.roundRect(-26, 22, 52, 40, 8);
+          ctx.fill();
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2.2;
+          ctx.stroke();
+
+          // 화이트 너클 플레이트 (전면 4마디)
+          ctx.fillStyle = '#f8fafc';
+          ctx.beginPath();
+          ctx.roundRect(-23, 25, 46, 12, 4);
+          ctx.fill();
+          ctx.strokeStyle = '#1e293b';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          for (let f = 1; f < 4; f++) {
+            ctx.moveTo(-23 + f * 11.5, 25);
+            ctx.lineTo(-23 + f * 11.5, 37);
+          }
+          ctx.stroke();
+
+          // 쥐어쥔 엄지손가락 하단 마디
+          ctx.fillStyle = '#1e293b';
+          ctx.beginPath();
+          ctx.roundRect(-18, 42, 36, 15, 5);
+          ctx.fill();
+        } else {
+          // 비행 도킹 중 대기 자세
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(-20, 10, 32, 28);
+          // 접시 쉴드
+          ctx.fillStyle = '#f8fafc';
+          ctx.beginPath();
+          ctx.ellipse(14, 20, 14, 32, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(-22, 38, 36, 22);
+        }
         ctx.restore();
 
         ctx.restore(); // 로봇 끝
@@ -5391,28 +5885,14 @@
         if (kScreenX + k.size > -50 && kScreenX < canvas.width + 50) {
           ctx.save();
           if (k.isDead) {
-            // [무력화 상태]: 바닥에 쓰러진 다운 자세 및 반투명 그레이 처리
-            ctx.globalAlpha = 0.45;
-            const downedHeight = k.size * 0.32;
-            const downedY = groundY - downedHeight;
-
-            // 그림자
-            ctx.fillStyle = 'rgba(0,0,0,0.2)';
-            ctx.beginPath();
-            ctx.ellipse(kScreenX + k.size / 2, groundY, k.size * 0.6, 5, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            // 쓰러진 몸체 (바닥에 납작하게 누운 직사각형)
-            ctx.fillStyle = '#475569';
-            ctx.fillRect(kScreenX, downedY, k.size, downedHeight);
-            ctx.strokeStyle = '#0f172a';
-            ctx.lineWidth = 1.5;
-            ctx.strokeRect(kScreenX, downedY, k.size, downedHeight);
+            // [무력화 상태]: 원작 고증 바닥에 쓰러진 다운 자세 (반투명)
+            ctx.globalAlpha = 0.55;
+            drawAuthenticKaitenzerBody(k, kScreenX, groundY - k.size, { pose: 'downed' });
 
             // 라벨: [무력화]
             ctx.fillStyle = '#94a3b8';
             ctx.font = 'bold 10px sans-serif';
-            ctx.fillText(`${k.name} [무력화]`, kScreenX - 4, downedY - 6);
+            ctx.fillText(`${k.name} [무력화]`, kScreenX - 4, groundY - 18);
           } else {
             // [생존 전투 상태]
             // 점프 높이에 따른 지면 그림자 축소
@@ -5422,12 +5902,8 @@
             ctx.ellipse(kScreenX + k.size / 2, groundY, k.size * 0.6 * jumpScale, 6 * jumpScale, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            // 사각형 몸체 (공중 점프 시 떠오름)
-            ctx.fillStyle = k.color;
-            ctx.fillRect(kScreenX, kScreenY, k.size, k.size);
-            ctx.strokeStyle = k.border || '#000000';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(kScreenX, kScreenY, k.size, k.size);
+            // [원작 고증 본체 렌더링]: 접시 가면 + 머리 위 초밥 + 전대 슈트 + 화이트 벨트 & 원형 버클!
+            drawAuthenticKaitenzerBody(k, kScreenX, kScreenY, { pose: 'idle' });
 
             // 스킬 오라
             if (k.isActive) {
