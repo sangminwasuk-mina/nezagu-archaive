@@ -523,7 +523,8 @@
     let phase1Triggered = true;
     let phase2Triggered = true;
 
-    // 카이텐저 1페이즈 20% 긴급 후퇴 및 2페이즈 전환 상태 변수
+    // 카이텐저 1페이즈 격파 및 2페이즈 암전 전환 상태 변수
+    let phase1Defeated = false;
     let isPhase1Retreating = false;
     let phase1RetreatTimer = 0;
     let isPhase2Active = false;

@@ -1306,8 +1306,8 @@
           hpDamageEl.style.width = `${window._smoothDamagePct.toFixed(1)}%`;
         }
 
-        // 3. 우측 하단 3칸 사선 ATG 게이지 블록 (실시간 연속 충전 반영)
-        const atgVal = isP2 ? (kaitenFx.atg || 0) : (window.phase1Atg || 0);
+        // 3. 우측 하단 3칸 사선 ATG 게이지 블록 (2페이즈에만 실시간 연속 충전)
+        const atgVal = isP2 ? (kaitenFx.atg || 0) : 0;
         const fill1 = Math.min(100, Math.max(0, (atgVal / 33.33) * 100));
         const fill2 = Math.min(100, Math.max(0, ((atgVal - 33.33) / 33.33) * 100));
         const fill3 = Math.min(100, Math.max(0, ((atgVal - 66.66) / 33.34) * 100));

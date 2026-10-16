@@ -603,6 +603,7 @@
 
       phase1Triggered = true;
       phase2Triggered = true;
+      phase1Defeated = false;
       isPhase1Retreating = false;
       phase1RetreatTimer = 0;
       isPhase2Active = false;
@@ -4601,63 +4602,33 @@
       posDisplay.innerText = `X: ${Math.round(player.x)}`;
 
       // 1-1. 카이텐저 1페이즈: 5인 전원 개전 즉시 참전 상태 유지 (순차 증원 불필요)
-      if (!isPhase1Retreating && !isPhase2Active) {
-        window.phase1Atg = Math.min(100, (window.phase1Atg || 0) + dt * (100 / 48)); // 1페이즈 실시간 연속 ATG 충전 (48초 기준 100%)
-      }
+      // (유저 요청: 1페이즈에서는 ATG를 채우지 않음)
+      window.phase1Atg = 0;
 
-      // 1-2-B. 카이텐저 1페이즈 단일 공유체력 5,000,000 전소(0 이하) 시 후퇴 및 2페이즈 전환 판정
+      // 1-2-B. 카이텐저 1페이즈 단일 공유체력 5,000,000 전소(0 이하) 시 즉시 화면 암전 및 2페이즈 전환 시퀀스
       const totalKaitenHp = kaitenzers.reduce((sum, k) => sum + (k.isDead ? 0 : Math.max(0, k.hp)), 0);
-      const totalKaitenMaxHp = kaitenzers.reduce((sum, k) => sum + k.maxHp, 0) || 5000000;
 
-      // [도주 발동 조건]: 5인이 공유하는 전체 체력 0 이하 (5,000,000 HP 완전 소진) 도달 시 2페이즈 합체 개시
-      if (!isPhase1Retreating && !isPhase2Active && totalKaitenHp <= 0) {
-        isPhase1Retreating = true;
-        phase1RetreatTimer = 4.0; // 4초간 긴급 후퇴 시퀀스 진행
+      if (!phase1Defeated && !isPhase2Active && (window.phaseTransitionState === 'none' || !window.phaseTransitionState) && totalKaitenHp <= 0) {
+        phase1Defeated = true;
+        isPhase1Retreating = false;
 
-        // 전장에 긴급 경보 출력
-        addDamageText(canvas.width / 2 + camera.x, 80, '🚨 [비상 경보] 카이텐저 연합 전원 후퇴 명령 발령!', '#ef4444');
+        // 전장에 1회성 승리 알림 텍스트 출력
+        addDamageText(canvas.width / 2 + camera.x, 80, '🎉 PHASE 1 요격 성공! 카이텐저 전원 격파 완료!', '#10b981');
         addDamageText(canvas.width / 2 + camera.x, 120, '⚡ "전원 퇴각! 최종 결전 병기 카이텐 FX Mk.0를 가동하라!"', '#facc15');
 
-        // 스폰된 모든 멤버 후퇴 상태로 전환 (모든 공격/스킬 즉시 취소)
+        // 카이텐저 전원 즉시 모든 공격/스킬 해제 및 정지
         kaitenzers.forEach(k => {
-          if (k.isSpawned) {
-            k.isRetreating = true;
-            k.isActive = false;
-            k.isSkillSealed = true;
-            if (k.id === 'yellow') k.laserState = 'none';
-            if (k.id === 'green') k.isOverheated = false;
-            addDamageText(k.x + k.size / 2, groundY - (k.jumpY || 0) - k.size - 25, '💨 [전력 후퇴!]', '#38bdf8');
-          }
-        });
-      }
-
-      // 후퇴 진행 처리 및 화면 암전 전환 연계
-      if (isPhase1Retreating) {
-        phase1RetreatTimer -= dt;
-        let allEscaped = true;
-
-        kaitenzers.forEach(k => {
-          if (k.isRetreating && !k.isDead) {
-            // 오른쪽 맵 바깥으로 전력 질주
-            k.x += 650 * dt;
-            if (k.x < WORLD_WIDTH + 150) {
-              allEscaped = false;
-            }
-          }
+          k.isDead = true;
+          k.isActive = false;
+          k.isSkillSealed = true;
+          if (k.id === 'yellow') k.laserState = 'none';
+          if (k.id === 'green') k.isOverheated = false;
         });
 
-        // 4초가 경과했거나 모든 멤버가 맵 밖으로 벗어난 경우 1페이즈 클리어 및 화면 암전 전환 시작
-        if (allEscaped || phase1RetreatTimer <= 0) {
-          isPhase1Retreating = false;
-          window.phaseTransitionState = 'fade_out';
-          window.phaseTransitionTimer = 1.0;
-          window.phaseTransitionAlpha = 0;
-          kaitenzers.forEach(k => {
-            k.isSpawned = false;
-            k.isDead = true;
-            k.isRetreating = false;
-          });
-        }
+        // [화면 암전 시퀀스 1회성 발동]
+        window.phaseTransitionState = 'fade_out';
+        window.phaseTransitionTimer = 1.0;
+        window.phaseTransitionAlpha = 0;
       }
 
       // 1-2-C. [1페이즈 -> 2페이즈 화면 암전 전환 상태 머신]
