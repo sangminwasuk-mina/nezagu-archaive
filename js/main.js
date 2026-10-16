@@ -4900,10 +4900,11 @@
 
       // 3. 카이텐저 무기별 특화 공격 로직 (게스트는 호스트의 탄환 동기화를 받으므로 발사 스킵!)
       if (!(currentMode === 'duo' && myRole === 'guest_striker')) {
-        const black = kaitenzers[1];
-        const yellow = kaitenzers[2];
-        const green = kaitenzers[3];
-        const pink = kaitenzers[4];
+        const red = kaitenzers.find(k => k.id === 'red') || kaitenzers[0];
+        const black = kaitenzers.find(k => k.id === 'black') || kaitenzers[1];
+        const yellow = kaitenzers.find(k => k.id === 'yellow') || kaitenzers[2];
+        const green = kaitenzers.find(k => k.id === 'green') || kaitenzers[3];
+        const pink = kaitenzers.find(k => k.id === 'pink') || kaitenzers[4];
 
         // --- [레드: AR 3점사] ---
         if (red.isSpawned && !red.isDead && !red.isRetreating && !red.isFrozen) {
