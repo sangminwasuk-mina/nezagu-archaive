@@ -5,8 +5,8 @@
     const player = {
       x: 350,
       y: 0,
-      width: 44,
-      height: 44,
+      width: 36,
+      height: 48,
       color: '#0284c7',
       facing: 1, // 1: 오른쪽, -1: 왼쪽
       baseMaxHp: 65000,
@@ -231,8 +231,8 @@
       role: 'guest', // 'host' or 'guest'
       x: 450,
       y: 0,
-      width: 44,
-      height: 44,
+      width: 36,
+      height: 48,
       color: '#ef4444', // 기본 2P 레드 (1P는 블루)
       facing: 1,
       baseMaxHp: 65000,

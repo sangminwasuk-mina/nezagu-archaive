@@ -2269,18 +2269,69 @@
         return;
       }
 
-      // [일반 스탠딩 / 점프 / 컷씬 포징 자세]
-      const bodyTop = screenY + 12;
-      const bodyH = s - 12;
+      // [유저 요청]: 카이텐저 다리 보행/질주 애니메이션 & 몸통 반동
+      const isMoving = Math.abs(k.vx || 0) > 0.1 || k.isRetreating || (options.pose === 'walking') || (options.pose === 'jump');
+      const isJumping = (k.jumpY || 0) > 4;
+      const tSeed = options.timer !== undefined ? options.timer : (performance.now() * 0.008);
+      const walkCycle = tSeed * (k.isRetreating ? 16 : 11);
 
-      // 1. 하체 슈트 및 다리 (2갈래)
+      let legLRot = 0;
+      let legRRot = 0;
+      let torsoBob = 0;
+
+      if (isJumping) {
+        // 공중 점프: 다리를 살짝 뒤로 젖히는 역동적 포즈
+        legLRot = -0.32;
+        legRRot = 0.22;
+      } else if (isMoving) {
+        // 보행/돌진: 좌우 다리가 앞뒤로 교차하며 스윙
+        const swingAmp = k.isRetreating ? 0.52 : 0.40;
+        legLRot = Math.sin(walkCycle) * swingAmp;
+        legRRot = -legLRot;
+        torsoBob = Math.abs(Math.sin(walkCycle)) * 2.2;
+      } else {
+        // 대기 상태: 미세하고 자연스러운 호흡 반동
+        torsoBob = Math.sin(tSeed * 1.5 + (k.id ? k.id.charCodeAt(0) : 0)) * 0.8;
+      }
+
+      const bodyTop = screenY + 12 - torsoBob;
+      const hipY = screenY + 22 - torsoBob;
+      const legLen = s - 22;
+
+      // 1. 하체 슈트 및 다리 (2갈래 역동적 보행 애니메이션 + 화이트 전대 부츠)
+      // 좌측 다리 (Left Leg)
+      ctx.save();
+      ctx.translate(centerX - 6, hipY);
+      ctx.rotate(legLRot);
       ctx.fillStyle = k.color;
-      ctx.fillRect(centerX - 10, screenY + 22, 8, s - 22);
-      ctx.fillRect(centerX + 2, screenY + 22, 8, s - 22);
+      ctx.fillRect(-4, 0, 8, legLen);
       ctx.strokeStyle = k.border || '#0f172a';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(centerX - 10, screenY + 22, 8, s - 22);
-      ctx.strokeRect(centerX + 2, screenY + 22, 8, s - 22);
+      ctx.lineWidth = 1.4;
+      ctx.strokeRect(-4, 0, 8, legLen);
+      // 화이트 전대 부츠
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-5, legLen - 5, 10, 5);
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-5, legLen - 5, 10, 5);
+      ctx.restore();
+
+      // 우측 다리 (Right Leg)
+      ctx.save();
+      ctx.translate(centerX + 6, hipY);
+      ctx.rotate(legRRot);
+      ctx.fillStyle = k.color;
+      ctx.fillRect(-4, 0, 8, legLen);
+      ctx.strokeStyle = k.border || '#0f172a';
+      ctx.lineWidth = 1.4;
+      ctx.strokeRect(-4, 0, 8, legLen);
+      // 화이트 전대 부츠
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-5, legLen - 5, 10, 5);
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-5, legLen - 5, 10, 5);
+      ctx.restore();
 
       // 2. 상체 슈트
       ctx.fillStyle = k.color;
@@ -2297,7 +2348,7 @@
       ctx.lineTo(centerX + 6, bodyTop);
       ctx.fill();
 
-      // 3. [유저 지정 핵심]: 허리 흰색 벨트 & 중앙 원형 버클
+      // 3. 허리 흰색 벨트 & 중앙 원형 버클
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(centerX - 12, bodyTop + 11, 24, 4);
       ctx.fillStyle = '#f8fafc';
@@ -2309,7 +2360,7 @@
       ctx.stroke();
 
       // 4. 머리 헬멧 돔 & [접시 가면]
-      const headCenterY = screenY + 5;
+      const headCenterY = bodyTop - 7;
       // 헬멧 뒤통수 (슈트 색상)
       ctx.fillStyle = k.color;
       ctx.beginPath();
@@ -4126,126 +4177,225 @@
         const cutIdx = cut.cutIndex || 0;
         ctx.save();
 
-        // 시네마틱 레터박스 상하 52px
-        ctx.fillStyle = '#050811';
-        ctx.fillRect(0, 0, canvas.width, 52);
-        ctx.fillRect(0, canvas.height - 52, canvas.width, 52);
+        // 1-A. [전체 화면 가득 채우는 폐허 전장 배경] (공중 부유감 100% 원천 차단!)
+        // 상단 어두운 밤하늘 & 붉은 연기
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, centerY);
+        skyGrad.addColorStop(0, '#090d16');
+        skyGrad.addColorStop(0.7, '#111827');
+        skyGrad.addColorStop(1, '#1e293b');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // [핵심 해결]: 실제 전장 아스팔트 지면 및 파괴 흔적/연기 렌더링 (공중 부유감 100% 제거!)
-        const cutGroundY = canvas.height - 110;
-        // 아스팔트 바닥
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(0, cutGroundY, canvas.width, canvas.height - 52 - cutGroundY);
-        ctx.strokeStyle = '#0f172a';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(0, cutGroundY);
-        ctx.lineTo(canvas.width, cutGroundY);
-        ctx.stroke();
-
-        // 아스팔트 균열선 & 파편
-        ctx.strokeStyle = '#0f172a';
-        ctx.lineWidth = 1.5;
-        for (let bx = 120; bx < canvas.width; bx += 180) {
-          ctx.beginPath();
-          ctx.moveTo(bx, cutGroundY);
-          ctx.lineTo(bx + 14, cutGroundY + 18);
-          ctx.lineTo(bx + 28, cutGroundY + 12);
-          ctx.stroke();
-          ctx.fillStyle = '#334155';
-          ctx.fillRect(bx + 35, cutGroundY + 8, 8, 5);
+        // 원거리 파괴된 빌딩 실루엣 (지평선 centerY - 35)
+        const horizonY = centerY - 35;
+        ctx.fillStyle = '#0f172a';
+        for (let b = 0; b < 12; b++) {
+          const bx = b * (canvas.width / 11);
+          const bw = 55 + (b % 4) * 25;
+          const bh = 50 + (b % 5) * 35;
+          ctx.fillRect(bx, horizonY - bh, bw, bh);
         }
 
-        // 지면에서 피어오르는 전장 연기
-        ctx.fillStyle = 'rgba(71, 85, 105, 0.35)';
-        for (let sm = 0; sm < 4; sm++) {
-          const smX = centerX - 180 + sm * 120 + Math.sin(t * 2 + sm) * 12;
+        // 1-B. [광활한 원근 아스팔트 고속도로 지면] (지평선 horizonY부터 바닥까지 완전히 채움)
+        const roadGrad = ctx.createLinearGradient(0, horizonY, 0, canvas.height);
+        roadGrad.addColorStop(0, '#1e293b');
+        roadGrad.addColorStop(0.3, '#172033');
+        roadGrad.addColorStop(1, '#0f172a');
+        ctx.fillStyle = roadGrad;
+        ctx.fillRect(0, horizonY, canvas.width, canvas.height - horizonY);
+
+        // 도로 원근 중앙 황색 복선 (지평선에서 바닥으로 뻗는 원근 차선)
+        ctx.strokeStyle = '#eab308';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.moveTo(centerX - 8, horizonY);
+        ctx.lineTo(centerX - 35, canvas.height);
+        ctx.moveTo(centerX + 8, horizonY);
+        ctx.lineTo(centerX + 35, canvas.height);
+        ctx.stroke();
+
+        // 도로 외곽선 (원근 흰색 차선)
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(centerX - 120, horizonY);
+        ctx.lineTo(0, canvas.height);
+        ctx.moveTo(centerX + 120, horizonY);
+        ctx.lineTo(canvas.width, canvas.height);
+        ctx.stroke();
+
+        // 1-C. 도로 위 대형 폭발 크레이터, 균열, 파편
+        ctx.fillStyle = '#050b14';
+        ctx.beginPath();
+        ctx.ellipse(centerX, horizonY + 70, 90, 22, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#020617';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // 균열선들
+        ctx.strokeStyle = '#020617';
+        ctx.lineWidth = 2;
+        for (let cr = -3; cr <= 3; cr++) {
           ctx.beginPath();
-          ctx.arc(smX, cutGroundY - 14 - Math.sin(t * 3 + sm) * 8, 22, 0, Math.PI * 2);
+          ctx.moveTo(centerX + cr * 50, horizonY + 70);
+          ctx.lineTo(centerX + cr * 75 + 15, horizonY + 110);
+          ctx.lineTo(centerX + cr * 85 - 10, horizonY + 130);
+          ctx.stroke();
+        }
+
+        // 지면 파편 및 자갈
+        ctx.fillStyle = '#334155';
+        for (let r = 0; r < 14; r++) {
+          const rx = (centerX - 240 + (r * 39 + 17) % 480);
+          const ry = horizonY + 50 + (r * 23) % 95;
+          ctx.fillRect(rx, ry, 6 + (r % 3) * 3, 4 + (r % 2) * 2);
+        }
+
+        // 자욱한 전장 연기 & 피어오르는 불티
+        ctx.fillStyle = 'rgba(51, 65, 85, 0.45)';
+        for (let sm = 0; sm < 6; sm++) {
+          const smX = centerX - 220 + sm * 88 + Math.sin(t * 2 + sm) * 15;
+          const smY = horizonY + 45 + (sm % 3) * 25 - Math.sin(t * 3 + sm) * 8;
+          ctx.beginPath();
+          ctx.arc(smX, smY, 32 + sm * 4, 0, Math.PI * 2);
           ctx.fill();
         }
 
+        // 지면 기준 높이
+        const cutGroundY = canvas.height - 110;
+
         if (cutIdx === 0) {
-          // [컷 1]: 중심 레드 아스팔트에 무릎 꿇고 비틀거림 (지면 접지)
-          const stagger = Math.sin(t * 12) * 6;
+          // [컷 1]: 중심 레드 아스팔트 전장에 무릎 꿇고 비틀거림 (지면 밀착)
+          const stagger = Math.sin(t * 12) * 5;
           const redK = kaitenzers.find(k => k.id === 'red') || { id: 'red', color: '#ef4444', border: '#b91c1c', size: 36 };
 
           ctx.save();
-          // 지면 접지 그림자
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+          // 깊은 2중 접지 그림자
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
           ctx.beginPath();
-          ctx.ellipse(centerX + stagger, cutGroundY, 44, 9, 0, 0, Math.PI * 2);
+          ctx.ellipse(centerX + stagger, cutGroundY, 55, 11, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+          ctx.beginPath();
+          ctx.ellipse(centerX + stagger, cutGroundY, 75, 16, 0, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.translate(centerX + stagger, cutGroundY);
-          ctx.scale(1.85, 1.85);
+          ctx.scale(1.9, 1.9);
 
           drawAuthenticKaitenzerBody(redK, -redK.size / 2, -redK.size, { pose: 'stagger', timer: t });
 
-          // 바닥에 꽂힌 채 떨리는 돌격소총 (AR)
+          // 아스팔트 균열에 깊게 꽂혀 연기 뿜는 돌격소총 (AR)
           ctx.save();
-          ctx.translate(22, -12);
-          ctx.rotate(0.7);
+          ctx.translate(24, -14);
+          ctx.rotate(0.65);
           ctx.fillStyle = '#0f172a';
-          ctx.fillRect(-2, -18, 4, 22);
+          ctx.fillRect(-2, -22, 5, 26);
           ctx.fillStyle = '#ef4444';
-          ctx.fillRect(-3, -10, 6, 6);
+          ctx.fillRect(-3, -12, 7, 7);
+          // 총구 연기
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+          ctx.beginPath();
+          ctx.arc(0, -26, 4 + Math.sin(t * 8) * 2, 0, Math.PI * 2);
+          ctx.fill();
           ctx.restore();
+
+          // 바닥 탄피 파편
+          ctx.fillStyle = '#ca8a04';
+          ctx.fillRect(-28, -2, 5, 2);
+          ctx.fillRect(-18, -4, 5, 2);
+          ctx.fillRect(16, -2, 5, 2);
 
           ctx.restore();
         } else if (cutIdx === 1) {
-          // [컷 2]: 옐로 & 핑크 아스팔트 바닥에 완전히 쓰러짐 (지면 접지)
+          // [컷 2]: 핑크 & 옐로 아스팔트 도로에 완전히 쓰러짐 (지면 밀착 & 무기 파편)
           const pinkK = kaitenzers.find(k => k.id === 'pink') || { id: 'pink', color: '#f472b6', border: '#db2777', size: 36 };
           const yellowK = kaitenzers.find(k => k.id === 'yellow') || { id: 'yellow', color: '#eab308', border: '#a16207', size: 36 };
 
           // 핑크 다운
           ctx.save();
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
           ctx.beginPath();
-          ctx.ellipse(centerX - 130, cutGroundY, 42, 8, 0, 0, Math.PI * 2);
+          ctx.ellipse(centerX - 130, cutGroundY, 52, 10, 0, 0, Math.PI * 2);
           ctx.fill();
           ctx.translate(centerX - 130, cutGroundY);
-          ctx.scale(1.6, 1.6);
+          ctx.scale(1.65, 1.65);
           drawAuthenticKaitenzerBody(pinkK, -pinkK.size / 2, -pinkK.size, { pose: 'downed', timer: t });
+          // 바닥에 뒹구는 저격소총
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(18, -6, 26, 4);
+          ctx.fillStyle = '#f472b6';
+          ctx.fillRect(24, -8, 8, 4);
           ctx.restore();
 
           // 옐로 다운
           ctx.save();
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
           ctx.beginPath();
-          ctx.ellipse(centerX + 130, cutGroundY, 42, 8, 0, 0, Math.PI * 2);
+          ctx.ellipse(centerX + 130, cutGroundY, 52, 10, 0, 0, Math.PI * 2);
           ctx.fill();
           ctx.translate(centerX + 130, cutGroundY);
-          ctx.scale(1.6, 1.6);
+          ctx.scale(1.65, 1.65);
           drawAuthenticKaitenzerBody(yellowK, -yellowK.size / 2, -yellowK.size, { pose: 'downed', timer: t });
+          // 바닥에 떨어진 샷건 & 탄피
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(-38, -6, 20, 5);
+          ctx.fillStyle = '#eab308';
+          ctx.fillRect(-32, -8, 7, 3);
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(-16, -3, 4, 3);
+          ctx.fillRect(-10, -3, 4, 3);
           ctx.restore();
         } else if (cutIdx === 2) {
-          // [컷 3]: 그린 & 블랙 아스팔트 바닥에 완전히 쓰러짐 (지면 접지)
+          // [컷 3]: 블랙 & 그린 아스팔트 도로에 완전히 쓰러짐 (지면 밀착 & 실드/기관총 파편)
           const blackK = kaitenzers.find(k => k.id === 'black') || { id: 'black', color: '#1e293b', border: '#0f172a', size: 36 };
           const greenK = kaitenzers.find(k => k.id === 'green') || { id: 'green', color: '#22c55e', border: '#15803d', size: 36 };
 
           // 블랙 다운
           ctx.save();
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
           ctx.beginPath();
-          ctx.ellipse(centerX - 130, cutGroundY, 42, 8, 0, 0, Math.PI * 2);
+          ctx.ellipse(centerX - 130, cutGroundY, 52, 10, 0, 0, Math.PI * 2);
           ctx.fill();
           ctx.translate(centerX - 130, cutGroundY);
-          ctx.scale(1.6, 1.6);
+          ctx.scale(1.65, 1.65);
           drawAuthenticKaitenzerBody(blackK, -blackK.size / 2, -blackK.size, { pose: 'downed', timer: t });
+          // 바닥에 뒹구는 깨진 방패
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(18, -12, 16, 12);
+          ctx.strokeStyle = '#dc2626';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(18, -12, 16, 12);
+          // 쏟아진 연어알
+          ctx.fillStyle = '#dc2626';
+          ctx.beginPath();
+          ctx.arc(38, -3, 3, 0, Math.PI * 2);
+          ctx.arc(43, -2, 2.5, 0, Math.PI * 2);
+          ctx.fill();
           ctx.restore();
 
           // 그린 다운
           ctx.save();
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
           ctx.beginPath();
-          ctx.ellipse(centerX + 130, cutGroundY, 42, 8, 0, 0, Math.PI * 2);
+          ctx.ellipse(centerX + 130, cutGroundY, 52, 10, 0, 0, Math.PI * 2);
           ctx.fill();
           ctx.translate(centerX + 130, cutGroundY);
-          ctx.scale(1.6, 1.6);
+          ctx.scale(1.65, 1.65);
           drawAuthenticKaitenzerBody(greenK, -greenK.size / 2, -greenK.size, { pose: 'downed', timer: t });
+          // 바닥에 떨어진 기관총 (MG)
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(-42, -7, 24, 6);
+          ctx.fillStyle = '#22c55e';
+          ctx.fillRect(-32, -9, 8, 4);
           ctx.restore();
         }
+
+        // 시네마틱 레터박스 상하 52px (가장 위에 덮음)
+        ctx.fillStyle = '#050811';
+        ctx.fillRect(0, 0, canvas.width, 52);
+        ctx.fillRect(0, canvas.height - 52, canvas.width, 52);
 
         ctx.restore();
       }
@@ -4303,33 +4453,71 @@
       if (['sky_fall', 'docking', 'eye_flash_pose', 'lightning_strike', 'boss_title'].includes(state)) {
         ctx.save();
 
-        // [하늘 비행 연출]: 'sky_fall' 및 'docking' 중 카메라가 상공을 고속 비행하며 추적
+        // [유저 요청 핵심]: 전용 사이버 네온 합체 초공간 배경 (퍼런 네온 어두운 배경 + 카이텐저 5색 상승 라인)
         if (state === 'sky_fall' || state === 'docking') {
           ctx.save();
-          // 고속 하강 스피드라인 (하늘 상공 비행 느낌 100%)
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-          ctx.lineWidth = 2.2;
-          const spSeed = Math.floor(t * 35);
-          for (let s = 0; s < 28; s++) {
-            const sx = ((s * 67 + spSeed * 43) % canvas.width);
-            const sy = ((s * 97 + spSeed * 79) % canvas.height);
-            const slen = 80 + (s % 6) * 45;
+
+          // 1. 딥 네온 미드나잇 블루 우주 그라데이션 (도시 상단 경계 이탈 문제 100% 원천 차단)
+          const cyberGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+          cyberGrad.addColorStop(0, '#020617'); // 상단 심연 암흑
+          cyberGrad.addColorStop(0.35, '#0a192f'); // 딥 네온 블루
+          cyberGrad.addColorStop(0.7, '#07162c');
+          cyberGrad.addColorStop(1, '#020617'); // 하단 칠흑
+          ctx.fillStyle = cyberGrad;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          // 2. 카이텐저 5색 은은한 수직 네온 에너지 기둥 (Red, Pink, Yellow, Green, Black/Cyan)
+          const sentaiNeonCols = [
+            { col: 'rgba(239, 68, 68, 0.28)', glow: '#ef4444', x: canvas.width * 0.16 }, // 레드
+            { col: 'rgba(244, 114, 182, 0.28)', glow: '#f472b6', x: canvas.width * 0.32 }, // 핑크
+            { col: 'rgba(250, 204, 21, 0.32)', glow: '#facc15', x: canvas.width * 0.50 }, // 옐로
+            { col: 'rgba(34, 197, 94, 0.28)', glow: '#22c55e', x: canvas.width * 0.68 }, // 그린
+            { col: 'rgba(6, 182, 212, 0.28)', glow: '#06b6d4', x: canvas.width * 0.84 }  // 블랙(네온 시안)
+          ];
+
+          sentaiNeonCols.forEach(beam => {
+            const beamGrad = ctx.createLinearGradient(beam.x - 30, 0, beam.x + 30, 0);
+            beamGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            beamGrad.addColorStop(0.5, beam.col);
+            beamGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = beamGrad;
+            ctx.fillRect(beam.x - 35, 0, 70, canvas.height);
+          });
+
+          // 3. [핵심]: 하단에서 상단으로 맹렬하게 솟구쳐 오르는 5색 네온 상승 스피드 라인 스트림!
+          // (로봇 부품들이 아래로 급강하하고 카메라가 추적하므로, 빛 라인은 위로 솟구쳐 올라감!)
+          const streamColors = ['#ef4444', '#f472b6', '#facc15', '#22c55e', '#38bdf8', '#ffffff'];
+          for (let s = 0; s < 45; s++) {
+            const sColor = streamColors[s % streamColors.length];
+            const sx = ((s * 79 + 31) % canvas.width);
+            const speed = 750 + (s % 5) * 200;
+            // 위로 솟구치는 Y 좌표 계산
+            const sy = canvas.height - ((t * speed + s * 93) % (canvas.height + 250));
+            const slen = 95 + (s % 7) * 45;
+            const swidth = 1.8 + (s % 3) * 1.2;
+
+            ctx.save();
+            ctx.strokeStyle = sColor;
+            ctx.shadowColor = sColor;
+            ctx.shadowBlur = 14;
+            ctx.lineWidth = swidth;
             ctx.beginPath();
             ctx.moveTo(sx, sy);
-            ctx.lineTo(sx, sy + slen);
+            ctx.lineTo(sx, sy - slen); // 위쪽으로 뻗는 네온 레이저 라인
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          // 4. 사이버 그리드 수평선 (깊이감 연출)
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.12)';
+          ctx.lineWidth = 1;
+          for (let gy = 0; gy < canvas.height; gy += 45) {
+            ctx.beginPath();
+            ctx.moveTo(0, gy);
+            ctx.lineTo(canvas.width, gy);
             ctx.stroke();
           }
-          // 상공 유빙 구름
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
-          for (let c = 0; c < 5; c++) {
-            const cx = ((c * 210 + t * 50) % (canvas.width + 250)) - 120;
-            const cy = ((c * 140 + t * 480) % (canvas.height + 180)) - 90;
-            ctx.beginPath();
-            ctx.arc(cx, cy, 55, 0, Math.PI * 2);
-            ctx.arc(cx + 40, cy - 10, 45, 0, Math.PI * 2);
-            ctx.arc(cx - 38, cy - 5, 48, 0, Math.PI * 2);
-            ctx.fill();
-          }
+
           ctx.restore();
         }
 
