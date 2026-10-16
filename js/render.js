@@ -3366,6 +3366,145 @@
       })(ctxToUse);
     }
 
+    /**
+     * [신규 UI] 활성화된 파츠 직상단 실시간 체력바 렌더링 함수
+     * 상단 메인 HUD 대신 현재 활성화된 파츠(오른팔/가슴/왼팔) 바로 위에 플레이어 체력바처럼 표시
+     */
+    function drawKaitenFxActivePartOverheadHpBar(boss, groundY) {
+      if (!boss || !boss.isSpawned || boss.isDead || !boss.activePart || boss.activePart === 'none') return;
+      if (boss.introState && boss.introState !== 'ready') return;
+
+      const partKey = boss.activePart;
+      const part = boss.parts ? boss.parts[partKey] : null;
+      if (!part || part.isBroken) return;
+
+      const dir = boss.facing >= 0 ? 1 : -1;
+      const screenX = boss.x - camera.x;
+      const screenY = groundY - boss.height - (boss.jumpY || 0);
+
+      // 파츠별 장착 월드/스크린 상대 좌표 오프셋 (로봇 몸체 중심 기준)
+      let partOffsetX = 0;
+      let partOffsetY = -150;
+      let partName = '';
+      let partColor = '#facc15';
+
+      if (partKey === 'pink') {
+        // 핑크: 오른팔 슈림프 개틀링 머신건
+        partOffsetX = -dir * 60;
+        partOffsetY = -175;
+        partName = '오른팔 [슈림프 개틀링]';
+        partColor = '#ec4899';
+      } else if (partKey === 'red') {
+        // 레드: 가슴 참치 쉴드 플레이트
+        partOffsetX = -dir * 10;
+        partOffsetY = -240;
+        partName = '가슴 [참치 실드]';
+        partColor = '#ef4444';
+      } else if (partKey === 'green') {
+        // 그린: 왼팔 고등어 슬래시 블레이드
+        partOffsetX = dir * 65;
+        partOffsetY = -185;
+        partName = '왼팔 [고등어 블레이드]';
+        partColor = '#22c55e';
+      }
+
+      const pX = screenX + boss.width / 2 + partOffsetX;
+      const pY = screenY + boss.height + partOffsetY;
+
+      const maxHp = boss.partMaxHp || 1500000;
+      const curHp = Math.max(0, part.hp || 0);
+      const hpPct = Math.max(0, Math.min(100, (curHp / maxHp) * 100));
+
+      // 플레이어 머리 위 체력바와 동일한 규격의 사선 블록형 게이지
+      const barW = 84;
+      const barH = 10;
+      const skew = -7;
+      const totalW = barW + 36;
+      const startX = pX - totalW / 2;
+      const startY = pY;
+
+      ctx.save();
+
+      // 1. 파츠 타겟 뱃지 라벨
+      ctx.font = '900 11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = partColor;
+      ctx.shadowColor = partColor;
+      ctx.shadowBlur = 8;
+      const leftSec = Math.max(0, (boss.partCycleDuration || 20) - (boss.partCycleTimer || 0));
+      ctx.fillText(`🎯 ${partName} [${leftSec.toFixed(0)}s]`, startX + barW / 2, startY - 7);
+      ctx.shadowBlur = 0;
+
+      // 2. 체력바 외곽 베이스 트랙
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.lineWidth = 1.2;
+
+      ctx.beginPath();
+      ctx.moveTo(startX - skew, startY);
+      ctx.lineTo(startX + barW - skew, startY);
+      ctx.lineTo(startX + barW, startY + barH);
+      ctx.lineTo(startX, startY + barH);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // 3. 5개 사선 세그먼트 (플레이어 체력바와 동일한 블록 렌더링)
+      const numSegs = 5;
+      const segGap = 2;
+      const segW = (barW - (numSegs + 1) * segGap) / numSegs;
+
+      for (let i = 0; i < numSegs; i++) {
+        const segStartX = startX + segGap + i * (segW + segGap);
+        const segSkew = skew * (segW / barW);
+        const segMinPct = i * 20;
+
+        if (hpPct > segMinPct) {
+          const segFill = Math.max(0, Math.min(1, (hpPct - segMinPct) / 20));
+          ctx.fillStyle = partColor;
+          ctx.beginPath();
+          ctx.moveTo(segStartX - segSkew, startY + 1.2);
+          ctx.lineTo(segStartX + (segW * segFill) - segSkew, startY + 1.2);
+          ctx.lineTo(segStartX + (segW * segFill), startY + barH - 1.2);
+          ctx.lineTo(segStartX, startY + barH - 1.2);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        if (i > 0) {
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(segStartX - 1 - segSkew, startY);
+          ctx.lineTo(segStartX - 1, startY + barH);
+          ctx.stroke();
+        }
+      }
+
+      // 4. 우측 퍼센트 박스
+      const pctBoxX = startX + barW + 5;
+      const pctBoxW = 28;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+      ctx.lineWidth = 1;
+
+      ctx.beginPath();
+      ctx.moveTo(pctBoxX - skew, startY);
+      ctx.lineTo(pctBoxX + pctBoxW - skew, startY);
+      ctx.lineTo(pctBoxX + pctBoxW, startY + barH);
+      ctx.lineTo(pctBoxX, startY + barH);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 8.5px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${Math.round(hpPct)}%`, pctBoxX + pctBoxW / 2, startY + 8);
+
+      ctx.restore();
+    }
+
     // [WHITE FANG 465] 화력 지원 드론 렌더링 함수
     // 유저 레퍼런스 스케치 완벽 구현:
     // - 중앙 수평 동체(Fuselage)와 양측 듀얼 수직 포드(Vertical Pods)의 "H"자 전술 드론 형상
@@ -4675,6 +4814,8 @@
         } else if (typeof drawKaitenFx === 'function') {
           // 실전 전투 중에는 75도 깊은 측면 프로필 뷰로 전투 진행
           drawKaitenFx(kaitenFx, groundY);
+          // [신규 UI] 활성화된 파츠 직상단 오버헤드 실시간 체력바 렌더링
+          drawKaitenFxActivePartOverheadHpBar(kaitenFx, groundY);
         }
       }
 

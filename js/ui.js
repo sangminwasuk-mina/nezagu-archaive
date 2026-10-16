@@ -1249,50 +1249,13 @@
         // 1. 좌측 초상화 및 보스 이름/장갑 뱃지 갱신
         const bossIconEl = document.getElementById('ba-boss-icon');
         const bossNameEl = document.getElementById('ba-boss-name');
-        const activePartBadge = document.getElementById('ba-active-part-badge');
-        const partsRow = document.getElementById('ba-parts-row');
 
         if (isP2) {
           if (bossIconEl) bossIconEl.innerText = '🤖';
           if (bossNameEl) bossNameEl.innerText = 'KAITEN FX Mk.0';
-          if (partsRow) partsRow.classList.remove('hidden');
-
-          // 활성 파츠 뱃지
-          if (activePartBadge) {
-            activePartBadge.classList.remove('hidden');
-            if (kaitenFx.activePart === 'none') {
-              activePartBadge.innerText = '전 파츠 파괴됨';
-              activePartBadge.style.background = '#475569';
-            } else {
-              const pName = kaitenFx.activePart === 'pink' ? '오른팔(새우)' : (kaitenFx.activePart === 'red' ? '가슴(참치)' : '왼팔(실드)');
-              const pColor = kaitenFx.activePart === 'pink' ? '#ec4899' : (kaitenFx.activePart === 'red' ? '#ef4444' : '#22c55e');
-              const leftSec = Math.max(0, kaitenFx.partCycleDuration - kaitenFx.partCycleTimer);
-              activePartBadge.innerText = `${pName} [${leftSec.toFixed(1)}s]`;
-              activePartBadge.style.background = pColor;
-            }
-          }
-
-          // 2페이즈 3대 파츠 미니 내구도 게이지 갱신
-          ['pink', 'red', 'green'].forEach(pKey => {
-            const part = kaitenFx.parts ? kaitenFx.parts[pKey] : null;
-            const pFill = document.getElementById(`fx-part-fill-${pKey}`);
-            const pText = document.getElementById(`fx-part-hp-${pKey}`);
-            const pCard = document.getElementById(`fx-part-card-${pKey}`);
-            if (part && pFill && pText) {
-              const pPct = part.isBroken ? 0 : Math.max(0, Math.min(100, (part.hp / kaitenFx.partMaxHp) * 100));
-              pFill.style.width = `${pPct.toFixed(0)}%`;
-              pText.innerText = part.isBroken ? '파괴' : `${pPct.toFixed(0)}%`;
-              if (pCard) {
-                pCard.style.opacity = part.isBroken ? '0.4' : '1.0';
-                pCard.style.boxShadow = (kaitenFx.activePart === pKey && !part.isBroken) ? `0 0 6px ${part.color}` : 'none';
-              }
-            }
-          });
         } else {
           if (bossIconEl) bossIconEl.innerText = '🍣';
           if (bossNameEl) bossNameEl.innerText = 'KAITENZERS (카이텐저 연합)';
-          if (partsRow) partsRow.classList.add('hidden');
-          if (activePartBadge) activePartBadge.classList.add('hidden');
         }
 
         // 2. 다중 레이어 체력바 연산 (x34 / x50)
@@ -1343,24 +1306,38 @@
           hpDamageEl.style.width = `${window._smoothDamagePct.toFixed(1)}%`;
         }
 
-        // 3. 우측 하단 3칸 사선 ATG 게이지 블록 (스케치 100% 연동)
-        const atgVal = isP2 ? (kaitenFx.atg || 0) : 34; // 1페이즈는 기본 1칸 노란색 점등
-        const atgSeg1 = document.getElementById('ba-atg-seg-1');
-        const atgSeg2 = document.getElementById('ba-atg-seg-2');
-        const atgSeg3 = document.getElementById('ba-atg-seg-3');
+        // 3. 우측 하단 3칸 사선 ATG 게이지 블록 (실시간 연속 충전 반영)
+        const atgVal = isP2 ? (kaitenFx.atg || 0) : (window.phase1Atg || 0);
+        const fill1 = Math.min(100, Math.max(0, (atgVal / 33.33) * 100));
+        const fill2 = Math.min(100, Math.max(0, ((atgVal - 33.33) / 33.33) * 100));
+        const fill3 = Math.min(100, Math.max(0, ((atgVal - 66.66) / 33.34) * 100));
 
-        if (atgSeg1) {
-          atgSeg1.className = 'ba-atg-seg' + (atgVal >= 33.3 ? ' active' : '');
-        }
-        if (atgSeg2) {
-          atgSeg2.className = 'ba-atg-seg' + (atgVal >= 66.6 ? ' active' : '');
-        }
-        if (atgSeg3) {
-          if (atgVal >= 99.0) {
-            atgSeg3.className = 'ba-atg-seg warning';
-          } else {
-            atgSeg3.className = 'ba-atg-seg';
-          }
+        const el1 = document.getElementById('ba-atg-fill-1');
+        const el2 = document.getElementById('ba-atg-fill-2');
+        const el3 = document.getElementById('ba-atg-fill-3');
+        const seg1 = document.getElementById('ba-atg-seg-1');
+        const seg2 = document.getElementById('ba-atg-seg-2');
+        const seg3 = document.getElementById('ba-atg-seg-3');
+
+        if (el1) el1.style.width = `${fill1.toFixed(1)}%`;
+        if (el2) el2.style.width = `${fill2.toFixed(1)}%`;
+        if (el3) el3.style.width = `${fill3.toFixed(1)}%`;
+
+        if (seg1) seg1.className = 'ba-atg-seg' + (fill1 >= 99 ? ' active' : '');
+        if (seg2) seg2.className = 'ba-atg-seg' + (fill2 >= 99 ? ' active' : '');
+        if (seg3) seg3.className = 'ba-atg-seg' + (fill3 >= 99 ? ' warning' : (fill3 > 0 ? ' active' : ''));
+      }
+
+      // [1페이즈 -> 2페이즈 전면 화면 암전 전환 오버레이 동기화]
+      const transOverlay = document.getElementById('phase-transition-overlay');
+      if (transOverlay) {
+        const alpha = (typeof window.phaseTransitionAlpha !== 'undefined') ? window.phaseTransitionAlpha : 0;
+        if (alpha > 0.01) {
+          transOverlay.classList.remove('hidden');
+          transOverlay.style.opacity = alpha.toFixed(2);
+        } else {
+          transOverlay.classList.add('hidden');
+          transOverlay.style.opacity = '0';
         }
       }
 

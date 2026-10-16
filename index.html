@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kaiten City - Weapon Attacks Complete</title>
-  <link rel="stylesheet" href="css/style.css?v=2.9.14">
+  <link rel="stylesheet" href="css/style.css?v=2.9.15">
 </head>
 <body>
   <!-- 메인 화면 (타이틀 오버레이) -->
@@ -592,13 +592,12 @@
 
       <!-- 2. 우측 보스 메인 바 영역 -->
       <div class="ba-bar-column">
-        <!-- 2-1. 상단 타이틀 행 (보스 이름 + 경장갑 뱃지 + 파츠 뱃지) -->
+        <!-- 2-1. 상단 타이틀 행 (보스 이름 + 경장갑 뱃지) -->
         <div class="ba-header-row">
           <div class="ba-name-wrapper">
             <span id="ba-boss-name" class="ba-boss-name">KAITENZERS (카이텐저 연합)</span>
             <span id="ba-boss-armor-badge" class="ba-armor-badge light">경장갑</span>
           </div>
-          <span id="ba-active-part-badge" class="ba-part-badge hidden">오른팔 [20s]</span>
         </div>
 
         <!-- 2-2. 사선 다중 레이어 체력바 트랙 -->
@@ -619,38 +618,24 @@
           </div>
         </div>
 
-        <!-- 2-3. 하단 서브 행: 2페이즈 3대 파츠 미니 바 & 우측 3칸 사선 ATG 블록 -->
+        <!-- 2-3. 하단 서브 행: 우측 실시간 3칸 사선 ATG 블록 -->
         <div class="ba-sub-row">
-          <!-- 2페이즈 3대 파츠 미니 내구도 (2페이즈에만 표시) -->
-          <div id="ba-parts-row" class="ba-parts-row hidden">
-            <div class="ba-part-item" id="fx-part-card-pink">
-              <span class="ba-part-name" style="color:#f472b6;">오른팔</span>
-              <div class="ba-part-bar"><div id="fx-part-fill-pink" style="background:#ec4899; width:100%;"></div></div>
-              <span id="fx-part-hp-pink" class="ba-part-val">100%</span>
-            </div>
-            <div class="ba-part-item" id="fx-part-card-red">
-              <span class="ba-part-name" style="color:#f87171;">가슴</span>
-              <div class="ba-part-bar"><div id="fx-part-fill-red" style="background:#ef4444; width:100%;"></div></div>
-              <span id="fx-part-hp-red" class="ba-part-val">100%</span>
-            </div>
-            <div class="ba-part-item" id="fx-part-card-green">
-              <span class="ba-part-name" style="color:#4ade80;">왼팔</span>
-              <div class="ba-part-bar"><div id="fx-part-fill-green" style="background:#22c55e; width:100%;"></div></div>
-              <span id="fx-part-hp-green" class="ba-part-val">100%</span>
-            </div>
-          </div>
-
-          <!-- 우측 하단: 유저 스케치 3칸 사선 분할 ATG 블록 -->
-          <div class="ba-atg-container" title="ATG 궁극기 게이지">
+          <div class="ba-atg-container" title="ATG 궁극기 게이지 (실시간 충전)">
             <span class="ba-atg-label">ATG</span>
             <div class="ba-atg-segments">
-              <div class="ba-atg-seg" id="ba-atg-seg-1"></div>
-              <div class="ba-atg-seg" id="ba-atg-seg-2"></div>
-              <div class="ba-atg-seg" id="ba-atg-seg-3"></div>
+              <div class="ba-atg-seg" id="ba-atg-seg-1"><div class="ba-atg-fill" id="ba-atg-fill-1"></div></div>
+              <div class="ba-atg-seg" id="ba-atg-seg-2"><div class="ba-atg-fill" id="ba-atg-fill-2"></div></div>
+              <div class="ba-atg-seg" id="ba-atg-seg-3"><div class="ba-atg-fill" id="ba-atg-fill-3"></div></div>
             </div>
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- [1페이즈 -> 2페이즈 화면 암전 전환 오버레이] -->
+    <div id="phase-transition-overlay" class="hidden">
+      <div class="trans-warning">WARNING : TOTAL ASSAULT PHASE 2</div>
+      <div class="trans-sub">-- KAITEN FX Mk.0 긴급 기동 시퀀스 접속 중 --</div>
     </div>
 
     <!-- 카이텐저 5인 상태 패널 (신규 보스 바로 대체되어 숨김) -->
@@ -767,15 +752,15 @@
   <canvas id="minimap" class="hidden"></canvas>
 
   <!-- WebRTC 순수 P2P 라이브러리 (로컬 내장 PeerJS) -->
-  <script src="js/peerjs.min.js?v=2.9.14"></script>
+  <script src="js/peerjs.min.js?v=2.9.15"></script>
   <script>window.Peer || document.write('<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"><\/script>');</script>
 
-  <!-- 게임 엔진 스크립트 모듈 순차 로드 (캐시 방지 v=2.9.14) -->
-  <script src="js/constants.js?v=2.9.14"></script>
-  <script src="js/entities.js?v=2.9.14"></script>
-  <script src="js/network.js?v=2.9.14"></script>
-  <script src="js/ui.js?v=2.9.14"></script>
-  <script src="js/render.js?v=2.9.14"></script>
-  <script src="js/main.js?v=2.9.14"></script>
+  <!-- 게임 엔진 스크립트 모듈 순차 로드 (캐시 방지 v=2.9.15) -->
+  <script src="js/constants.js?v=2.9.15"></script>
+  <script src="js/entities.js?v=2.9.15"></script>
+  <script src="js/network.js?v=2.9.15"></script>
+  <script src="js/ui.js?v=2.9.15"></script>
+  <script src="js/render.js?v=2.9.15"></script>
+  <script src="js/main.js?v=2.9.15"></script>
 </body>
 </html>

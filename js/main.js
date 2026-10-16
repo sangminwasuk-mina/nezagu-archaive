@@ -606,6 +606,10 @@
       isPhase1Retreating = false;
       phase1RetreatTimer = 0;
       isPhase2Active = false;
+      window.phase1Atg = 0;
+      window.phaseTransitionState = 'none';
+      window.phaseTransitionTimer = 0;
+      window.phaseTransitionAlpha = 0;
 
       // 3. KAITEN FX Mk.0 상태 초기화
       if (typeof kaitenFx !== 'undefined') {
@@ -4597,6 +4601,9 @@
       posDisplay.innerText = `X: ${Math.round(player.x)}`;
 
       // 1-1. 카이텐저 1페이즈: 5인 전원 개전 즉시 참전 상태 유지 (순차 증원 불필요)
+      if (!isPhase1Retreating && !isPhase2Active) {
+        window.phase1Atg = Math.min(100, (window.phase1Atg || 0) + dt * (100 / 48)); // 1페이즈 실시간 연속 ATG 충전 (48초 기준 100%)
+      }
 
       // 1-2-B. 카이텐저 1페이즈 단일 공유체력 5,000,000 전소(0 이하) 시 후퇴 및 2페이즈 전환 판정
       const totalKaitenHp = kaitenzers.reduce((sum, k) => sum + (k.isDead ? 0 : Math.max(0, k.hp)), 0);
@@ -4622,11 +4629,9 @@
             addDamageText(k.x + k.size / 2, groundY - (k.jumpY || 0) - k.size - 25, '💨 [전력 후퇴!]', '#38bdf8');
           }
         });
-
-        // [사슬 결속 해제 불필요]
       }
 
-      // 후퇴 진행 처리
+      // 후퇴 진행 처리 및 화면 암전 전환 연계
       if (isPhase1Retreating) {
         phase1RetreatTimer -= dt;
         let allEscaped = true;
@@ -4641,17 +4646,51 @@
           }
         });
 
-        // 4초가 경과했거나 모든 멤버가 맵 밖으로 벗어난 경우 1페이즈 클리어 및 2페이즈 준비 완료
+        // 4초가 경과했거나 모든 멤버가 맵 밖으로 벗어난 경우 1페이즈 클리어 및 화면 암전 전환 시작
         if (allEscaped || phase1RetreatTimer <= 0) {
           isPhase1Retreating = false;
-          isPhase2Active = true;
+          window.phaseTransitionState = 'fade_out';
+          window.phaseTransitionTimer = 1.0;
+          window.phaseTransitionAlpha = 0;
           kaitenzers.forEach(k => {
             k.isSpawned = false;
             k.isDead = true;
             k.isRetreating = false;
           });
-          addDamageText(canvas.width / 2 + camera.x, 90, '🎉 PHASE 1 요격 성공! 카이텐저 전원 퇴각 완료!', '#10b981');
-          addDamageText(canvas.width / 2 + camera.x, 130, '🤖 경고: 거대 로봇 카이텐 FX Mk.0 출격 시퀀스 대기...', '#f59e0b');
+        }
+      }
+
+      // 1-2-C. [1페이즈 -> 2페이즈 화면 암전 전환 상태 머신]
+      if (typeof window.phaseTransitionState !== 'undefined' && window.phaseTransitionState !== 'none') {
+        window.phaseTransitionTimer -= dt;
+
+        if (window.phaseTransitionState === 'fade_out') {
+          // 화면이 서서히 칠흑같이 어두워짐 (0 -> 1)
+          window.phaseTransitionAlpha = Math.min(1.0, 1.0 - Math.max(0, window.phaseTransitionTimer / 1.0));
+          if (window.phaseTransitionTimer <= 0) {
+            window.phaseTransitionState = 'blackout';
+            window.phaseTransitionTimer = 1.2; // 1.2초간 완전 암전 상태 유지
+            window.phaseTransitionAlpha = 1.0;
+            // 완전 암전 시점에 2페이즈 활성화 및 안정적 플레이어 좌표 정돈
+            isPhase2Active = true;
+            player.x = 400;
+            player.facing = 1;
+            addDamageText(canvas.width / 2 + camera.x, 110, '🤖 거대 로봇 카이텐 FX Mk.0 출격 시퀀스 접속!', '#f59e0b');
+          }
+        } else if (window.phaseTransitionState === 'blackout') {
+          window.phaseTransitionAlpha = 1.0;
+          if (window.phaseTransitionTimer <= 0) {
+            window.phaseTransitionState = 'fade_in';
+            window.phaseTransitionTimer = 1.0; // 1초간 서서히 밝아짐
+          }
+        } else if (window.phaseTransitionState === 'fade_in') {
+          // 화면이 서서히 밝아지며 전장 공개 (1 -> 0)
+          window.phaseTransitionAlpha = Math.max(0, window.phaseTransitionTimer / 1.0);
+          if (window.phaseTransitionTimer <= 0) {
+            window.phaseTransitionState = 'none';
+            window.phaseTransitionAlpha = 0;
+            addDamageText(canvas.width / 2 + camera.x, 90, '⚡ KAITEN FX Mk.0 최종 결전 개시!', '#ef4444');
+          }
         }
       }
 
@@ -5146,6 +5185,9 @@
 
         // C. [실전 전투 AI & 물리 이동 & 미니건 평타 패턴]
         if (kaitenFx.isSpawned && !kaitenFx.isDead && kaitenFx.introState === 'ready') {
+          // [실시간 ATG 연속 충전]: 42초 기준 0% -> 100% 충전
+          kaitenFx.atg = Math.min(100, (kaitenFx.atg || 0) + dt * (100 / 42));
+
           // [FOX 45식: 철벽의 방어 기절 타이머]
           const isFxStunned = (kaitenFx.stunTimer > 0);
           if (isFxStunned) {
