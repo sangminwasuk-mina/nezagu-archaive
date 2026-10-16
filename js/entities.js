@@ -331,7 +331,7 @@
         name: '레드',
         role: 'AR',
         color: '#ef4444',
-        armorType: 'normal', // 카이텐저 기본 장갑 (일반장갑)
+        armorType: 'light', // 원작 고증: 경장갑 (폭발 약점)
         attackType: 'normal', // 카이텐저 기본 공격 유형 (일반)
         defense: 0,
         accuracy: 0,
@@ -370,7 +370,7 @@
         role: 'HG',
         color: '#1e293b',
         border: '#94a3b8',
-        armorType: 'normal', // 기본 일반장갑
+        armorType: 'light', // 원작 고증: 경장갑
         attackType: 'normal', // 기본 일반공격
         defense: 0,
         accuracy: 0,
@@ -407,7 +407,7 @@
         name: '옐로',
         role: 'SR',
         color: '#eab308',
-        armorType: 'normal', // 기본 일반장갑
+        armorType: 'light', // 원작 고증: 경장갑
         attackType: 'normal', // 기본 일반공격
         defense: 0,
         accuracy: 0,
@@ -446,7 +446,7 @@
         name: '그린',
         role: 'MG',
         color: '#22c55e',
-        armorType: 'normal', // 기본 일반장갑
+        armorType: 'light', // 원작 고증: 경장갑
         attackType: 'normal', // 기본 일반공격
         defense: 0,
         accuracy: 0,
@@ -484,7 +484,7 @@
         name: '핑크',
         role: 'RL',
         color: '#ec4899',
-        armorType: 'normal', // 기본 일반장갑
+        armorType: 'light', // 원작 고증: 경장갑
         attackType: 'normal', // 기본 일반공격
         defense: 0,
         accuracy: 0,
@@ -551,6 +551,7 @@
       // 체력 및 스탯
       maxHp: 7500000,
       hp: 7500000,
+      armorType: 'light', // 원작 고증: 경장갑 (폭발 약점)
       baseAtk: 1000,
       atk: 1000,
       defense: 0,

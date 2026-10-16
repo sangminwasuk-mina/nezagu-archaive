@@ -1225,87 +1225,141 @@
         myBadgeEl.innerText = player.hp <= 0 ? '전투 불능' : `HP: ${player.hp.toLocaleString()}`;
       }
 
-      // 카이텐저 1페이즈 체력바 vs 2페이즈 KAITEN FX Mk.0 종합 패널 전환
-      const kaitenPanel = document.getElementById('kaiten-boss-panel');
-      const fxPanel = document.getElementById('kaiten-fx-panel');
+      // ========================================================
+      // [블루아카이브 총력전 스타일] 통합 보스 체력바 HUD 갱신
+      // ========================================================
+      const bossHud = document.getElementById('ba-boss-hud');
+      if (bossHud) {
+        const isP2 = typeof kaitenFx !== 'undefined' && (kaitenFx.isSpawned || isPhase2Active);
 
-      if (typeof kaitenFx !== 'undefined' && (kaitenFx.isSpawned || isPhase2Active)) {
-        // 2페이즈 패널 표시
-        if (kaitenPanel) kaitenPanel.classList.add('hidden');
-        if (fxPanel) {
-          fxPanel.classList.remove('hidden');
+        // 페이즈 전환 감지 시 잔상 게이지 리셋
+        if (typeof window._lastBossPhase === 'undefined' || window._lastBossPhase !== isP2) {
+          window._lastBossPhase = isP2;
+          window._smoothDamagePct = 100;
+        }
 
-          // 보스 본체 HP 갱신
-          const fxHpPct = Math.max(0, Math.min(100, (kaitenFx.hp / kaitenFx.maxHp) * 100));
-          const fxHpFill = document.getElementById('fx-boss-hp-fill');
-          const fxHpText = document.getElementById('fx-boss-hp-text');
-          if (fxHpFill) fxHpFill.style.width = `${fxHpPct.toFixed(1)}%`;
-          if (fxHpText) fxHpText.innerText = `${kaitenFx.hp.toLocaleString()} / ${kaitenFx.maxHp.toLocaleString()} [${fxHpPct.toFixed(1)}%]`;
+        const maxHp = isP2 ? (kaitenFx.maxHp || 7500000) : 5000000;
+        const totalKaitenHp = kaitenzers.reduce((sum, k) => sum + (k.isDead ? 0 : Math.max(0, k.hp)), 0);
+        const currentHp = isP2 ? Math.max(0, kaitenFx.hp) : Math.max(0, totalKaitenHp);
+        const totalLines = isP2 ? 50 : 34; // 1페이즈 x34줄, 2페이즈 x50줄
 
-          // ATG 게이지 갱신
-          const atgPct = Math.max(0, Math.min(100, kaitenFx.atg));
-          const atgFill = document.getElementById('fx-atg-fill');
-          const atgText = document.getElementById('fx-atg-text');
-          const atgLeftSec = Math.max(0, kaitenFx.atgMaxDuration * (1 - atgPct / 100));
-          if (atgFill) atgFill.style.width = `${atgPct.toFixed(1)}%`;
-          if (atgText) atgText.innerText = `${atgPct.toFixed(1)}% / 100% [${atgLeftSec.toFixed(1)}s]`;
+        // 경장갑(Light Armor) 공식 4색 순환 팔레트
+        const LIGHT_PALETTE = ['#dc2626', '#f97316', '#ef4444', '#f43f5e'];
+
+        // 1. 좌측 초상화 및 보스 이름/장갑 뱃지 갱신
+        const bossIconEl = document.getElementById('ba-boss-icon');
+        const bossNameEl = document.getElementById('ba-boss-name');
+        const activePartBadge = document.getElementById('ba-active-part-badge');
+        const partsRow = document.getElementById('ba-parts-row');
+
+        if (isP2) {
+          if (bossIconEl) bossIconEl.innerText = '🤖';
+          if (bossNameEl) bossNameEl.innerText = 'KAITEN FX Mk.0';
+          if (partsRow) partsRow.classList.remove('hidden');
 
           // 활성 파츠 뱃지
-          const badgeEl = document.getElementById('fx-active-part-badge');
-          if (badgeEl) {
+          if (activePartBadge) {
+            activePartBadge.classList.remove('hidden');
             if (kaitenFx.activePart === 'none') {
-              badgeEl.innerText = '전 파츠 파괴됨 (스킬 영구 봉인)';
-              badgeEl.style.background = '#475569';
+              activePartBadge.innerText = '전 파츠 파괴됨';
+              activePartBadge.style.background = '#475569';
             } else {
               const pName = kaitenFx.activePart === 'pink' ? '오른팔(새우)' : (kaitenFx.activePart === 'red' ? '가슴(참치)' : '왼팔(실드)');
               const pColor = kaitenFx.activePart === 'pink' ? '#ec4899' : (kaitenFx.activePart === 'red' ? '#ef4444' : '#22c55e');
               const leftSec = Math.max(0, kaitenFx.partCycleDuration - kaitenFx.partCycleTimer);
-              badgeEl.innerText = `${pName} [${leftSec.toFixed(1)}s]`;
-              badgeEl.style.background = pColor;
+              activePartBadge.innerText = `${pName} [${leftSec.toFixed(1)}s]`;
+              activePartBadge.style.background = pColor;
             }
           }
 
-          // 3개 파츠별 내구도 미니 바 갱신
+          // 2페이즈 3대 파츠 미니 내구도 게이지 갱신
           ['pink', 'red', 'green'].forEach(pKey => {
-            const part = kaitenFx.parts[pKey];
+            const part = kaitenFx.parts ? kaitenFx.parts[pKey] : null;
             const pFill = document.getElementById(`fx-part-fill-${pKey}`);
             const pText = document.getElementById(`fx-part-hp-${pKey}`);
             const pCard = document.getElementById(`fx-part-card-${pKey}`);
             if (part && pFill && pText) {
               const pPct = part.isBroken ? 0 : Math.max(0, Math.min(100, (part.hp / kaitenFx.partMaxHp) * 100));
               pFill.style.width = `${pPct.toFixed(0)}%`;
-              pText.innerText = part.isBroken ? '파괴됨' : `${pPct.toFixed(0)}%`;
+              pText.innerText = part.isBroken ? '파괴' : `${pPct.toFixed(0)}%`;
               if (pCard) {
                 pCard.style.opacity = part.isBroken ? '0.4' : '1.0';
-                pCard.style.boxShadow = (kaitenFx.activePart === pKey && !part.isBroken) ? `0 0 8px ${part.color}` : 'none';
+                pCard.style.boxShadow = (kaitenFx.activePart === pKey && !part.isBroken) ? `0 0 6px ${part.color}` : 'none';
               }
             }
           });
+        } else {
+          if (bossIconEl) bossIconEl.innerText = '🍣';
+          if (bossNameEl) bossNameEl.innerText = 'KAITENZERS (카이텐저 연합)';
+          if (partsRow) partsRow.classList.add('hidden');
+          if (activePartBadge) activePartBadge.classList.add('hidden');
         }
-      } else {
-        // 1페이즈 상태 유지
-        if (kaitenPanel) kaitenPanel.classList.remove('hidden');
-        if (fxPanel) fxPanel.classList.add('hidden');
 
-        const totalHp = kaitenzers.reduce((sum, k) => sum + (k.isDead ? 0 : Math.max(0, k.hp)), 0);
-        const totalMaxHp = kaitenzers.reduce((sum, k) => sum + k.maxHp, 0) || 5000000;
-        const bossHpPct = Math.max(0, Math.min(100, (totalHp / totalMaxHp) * 100));
+        // 2. 다중 레이어 체력바 연산 (x34 / x50)
+        const hpPerLine = maxHp / totalLines;
+        let currentLine = Math.ceil(currentHp / hpPerLine);
+        if (currentHp <= 0) currentLine = 0;
 
-        const bossHpFill = document.getElementById('kaiten-total-hp-fill');
-        const bossHpText = document.getElementById('kaiten-total-hp-text');
-        if (bossHpFill) {
-          bossHpFill.style.width = `${bossHpPct.toFixed(1)}%`;
+        let lineHp = currentHp - (currentLine - 1) * hpPerLine;
+        if (currentLine <= 0) lineHp = 0;
+        const linePct = Math.max(0, Math.min(100, (lineHp / hpPerLine) * 100));
+
+        // 경장갑 레드 4색 순환
+        const currentColor = currentLine > 0 ? LIGHT_PALETTE[(currentLine - 1) % 4] : 'transparent';
+        const nextColor = currentLine > 1 ? LIGHT_PALETTE[(currentLine - 2) % 4] : '#1e293b';
+
+        // 피격 데미지 잔상 (Damage Trail) 부드러운 감소
+        if (typeof window._smoothDamagePct === 'undefined') window._smoothDamagePct = 100;
+        if (window._smoothDamagePct < linePct) {
+          window._smoothDamagePct = linePct;
+        } else {
+          window._smoothDamagePct += (linePct - window._smoothDamagePct) * 0.14;
+        }
+
+        const hpNumEl = document.getElementById('ba-hp-num');
+        const hpLinesEl = document.getElementById('ba-hp-lines');
+        const hpFillEl = document.getElementById('ba-hp-fill');
+        const hpUnderlayEl = document.getElementById('ba-hp-underlay');
+        const hpDamageEl = document.getElementById('ba-hp-damage');
+
+        if (hpNumEl) {
           if (isPhase1Retreating) {
-            bossHpFill.style.background = 'linear-gradient(90deg, #f59e0b, #ef4444)';
-          } else if (isPhase2Active) {
-            bossHpFill.style.background = 'linear-gradient(90deg, #38bdf8, #818cf8)';
+            hpNumEl.innerText = `🚨 비상 퇴각 중! ${currentHp.toLocaleString()} / ${maxHp.toLocaleString()}`;
+          } else {
+            hpNumEl.innerText = `${currentHp.toLocaleString()} / ${maxHp.toLocaleString()}`;
           }
         }
-        if (bossHpText) {
-          if (isPhase1Retreating) {
-            bossHpText.innerText = `🚨 비상 퇴각 중! ${totalHp.toLocaleString()} / ${totalMaxHp.toLocaleString()} [${bossHpPct.toFixed(1)}%]`;
+        if (hpLinesEl) {
+          hpLinesEl.innerText = `x ${currentLine}`;
+        }
+        if (hpFillEl) {
+          hpFillEl.style.width = `${linePct.toFixed(1)}%`;
+          hpFillEl.style.background = currentColor;
+        }
+        if (hpUnderlayEl) {
+          hpUnderlayEl.style.background = nextColor;
+        }
+        if (hpDamageEl) {
+          hpDamageEl.style.width = `${window._smoothDamagePct.toFixed(1)}%`;
+        }
+
+        // 3. 우측 하단 3칸 사선 ATG 게이지 블록 (스케치 100% 연동)
+        const atgVal = isP2 ? (kaitenFx.atg || 0) : 34; // 1페이즈는 기본 1칸 노란색 점등
+        const atgSeg1 = document.getElementById('ba-atg-seg-1');
+        const atgSeg2 = document.getElementById('ba-atg-seg-2');
+        const atgSeg3 = document.getElementById('ba-atg-seg-3');
+
+        if (atgSeg1) {
+          atgSeg1.className = 'ba-atg-seg' + (atgVal >= 33.3 ? ' active' : '');
+        }
+        if (atgSeg2) {
+          atgSeg2.className = 'ba-atg-seg' + (atgVal >= 66.6 ? ' active' : '');
+        }
+        if (atgSeg3) {
+          if (atgVal >= 99.0) {
+            atgSeg3.className = 'ba-atg-seg warning';
           } else {
-            bossHpText.innerText = `${totalHp.toLocaleString()} / ${totalMaxHp.toLocaleString()} [${bossHpPct.toFixed(1)}%]`;
+            atgSeg3.className = 'ba-atg-seg';
           }
         }
       }

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kaiten City - Weapon Attacks Complete</title>
-  <link rel="stylesheet" href="css/style.css?v=2.9.12">
+  <link rel="stylesheet" href="css/style.css?v=2.9.13">
 </head>
 <body>
   <!-- 메인 화면 (타이틀 오버레이) -->
@@ -580,69 +580,74 @@
       </div>
     </div>
 
-    <!-- 카이텐저 전체 총합 보스 체력바 (1페이즈 상단 중앙) -->
-    <div id="kaiten-boss-panel" class="panel">
-      <div class="boss-title-row">
-        <span class="boss-name"><span style="color: #ef4444; font-weight: 800;">🍣 KAITENZERS</span> (카이텐저 연합)</span>
-        <span id="kaiten-total-hp-text" class="boss-hp-numbers">5,000,000 / 5,000,000 [100.0%]</span>
-      </div>
-      <div class="boss-hp-track">
-        <div id="kaiten-total-hp-fill" class="boss-hp-fill" style="width: 100%;"></div>
-        <!-- 20% 도주선 마커 -->
-        <div class="boss-retreat-line" title="20% 도주 기준선">
-          <span class="retreat-marker-label">20% 도주선</span>
+    <!-- [블루아카이브 총력전 스타일] 통합 보스 체력바 HUD (스케치 100% 반영) -->
+    <div id="ba-boss-hud" class="ba-boss-hud">
+      <!-- 1. 좌측 원형 보스 초상화 프레임 -->
+      <div class="ba-portrait-frame">
+        <div id="ba-boss-portrait" class="ba-portrait-inner">
+          <span id="ba-boss-icon">🍣</span>
         </div>
+        <div class="ba-portrait-ring"></div>
       </div>
-    </div>
 
-    <!-- [신규 2페이즈] KAITEN FX Mk.0 종합 보스 패널 (HP + ATG + 3개 파츠) -->
-    <div id="kaiten-fx-panel" class="panel hidden" style="border-color: #ef4444; min-width: 460px;">
-      <div class="boss-title-row">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span class="boss-name" style="color: #ef4444; font-weight: 900; letter-spacing: 1px;">🤖 KAITEN FX Mk.0</span>
-          <span id="fx-active-part-badge" style="font-size: 11px; padding: 2px 7px; border-radius: 4px; font-weight: bold; background: #ec4899; color: #fff;">오른팔 [20s]</span>
-        </div>
-        <span id="fx-boss-hp-text" class="boss-hp-numbers" style="color: #fca5a5;">7,500,000 / 7,500,000 [100.0%]</span>
-      </div>
-      <!-- 보스 본체 HP 바 -->
-      <div class="boss-hp-track" style="margin-bottom: 5px;">
-        <div id="fx-boss-hp-fill" class="boss-hp-fill" style="background: linear-gradient(90deg, #dc2626, #f87171); width: 100%;"></div>
-      </div>
-      <!-- 보스 ATG 게이지 (45s 완충 궁극기) -->
-      <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10.5px; margin-bottom: 2px;">
-        <span style="color: #facc15; font-weight: 800;">⚡ ATG GAUGE (궁극기 충전)</span>
-        <span id="fx-atg-text" style="color: #fef08a; font-family: monospace; font-weight: bold;">0% / 100% [45.0s]</span>
-      </div>
-      <div style="width: 100%; height: 7px; background: #1e293b; border-radius: 3px; overflow: hidden; margin-bottom: 6px; border: 1px solid rgba(250, 204, 21, 0.3);">
-        <div id="fx-atg-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #eab308, #facc15); transition: width 0.1s linear;"></div>
-      </div>
-      <!-- 3대 파츠 내구도 미니 바 -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; font-size: 10px;">
-        <div id="fx-part-card-pink" style="background: rgba(15,23,42,0.8); padding: 3px 6px; border-radius: 4px; border: 1px solid #ec4899;">
-          <div style="display: flex; justify-content: space-between; color: #f472b6; font-weight: bold;">
-            <span>오른팔(새우)</span>
-            <span id="fx-part-hp-pink">100%</span>
+      <!-- 2. 우측 보스 메인 바 영역 -->
+      <div class="ba-bar-column">
+        <!-- 2-1. 상단 타이틀 행 (보스 이름 + 경장갑 뱃지 + 파츠 뱃지) -->
+        <div class="ba-header-row">
+          <div class="ba-name-wrapper">
+            <span id="ba-boss-name" class="ba-boss-name">KAITENZERS (카이텐저 연합)</span>
+            <span id="ba-boss-armor-badge" class="ba-armor-badge light">경장갑</span>
           </div>
-          <div style="width: 100%; height: 3.5px; background: #334155; border-radius: 2px; margin-top: 2px; overflow: hidden;">
-            <div id="fx-part-fill-pink" style="width: 100%; height: 100%; background: #ec4899;"></div>
+          <span id="ba-active-part-badge" class="ba-part-badge hidden">오른팔 [20s]</span>
+        </div>
+
+        <!-- 2-2. 사선 다중 레이어 체력바 트랙 -->
+        <div class="ba-hp-track-wrapper">
+          <div class="ba-hp-track">
+            <!-- 다음 줄 바 (바닥 레이어) -->
+            <div id="ba-hp-underlay" class="ba-hp-layer underlay"></div>
+            <!-- 피격 데미지 잔상 바 (중간 레이어) -->
+            <div id="ba-hp-damage" class="ba-hp-layer damage-trail"></div>
+            <!-- 현재 체력 바 (최상단 레이어) -->
+            <div id="ba-hp-fill" class="ba-hp-layer current"></div>
+
+            <!-- 바 내부 텍스트 오버레이 (체력 수치 & 줄 수) -->
+            <div class="ba-hp-content">
+              <span id="ba-hp-num" class="ba-hp-num">5,000,000 / 5,000,000</span>
+              <span id="ba-hp-lines" class="ba-hp-lines">x 34</span>
+            </div>
           </div>
         </div>
-        <div id="fx-part-card-red" style="background: rgba(15,23,42,0.8); padding: 3px 6px; border-radius: 4px; border: 1px solid #ef4444;">
-          <div style="display: flex; justify-content: space-between; color: #f87171; font-weight: bold;">
-            <span>가슴(참치)</span>
-            <span id="fx-part-hp-red">100%</span>
+
+        <!-- 2-3. 하단 서브 행: 2페이즈 3대 파츠 미니 바 & 우측 3칸 사선 ATG 블록 -->
+        <div class="ba-sub-row">
+          <!-- 2페이즈 3대 파츠 미니 내구도 (2페이즈에만 표시) -->
+          <div id="ba-parts-row" class="ba-parts-row hidden">
+            <div class="ba-part-item" id="fx-part-card-pink">
+              <span class="ba-part-name" style="color:#f472b6;">오른팔</span>
+              <div class="ba-part-bar"><div id="fx-part-fill-pink" style="background:#ec4899; width:100%;"></div></div>
+              <span id="fx-part-hp-pink" class="ba-part-val">100%</span>
+            </div>
+            <div class="ba-part-item" id="fx-part-card-red">
+              <span class="ba-part-name" style="color:#f87171;">가슴</span>
+              <div class="ba-part-bar"><div id="fx-part-fill-red" style="background:#ef4444; width:100%;"></div></div>
+              <span id="fx-part-hp-red" class="ba-part-val">100%</span>
+            </div>
+            <div class="ba-part-item" id="fx-part-card-green">
+              <span class="ba-part-name" style="color:#4ade80;">왼팔</span>
+              <div class="ba-part-bar"><div id="fx-part-fill-green" style="background:#22c55e; width:100%;"></div></div>
+              <span id="fx-part-hp-green" class="ba-part-val">100%</span>
+            </div>
           </div>
-          <div style="width: 100%; height: 3.5px; background: #334155; border-radius: 2px; margin-top: 2px; overflow: hidden;">
-            <div id="fx-part-fill-red" style="width: 100%; height: 100%; background: #ef4444;"></div>
-          </div>
-        </div>
-        <div id="fx-part-card-green" style="background: rgba(15,23,42,0.8); padding: 3px 6px; border-radius: 4px; border: 1px solid #22c55e;">
-          <div style="display: flex; justify-content: space-between; color: #4ade80; font-weight: bold;">
-            <span>왼팔(실드)</span>
-            <span id="fx-part-hp-green">100%</span>
-          </div>
-          <div style="width: 100%; height: 3.5px; background: #334155; border-radius: 2px; margin-top: 2px; overflow: hidden;">
-            <div id="fx-part-fill-green" style="width: 100%; height: 100%; background: #22c55e;"></div>
+
+          <!-- 우측 하단: 유저 스케치 3칸 사선 분할 ATG 블록 -->
+          <div class="ba-atg-container" title="ATG 궁극기 게이지">
+            <span class="ba-atg-label">ATG</span>
+            <div class="ba-atg-segments">
+              <div class="ba-atg-seg" id="ba-atg-seg-1"></div>
+              <div class="ba-atg-seg" id="ba-atg-seg-2"></div>
+              <div class="ba-atg-seg" id="ba-atg-seg-3"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -762,15 +767,15 @@
   <canvas id="minimap" class="hidden"></canvas>
 
   <!-- WebRTC 순수 P2P 라이브러리 (로컬 내장 PeerJS) -->
-  <script src="js/peerjs.min.js?v=2.9.12"></script>
+  <script src="js/peerjs.min.js?v=2.9.13"></script>
   <script>window.Peer || document.write('<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"><\/script>');</script>
 
-  <!-- 게임 엔진 스크립트 모듈 순차 로드 (캐시 방지 v=2.9.12) -->
-  <script src="js/constants.js?v=2.9.12"></script>
-  <script src="js/entities.js?v=2.9.12"></script>
-  <script src="js/network.js?v=2.9.12"></script>
-  <script src="js/ui.js?v=2.9.12"></script>
-  <script src="js/render.js?v=2.9.12"></script>
-  <script src="js/main.js?v=2.9.12"></script>
+  <!-- 게임 엔진 스크립트 모듈 순차 로드 (캐시 방지 v=2.9.13) -->
+  <script src="js/constants.js?v=2.9.13"></script>
+  <script src="js/entities.js?v=2.9.13"></script>
+  <script src="js/network.js?v=2.9.13"></script>
+  <script src="js/ui.js?v=2.9.13"></script>
+  <script src="js/render.js?v=2.9.13"></script>
+  <script src="js/main.js?v=2.9.13"></script>
 </body>
 </html>

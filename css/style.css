@@ -108,68 +108,276 @@
       font-weight: bold;
     }
 
-    /* 카이텐저 상단 중앙 통합 보스 체력바 */
-    #kaiten-boss-panel {
-      min-width: 440px;
-      max-width: 600px;
+    /* ========================================================
+       [블루아카이브 총력전 스타일] 통합 보스 체력바 HUD
+       ======================================================== */
+    .ba-boss-hud {
+      min-width: 460px;
+      max-width: 620px;
       flex: 1;
       margin: 0 auto;
-      border: 1.5px solid rgba(239, 68, 68, 0.55);
-      background: rgba(15, 23, 42, 0.92);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 16px rgba(239, 68, 68, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      pointer-events: auto;
+      position: relative;
+      filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.6));
     }
-    .boss-title-row {
+    .ba-boss-hud.hidden {
+      display: none !important;
+    }
+
+    /* 좌측 원형 보스 초상화 프레임 */
+    .ba-portrait-frame {
+      position: relative;
+      width: 58px;
+      height: 58px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle, #1e293b 0%, #0f172a 100%);
+      border: 2.5px solid #ef4444;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.5), inset 0 0 8px rgba(0, 0, 0, 0.8);
+      z-index: 5;
+    }
+    .ba-portrait-inner {
+      font-size: 28px;
+      line-height: 1;
+      transform: scale(1);
+      transition: transform 0.15s ease;
+      user-select: none;
+    }
+    .ba-portrait-ring {
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 1.5px dashed rgba(239, 68, 68, 0.4);
+      animation: rotateRing 20s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes rotateRing {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* 우측 보스 메인 바 영역 */
+    .ba-bar-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    /* 상단 헤더 행 (이름 + 경장갑 뱃지) */
+    .ba-header-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 6px;
-      font-size: 13px;
+      padding-right: 4px;
     }
-    .boss-name {
+    .ba-name-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ba-boss-name {
+      font-size: 13.5px;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+    }
+    .ba-armor-badge {
+      font-size: 10px;
+      font-weight: 900;
+      padding: 1.5px 6px;
+      border-radius: 3px;
+      letter-spacing: 0.5px;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    }
+    .ba-armor-badge.light {
+      background: linear-gradient(135deg, #dc2626, #ef4444);
+      color: #ffffff;
+      border: 1px solid #f87171;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+    }
+    .ba-part-badge {
+      font-size: 10px;
       font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #ec4899;
+      color: #ffffff;
+    }
+
+    /* 사선 다중 레이어 체력바 트랙 */
+    .ba-hp-track-wrapper {
+      width: 100%;
+      height: 22px;
+      transform: skewX(-14deg);
+      background: rgba(15, 23, 42, 0.95);
+      border: 1.5px solid rgba(255, 255, 255, 0.28);
+      border-radius: 4px;
+      padding: 2px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+      position: relative;
+      overflow: hidden;
+    }
+    .ba-hp-track {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      background: #1e293b;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    /* 3중 겹침 레이어 (underlay -> damage-trail -> current) */
+    .ba-hp-layer {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      height: 100%;
+      border-radius: 2px;
+    }
+    .ba-hp-layer.underlay {
+      z-index: 1;
+      width: 100%;
+      background: #dc2626;
+      transition: background 0.1s ease;
+    }
+    .ba-hp-layer.damage-trail {
+      z-index: 2;
+      background: #fef08a;
+      box-shadow: 0 0 8px #fde047;
+      transition: width 0.25s ease-out;
+    }
+    .ba-hp-layer.current {
+      z-index: 3;
+      background: #ef4444;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+      transition: width 0.08s linear, background 0.1s ease;
+    }
+
+    /* 체력바 내부 텍스트 오버레이 */
+    .ba-hp-content {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 10px;
+      transform: skewX(14deg); /* 텍스트 역회전으로 정상 수평 표시 */
+      pointer-events: none;
+    }
+    .ba-hp-num {
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 11.5px;
+      font-weight: 900;
+      color: #ffffff;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0,0,0,0.9);
       letter-spacing: 0.5px;
     }
-    .boss-hp-numbers {
-      font-family: monospace;
-      font-size: 12px;
-      font-weight: bold;
-      color: #f87171;
+    .ba-hp-lines {
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 13.5px;
+      font-weight: 900;
+      color: #ffffff;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 6px rgba(254, 240, 138, 0.5);
+      letter-spacing: 1px;
     }
-    .boss-hp-track {
-      width: 100%;
-      height: 16px;
-      background: #1e293b;
-      border-radius: 8px;
-      overflow: visible;
+
+    /* 하단 서브 행 */
+    .ba-sub-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 18px;
+      margin-top: 2px;
+    }
+
+    /* 2페이즈 파츠 미니 바 */
+    .ba-parts-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .ba-part-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(15, 23, 42, 0.8);
+      padding: 1.5px 5px;
+      border-radius: 3px;
       border: 1px solid rgba(255, 255, 255, 0.15);
-      position: relative;
+      font-size: 9.5px;
     }
-    .boss-hp-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #dc2626, #ef4444, #f97316);
-      border-radius: 7px;
-      transition: width 0.12s linear;
-    }
-    .boss-retreat-line {
-      position: absolute;
-      top: -3px;
-      bottom: -3px;
-      left: 20%;
-      width: 2px;
-      background: #facc15;
-      box-shadow: 0 0 6px #facc15;
-      z-index: 2;
-    }
-    .retreat-marker-label {
-      position: absolute;
-      bottom: -15px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 9px;
+    .ba-part-name {
       font-weight: bold;
+    }
+    .ba-part-bar {
+      width: 42px;
+      height: 4px;
+      background: #334155;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .ba-part-bar > div {
+      height: 100%;
+      transition: width 0.15s ease;
+    }
+    .ba-part-val {
+      font-family: monospace;
+      font-size: 9px;
+      color: #94a3b8;
+    }
+
+    /* 우측 하단 3칸 사선 분할 ATG 게이지 블록 (스케치 100% 일치) */
+    .ba-atg-container {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transform: skewX(-14deg);
+    }
+    .ba-atg-label {
+      font-size: 10px;
+      font-weight: 900;
       color: #facc15;
-      white-space: nowrap;
-      text-shadow: 0 1px 2px #000;
+      letter-spacing: 0.5px;
+      transform: skewX(14deg);
+      text-shadow: 0 0 6px rgba(250, 204, 21, 0.6);
+    }
+    .ba-atg-segments {
+      display: flex;
+      gap: 3px;
+    }
+    .ba-atg-seg {
+      width: 28px;
+      height: 11px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1.5px solid rgba(255, 255, 255, 0.3);
+      border-radius: 2px;
+      transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .ba-atg-seg.active {
+      background: #facc15;
+      border-color: #fef08a;
+      box-shadow: 0 0 8px rgba(250, 204, 21, 0.9);
+    }
+    .ba-atg-seg.warning {
+      background: #ef4444;
+      border-color: #f87171;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.9);
+      animation: atgBlink 0.4s infinite alternate;
+    }
+    @keyframes atgBlink {
+      0% { opacity: 0.7; }
+      100% { opacity: 1; }
     }
 
     /* 카이텐저 5인 상태 패널 */

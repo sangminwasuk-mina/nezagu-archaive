@@ -650,6 +650,26 @@
       }
     }
 
+    // [카이텐저 1페이즈]: 5인이 5,000,000 단일 체력바를 균등 공유하는 피해 처리 함수
+    function applyKaitenzerSharedDamage(dmg) {
+      if (typeof kaitenzers === 'undefined') return 0;
+      const currentTotal = kaitenzers.reduce((sum, r) => sum + (r.isDead ? 0 : Math.max(0, r.hp)), 0);
+      const newTotal = Math.max(0, currentTotal - dmg);
+      const hpPerRanger = Math.ceil(newTotal / 5);
+      kaitenzers.forEach(r => {
+        r.hp = hpPerRanger;
+        if (newTotal <= 0) {
+          r.hp = 0;
+          r.isDead = true;
+          r.isActive = false;
+          if (r.id === 'yellow') r.laserState = 'none';
+          if (r.id === 'green') r.isOverheated = false;
+        }
+      });
+      return newTotal;
+    }
+    window.applyKaitenzerSharedDamage = applyKaitenzerSharedDamage;
+
     /**
      * [소속 패시브 & 보조스킬 통합 공격력 보정 연산 함수]
      * 게헨나(+70), 아비도스(+25), 밀레니엄(+1%), 아리우스(+1%), 미친개의 집념(+24.5%) 반영
@@ -1806,7 +1826,7 @@
           const isBlackBuff = kaitenzers.find(b => b.id === 'black').isActive;
           let calculatedDmg = k.id === 'black' ? finalTickDmg : (isBlackBuff ? Math.round(finalTickDmg * 0.7) : finalTickDmg);
 
-          k.hp = Math.max(0, k.hp - calculatedDmg);
+          applyKaitenzerSharedDamage(calculatedDmg);
 
           // [2인 멀티 동기화] 2P 각성 슈퍼노바 레이저 타격 전송
           if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
@@ -1817,15 +1837,6 @@
               damage: calculatedDmg,
               isCrit: isCrit
             });
-          }
-
-          if (k.hp <= 0) {
-            k.hp = 0;
-            k.isDead = true;
-            k.isActive = false;
-            if (k.id === 'yellow') k.laserState = 'none';
-
-            addDamageText(k.x + k.size / 2, groundY - (k.jumpY || 0) - k.size - 25, `💀 [${k.name} 무력화!]`, '#94a3b8');
           }
 
           const dispY = groundY - (k.jumpY || 0) - k.size - 15;
@@ -2984,7 +2995,7 @@
           const kCenterY = (canvas.height - GROUND_OFFSET) - (k.jumpY || 0) - k.size / 2;
           const d = Math.hypot(kCenterX - x, kCenterY - y);
           if (d <= 80) {
-            k.hp = Math.max(0, k.hp - dmg);
+            applyKaitenzerSharedDamage(dmg);
             if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
               sendNetPacket({
                 type: 'ENEMY_DAMAGE',
@@ -3113,7 +3124,7 @@
           const kCenterY = (canvas.height - GROUND_OFFSET) - (k.jumpY || 0) - k.size / 2;
           const d = Math.hypot(kCenterX - x, kCenterY - y);
           if (d <= 75) {
-            k.hp = Math.max(0, k.hp - dmg);
+            applyKaitenzerSharedDamage(dmg);
             if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
               sendNetPacket({
                 type: 'ENEMY_DAMAGE',
@@ -3127,12 +3138,8 @@
             if (hitCount <= 2) {
               addDamageText(kCenterX, kCenterY - 25, `💥 -${dmg}`, '#06b6d4');
             }
-            if (k.hp <= 0) {
-              k.hp = 0;
-              k.isDead = true;
-              k.isActive = false;
-              if (k.id === 'yellow') k.laserState = 'none';
-              addDamageText(kCenterX, (canvas.height - GROUND_OFFSET) - k.size - 25, `💀 [${k.name} 무력화!]`, '#94a3b8');
+            if (k.isDead) {
+              addDamageText(kCenterX, (canvas.height - GROUND_OFFSET) - k.size - 25, `💀 [카이텐저 전원 격파!]`, '#94a3b8');
             }
           }
         }
@@ -3245,7 +3252,7 @@
           const d = Math.hypot(kCenterX - x, kCenterY - y);
           if (d <= 110) {
             // 1) 630% 범위 대미지 적용
-            k.hp = Math.max(0, k.hp - dmg);
+            applyKaitenzerSharedDamage(dmg);
             addDamageText(kCenterX, kCenterY - 25, `💥 -${dmg}`, '#06b6d4');
 
             // 2) 공격력 30% 감소 디버프 부여 (10초 지속)
@@ -3264,12 +3271,8 @@
             }
             addDamageText(kCenterX, kCenterY - 45, `🔻 [ATK -30%]`, '#38bdf8');
 
-            if (k.hp <= 0) {
-              k.hp = 0;
-              k.isDead = true;
-              k.isActive = false;
-              if (k.id === 'yellow') k.laserState = 'none';
-              addDamageText(kCenterX, (canvas.height - GROUND_OFFSET) - k.size - 25, `💀 [${k.name} 무력화!]`, '#94a3b8');
+            if (k.isDead) {
+              addDamageText(kCenterX, (canvas.height - GROUND_OFFSET) - k.size - 25, `💀 [카이텐저 전원 격파!]`, '#94a3b8');
             }
           }
         }
@@ -3363,7 +3366,7 @@
           const kCenterY = (canvas.height - GROUND_OFFSET) - (k.jumpY || 0) - k.size / 2;
           const d = Math.hypot(kCenterX - x, kCenterY - y);
           if (d <= 120) {
-            k.hp = Math.max(0, k.hp - dmg);
+            applyKaitenzerSharedDamage(dmg);
             if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
               sendNetPacket({
                 type: 'ENEMY_DAMAGE',
@@ -3375,12 +3378,8 @@
             }
             addDamageText(kCenterX, kCenterY - 25, `💥 -${dmg.toLocaleString()}`, '#94a3b8');
 
-            if (k.hp <= 0) {
-              k.hp = 0;
-              k.isDead = true;
-              k.isActive = false;
-              if (k.id === 'yellow') k.laserState = 'none';
-              addDamageText(kCenterX, (canvas.height - GROUND_OFFSET) - k.size - 25, `💀 [${k.name} 무력화!]`, '#94a3b8');
+            if (k.isDead) {
+              addDamageText(kCenterX, (canvas.height - GROUND_OFFSET) - k.size - 25, `💀 [카이텐저 전원 격파!]`, '#94a3b8');
             }
           }
         }
@@ -3775,7 +3774,7 @@
             enemies.forEach(k => {
               if (k.isSpawned && !k.isDead) {
                 const dmg = Math.round(k.hp * 0.05 + 53000);
-                k.hp = Math.max(0, k.hp - dmg);
+                applyKaitenzerSharedDamage(dmg);
                 if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
                   sendNetPacket({
                     type: 'ENEMY_DAMAGE',
@@ -3788,11 +3787,8 @@
                 const kCenterX = k.x + k.size / 2;
                 const kCenterY = (canvas.height - GROUND_OFFSET) - (k.jumpY || 0) - k.size / 2;
                 addDamageText(kCenterX, kCenterY - 30, `💥 -${dmg.toLocaleString()} (체력5%+53,000)`, '#00ffff');
-                if (k.hp <= 0) {
-                  k.hp = 0;
-                  k.isDead = true;
-                  k.isActive = false;
-                  addDamageText(kCenterX, kCenterY - 50, `💀 [${k.name} 일도양단 격파!]`, '#fbbf24');
+                if (k.isDead) {
+                  addDamageText(kCenterX, kCenterY - 50, `💀 [카이텐저 전원 격파!]`, '#fbbf24');
                 }
               }
             });
@@ -4640,12 +4636,12 @@
 
       // [타인의 사슬 타이머 제거]
 
-      // 1-2-B. 카이텐저 1페이즈 20% 긴급 후퇴 및 2페이즈 전환 판정
+      // 1-2-B. 카이텐저 1페이즈 단일 공유체력 5,000,000 전소(0 이하) 시 후퇴 및 2페이즈 전환 판정
       const totalKaitenHp = kaitenzers.reduce((sum, k) => sum + (k.isDead ? 0 : Math.max(0, k.hp)), 0);
       const totalKaitenMaxHp = kaitenzers.reduce((sum, k) => sum + k.maxHp, 0) || 5000000;
 
-      // [도주 발동 조건]: 전체 합산 체력 20% 이하 (1,000,000 HP 이하) 도달 시
-      if (!isPhase1Retreating && !isPhase2Active && totalKaitenHp <= totalKaitenMaxHp * 0.20) {
+      // [도주 발동 조건]: 5인이 공유하는 전체 체력 0 이하 (5,000,000 HP 완전 소진) 도달 시 2페이즈 합체 개시
+      if (!isPhase1Retreating && !isPhase2Active && totalKaitenHp <= 0) {
         isPhase1Retreating = true;
         phase1RetreatTimer = 4.0; // 4초간 긴급 후퇴 시퀀스 진행
 
@@ -4653,9 +4649,9 @@
         addDamageText(canvas.width / 2 + camera.x, 80, '🚨 [비상 경보] 카이텐저 연합 전원 후퇴 명령 발령!', '#ef4444');
         addDamageText(canvas.width / 2 + camera.x, 120, '⚡ "전원 퇴각! 최종 결전 병기 카이텐 FX Mk.0를 가동하라!"', '#facc15');
 
-        // 생존 중인 모든 멤버 후퇴 상태로 전환 (모든 공격/스킬 즉시 취소)
+        // 스폰된 모든 멤버 후퇴 상태로 전환 (모든 공격/스킬 즉시 취소)
         kaitenzers.forEach(k => {
-          if (k.isSpawned && !k.isDead) {
+          if (k.isSpawned) {
             k.isRetreating = true;
             k.isActive = false;
             k.isSkillSealed = true;
@@ -6118,7 +6114,7 @@
             }
 
             let finalDmg = Math.round(combatResult.damage * buffFactor);
-            hitKaiten.hp = Math.max(0, hitKaiten.hp - finalDmg);
+            applyKaitenzerSharedDamage(finalDmg);
 
             // [2인 멀티플레이 동기화]: 2P 게스트 타격 시 1P 호스트에게 권위적 대미지 확정 전송
             if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
@@ -6174,14 +6170,9 @@
               addDamageText(hitKaiten.x + hitKaiten.size / 2, groundY - (hitKaiten.jumpY || 0) - hitKaiten.size - 30, `🎯 치저 -${b.critResistDebuff}%!`, '#fb923c');
             }
 
-            // 체력이 0이 된 멤버는 즉시 무력화(Knockout) 상태 전환!
-            if (hitKaiten.hp <= 0) {
-              hitKaiten.hp = 0;
-              hitKaiten.isDead = true;
-              hitKaiten.isActive = false; // 모든 활성 스킬 해제
-              if (hitKaiten.id === 'yellow') hitKaiten.laserState = 'none';
-
-              addDamageText(hitKaiten.x + hitKaiten.size / 2, groundY - (hitKaiten.jumpY || 0) - hitKaiten.size - 25, `💀 [${hitKaiten.name} 무력화!]`, '#94a3b8');
+            // 체력이 0이 된 멤버는 즉시 무력화(Knockout) 상태 전환! (전체 공유체력 소진 시)
+            if (hitKaiten.isDead) {
+              addDamageText(hitKaiten.x + hitKaiten.size / 2, groundY - (hitKaiten.jumpY || 0) - hitKaiten.size - 25, `💀 [카이텐저 전원 격파!]`, '#94a3b8');
             }
 
             // 상성 표기 (WEAK, EFFECTIVE, RESIST 일 때 배지 텍스트 팝업)
