@@ -612,6 +612,36 @@
       window.phaseTransitionTimer = 0;
       window.phaseTransitionAlpha = 0;
 
+      // [신규 연출] 1페이즈 오프닝 & 2페이즈 합체 컷씬 초기화
+      const gY = canvas.height - GROUND_OFFSET;
+      camera.zoom = 1.0;
+      camera.targetZoom = 1.0;
+      camera.y = 0;
+
+      window.phase1Cutscene = {
+        active: true,
+        state: 'rooftop', // 'rooftop' -> 'jump' -> 'land' -> 'weapon_spin' -> 'red_pose' -> 'team_pose' -> 'explosion' -> 'done'
+        timer: 0,
+        subTimer: 0,
+        rangers: [
+          { id: 'black',  color: '#1e293b', border: '#0f172a', name: '블랙',  x: 1100, y: gY - 140 - 24, targetX: 1100, landDelay: 0.35, vx: 0, vy: 0, isLanded: false, landSmokeTimer: 0 },
+          { id: 'pink',   color: '#f472b6', border: '#db2777', name: '핑크',  x: 1250, y: gY - 140 - 24, targetX: 1250, landDelay: 0.20, vx: 0, vy: 0, isLanded: false, landSmokeTimer: 0 },
+          { id: 'red',    color: '#ef4444', border: '#b91c1c', name: '레드',  x: 1400, y: gY - 140 - 24, targetX: 1400, landDelay: 0.00, vx: 0, vy: 0, isLanded: false, landSmokeTimer: 0 },
+          { id: 'green',  color: '#22c55e', border: '#15803d', name: '그린',  x: 1550, y: gY - 140 - 24, targetX: 1550, landDelay: 0.20, vx: 0, vy: 0, isLanded: false, landSmokeTimer: 0 },
+          { id: 'yellow', color: '#eab308', border: '#a16207', name: '옐로',  x: 1700, y: gY - 140 - 24, targetX: 1700, landDelay: 0.35, vx: 0, vy: 0, isLanded: false, landSmokeTimer: 0 }
+        ]
+      };
+
+      window.phase2Cutscene = {
+        active: false,
+        state: 'none',
+        timer: 0,
+        subTimer: 0,
+        cutIndex: 0,
+        dockStep: 0,
+        fadeAlpha: 0
+      };
+
       // 3. KAITEN FX Mk.0 상태 초기화
       if (typeof kaitenFx !== 'undefined') {
         kaitenFx.isSpawned = false;
@@ -661,6 +691,251 @@
       }
     }
 
+    // =========================================================================
+    // [신규 연출] 1페이즈 오프닝 컷신 상태 머신 (옥상 대기 -> 도약/착지 -> 무기회전 -> 포징 -> 5색폭발)
+    // =========================================================================
+    function updatePhase1Cutscene(dt) {
+      const cut = window.phase1Cutscene;
+      if (!cut || !cut.active) return;
+
+      cut.timer += dt;
+      const groundY = canvas.height - GROUND_OFFSET;
+      const roofY = groundY - 140 - 24;
+
+      if (cut.state === 'rooftop') {
+        // 옥상 대기 씬 (1.0초간 5인 대형: 블랙-핑크-레드-그린-옐로)
+        camera.x = 1400 - canvas.width / 2;
+        camera.zoom = 1.0;
+        camera.y = -70; // 옥상 난간 포커스
+        if (cut.timer >= 1.0) {
+          cut.state = 'jump';
+          cut.timer = 0;
+          cut.rangers.forEach(r => {
+            r.x = r.targetX;
+            r.y = roofY;
+            r.vy = -5.5; // 살짝 솟구치며 도약
+            r.isLanded = false;
+            r.hasJumped = false;
+          });
+        }
+      } else if (cut.state === 'jump') {
+        // 순차 도약: 레드(0초) -> 핑크,그린(0.2초) -> 블랙,옐로(0.35초)
+        camera.y += (0 - camera.y) * 0.12;
+        let allLanded = true;
+
+        cut.rangers.forEach(r => {
+          if (cut.timer >= r.landDelay) {
+            r.hasJumped = true;
+          }
+          if (r.hasJumped && !r.isLanded) {
+            r.vy += 22 * dt; // 중력 가속도
+            r.y += r.vy * 60 * dt;
+            if (r.y >= groundY - 36) {
+              r.y = groundY - 36;
+              r.vy = 0;
+              r.isLanded = true;
+              r.landSmokeTimer = 0.3;
+            }
+          }
+          if (r.landSmokeTimer > 0) {
+            r.landSmokeTimer -= dt;
+          }
+          if (!r.isLanded) allLanded = false;
+        });
+
+        if (allLanded) {
+          // 전원 착지 완료!
+          cut.state = 'land';
+          cut.timer = 0;
+          // 착지 직후 카메라 인 ('n' 줌인 1.32x)
+          camera.targetZoom = 1.32;
+        }
+      } else if (cut.state === 'land') {
+        // 전원 착지 후 0.5초 대기 (정적)
+        camera.zoom += ((camera.targetZoom || 1.32) - camera.zoom) * 0.18;
+        camera.x = 1400 - canvas.width / 2;
+
+        if (cut.timer >= 0.5) {
+          // 0.5초 경과 ➔ 무기 회전 시작!
+          cut.state = 'weapon_spin';
+          cut.timer = 0;
+        }
+      } else if (cut.state === 'weapon_spin') {
+        // 0.4초간 다함께 무기를 왼쪽에서 시계방향 360도 회전시켜 오른쪽으로 촥!
+        camera.zoom += ((camera.targetZoom || 1.32) - camera.zoom) * 0.18;
+        if (cut.timer >= 0.4) {
+          // 레드 솔로 포즈로 전환
+          cut.state = 'red_pose';
+          cut.timer = 0;
+          // 카메라 약간 아웃 ('o' 1.15x)
+          camera.targetZoom = 1.15;
+        }
+      } else if (cut.state === 'red_pose') {
+        // 0.5초간 레드 혼자 리더 결전 포즈
+        camera.zoom += ((camera.targetZoom || 1.15) - camera.zoom) * 0.18;
+        if (cut.timer >= 0.5) {
+          // 나머지 멤버들도 전부 포즈 취함
+          cut.state = 'team_pose';
+          cut.timer = 0;
+          // 카메라 완전 아웃 ('o' 1.0x)
+          camera.targetZoom = 1.0;
+        }
+      } else if (cut.state === 'team_pose') {
+        // 0.4초간 전원 결전 포징 완성
+        camera.zoom += (1.0 - camera.zoom) * 0.2;
+        if (cut.timer >= 0.4) {
+          // 등 뒤 5색 대폭발!
+          cut.state = 'explosion';
+          cut.timer = 0;
+          if (typeof triggerScreenShake === 'function') triggerScreenShake(26, 0.7);
+        }
+      } else if (cut.state === 'explosion') {
+        // 0.8초간 5색 대폭발
+        camera.zoom += (1.0 - camera.zoom) * 0.2;
+        if (cut.timer >= 0.8) {
+          // 1페이즈 오프닝 컷신 완료 ➔ 실전 전투 개시!
+          cut.active = false;
+          cut.state = 'done';
+          camera.zoom = 1.0;
+          camera.targetZoom = 1.0;
+          camera.y = 0;
+
+          // 실전 카이텐저 위치와 상태 활성화
+          cut.rangers.forEach(r => {
+            const liveK = kaitenzers.find(k => k.id === r.id);
+            if (liveK) {
+              liveK.x = r.targetX;
+              liveK.isSpawned = true;
+              liveK.isDead = false;
+              liveK.isActive = true;
+            }
+          });
+          addDamageText(canvas.width / 2 + camera.x, 80, '⚔️ PHASE 1 BATTLE START! ⚔️', '#ef4444');
+        }
+      }
+    }
+
+    // =========================================================================
+    // [신규 연출] 2페이즈 합체 컷씬 상태 머신
+    // (페이드아웃/인 -> 패배 컷 3종 -> 무기 치켜들기 -> 하늘 5부품 강하 -> 도킹 -> 안광 위압포즈 -> 암전 번개 -> 보스 타이틀)
+    // =========================================================================
+    function updatePhase2Cutscene(dt) {
+      const cut = window.phase2Cutscene;
+      if (!cut || !cut.active) return;
+
+      cut.timer += dt;
+      cut.subTimer = (cut.subTimer || 0) + dt;
+
+      if (cut.state === 'fade_out') {
+        // 화면 완전 암전 진행 (0.8초)
+        clearEnemyProjectiles();
+        cut.fadeAlpha = Math.min(1.0, cut.timer / 0.8);
+        if (cut.timer >= 0.8) {
+          cut.state = 'fade_in';
+          cut.timer = 0;
+          cut.fadeAlpha = 1.0;
+        }
+      } else if (cut.state === 'fade_in') {
+        // 화면 서서히 밝아지며 컷신 전장 진입 (0.6초)
+        clearEnemyProjectiles();
+        cut.fadeAlpha = Math.max(0, 1.0 - (cut.timer / 0.6));
+        if (cut.timer >= 0.6) {
+          cut.state = 'defeated_cuts';
+          cut.timer = 0;
+          cut.subTimer = 0;
+          cut.cutIndex = 0; // 레드 비틀거림 컷
+        }
+      } else if (cut.state === 'defeated_cuts') {
+        clearEnemyProjectiles();
+        // 0~0.8s: 컷 0 (레드 비틀거림)
+        // 0.8~1.5s: 컷 1 (옐로&핑크 쓰러짐)
+        // 1.5~2.2s: 컷 2 (그린&블랙 쓰러짐)
+        if (cut.timer < 0.8) {
+          cut.cutIndex = 0;
+        } else if (cut.timer < 1.5) {
+          cut.cutIndex = 1;
+        } else if (cut.timer < 2.2) {
+          cut.cutIndex = 2;
+        } else {
+          // 패배 컷 종료 ➔ 전원 무기 치켜들기 씬으로 전환
+          cut.state = 'weapon_raise';
+          cut.timer = 0;
+          cut.subTimer = 0;
+        }
+      } else if (cut.state === 'weapon_raise') {
+        clearEnemyProjectiles();
+        // 1.2초간 레드가 먼저, 이어 4명이 함께 무기를 머리 위로 번쩍 치켜듦
+        if (cut.timer >= 1.2) {
+          // 카메라 위로 상승 & 하늘에서 5개 부품 강하 시작!
+          cut.state = 'sky_fall';
+          cut.timer = 0;
+          cut.subTimer = 0;
+          camera.y = -180;
+        }
+      } else if (cut.state === 'sky_fall') {
+        clearEnemyProjectiles();
+        camera.y += (0 - camera.y) * 0.08; // 카메라 부드럽게 지상 복귀
+        // 하늘에서 5개 부품 함께 하강 (1.2초)
+        if (cut.timer >= 1.2) {
+          // 순차 도킹 결합 시작!
+          cut.state = 'docking';
+          cut.timer = 0;
+          cut.subTimer = 0;
+          cut.dockStep = 0; // 0: 우측팔(새우)
+          camera.y = 0;
+          if (typeof triggerScreenShake === 'function') triggerScreenShake(14, 0.3);
+        }
+      } else if (cut.state === 'docking') {
+        clearEnemyProjectiles();
+        // 3단계 순차 도킹: 우측팔 -> 좌측팔 -> 양다리
+        if (cut.subTimer >= 0.45) {
+          cut.subTimer = 0;
+          cut.dockStep = (cut.dockStep || 0) + 1;
+          if (typeof triggerScreenShake === 'function') triggerScreenShake(18, 0.35);
+
+          if (cut.dockStep > 2) {
+            // 접합 완료 ➔ 안광 번쩍 & 시그니처 위압 포즈 씬으로 전환!
+            cut.state = 'eye_flash_pose';
+            cut.timer = 0;
+            cut.subTimer = 0;
+          }
+        }
+      } else if (cut.state === 'eye_flash_pose') {
+        clearEnemyProjectiles();
+        // 1.0초간 안광 번쩍 + 양팔 들어올리다 사진 포즈(양 주먹 쥐고 앞으로 내민 위압 포즈)
+        if (cut.timer >= 1.0) {
+          // 암전 번개 씬으로 전환!
+          cut.state = 'lightning_strike';
+          cut.timer = 0;
+          if (typeof triggerScreenShake === 'function') triggerScreenShake(35, 0.8);
+        }
+      } else if (cut.state === 'lightning_strike') {
+        clearEnemyProjectiles();
+        // 0.8초간 암전 배경 + 거대 노란 벼락 콰르르릉!
+        if (cut.timer >= 0.8) {
+          // 화면 복구 & 보스 타이틀 명판 씬으로 전환!
+          cut.state = 'boss_title';
+          cut.timer = 0;
+        }
+      } else if (cut.state === 'boss_title') {
+        clearEnemyProjectiles();
+        // 1.2초간 보스 타이틀 명판 출력
+        if (cut.timer >= 1.2) {
+          // 컷신 종료! 실전 2페이즈 전투 개시!
+          cut.active = false;
+          cut.state = 'done';
+          isPhase2Active = true;
+          if (typeof kaitenFx !== 'undefined') {
+            kaitenFx.isSpawned = true;
+            kaitenFx.isActive = true;
+            kaitenFx.introState = 'ready';
+            kaitenFx.normalAttackTimer = 1.0;
+          }
+          addDamageText(canvas.width / 2 + camera.x, 80, '⚔️ PHASE 2 KAITEN FX Mk.0 전투 개시! ⚔️', '#ef4444');
+        }
+      }
+    }
+
     // [카이텐저 1페이즈]: 5인이 5,000,000 단일 체력바를 균등 공유하는 피해 처리 함수
     function applyKaitenzerSharedDamage(dmg) {
       if (typeof kaitenzers === 'undefined') return 0;
@@ -705,6 +980,9 @@
 
     // 일반 사격 함수 (MG 및 HG, RG, SG)
     function tryFireWeapon() {
+      // 컷신 진행 중에는 사격 불가
+      if ((window.phase1Cutscene && window.phase1Cutscene.active) || (window.phase2Cutscene && window.phase2Cutscene.active)) return;
+
       // 기절(Stun) 상태 시 일반 사격 불가
       if (player.stunTimer > 0) return;
 
@@ -4446,11 +4724,12 @@
       }
 
       // 사격 키 홀딩 처리 (MG 연사, AR 연사, SG 불사 모드, SG 기괴멸렬 발동 시) vs 일반 단발식 무기
+      const isCutsceneRunning = (window.phase1Cutscene && window.phase1Cutscene.active) || (window.phase2Cutscene && window.phase2Cutscene.active);
       const isFxIntroActive = (typeof kaitenFx !== 'undefined' && kaitenFx.isSpawned && kaitenFx.introState !== 'none' && kaitenFx.introState !== 'ready');
       const isSGSkill = (player.activeWeaponSlot === 'main' && player.mainWeapon.id === 'sg_bloody_gunpowder' && player.sgSkillActive);
       const isColorAR = (player.activeWeaponSlot === 'main' && player.mainWeapon.id === 'ar_white_fang' && player.isColorActive);
       const isStunnedPlayer = (player.abiStunTimer > 0) || (player.stunTimer > 0);
-      const isHoldFire = !isFxIntroActive && !isStunnedPlayer && (((player.activeWeaponSlot === 'main' && (player.mainWeapon.id === 'mg_destructor' || player.mainWeapon.id === 'ar_white_fang' || player.mainWeapon.id === 'smg_fox45')) ||
+      const isHoldFire = !isCutsceneRunning && !isFxIntroActive && !isStunnedPlayer && (((player.activeWeaponSlot === 'main' && (player.mainWeapon.id === 'mg_destructor' || player.mainWeapon.id === 'ar_white_fang' || player.mainWeapon.id === 'smg_fox45')) ||
                          (player.activeWeaponSlot === 'main' && player.mainWeapon.id === 'sg_bloody_gunpowder' && (player.isImmortalActive || player.sgSkillActive))));
       const currentFireDelay = (player.isImmortalActive && player.mainWeapon.id === 'sg_bloody_gunpowder')
                                ? player.immortalFireDelay
@@ -4578,12 +4857,18 @@
         } else {
           // [일반 지상 이동]
           const moveSpeed = player.isRunning ? player.baseSpeed * 1.5 : player.baseSpeed;
-          if (keys.left) player.vx = -moveSpeed;
-          else if (keys.right) player.vx = moveSpeed;
-          else player.vx = 0;
+          if (isCutsceneRunning) {
+            player.vx = 0;
+          } else if (keys.left) {
+            player.vx = -moveSpeed;
+          } else if (keys.right) {
+            player.vx = moveSpeed;
+          } else {
+            player.vx = 0;
+          }
 
-          // 점프 (이동 잠금 중엔 점프 불가, SG 격류는 점프 가능!)
-          if (keys.jump && player.isGrounded) {
+          // 점프 (컷신 중엔 점프 불가)
+          if (!isCutsceneRunning && keys.jump && player.isGrounded) {
             player.vy = -16;
             player.isGrounded = false;
           }
@@ -4605,90 +4890,78 @@
         }
       }
 
-      // 카메라 추적 (합체 연출 중에는 로봇 중심, 평상시에는 로컬 플레이어 기준 포커스)
-      let targetFocusX = player.x;
-      if (typeof kaitenFx !== 'undefined' && kaitenFx.isSpawned && kaitenFx.introState !== 'none' && kaitenFx.introState !== 'ready') {
-        targetFocusX = kaitenFx.x + kaitenFx.width / 2;
-      }
-      const targetCamX = targetFocusX - (canvas.width / 2);
-      camera.x += (targetCamX - camera.x) * 0.1;
-      if (camera.x < 0) camera.x = 0;
-      if (camera.x > WORLD_WIDTH - canvas.width) {
-        camera.x = Math.max(0, WORLD_WIDTH - canvas.width);
+      // 카메라 추적 (컷신 진행 중에는 연출 타겟, 실전 중에는 플레이어 추적)
+      if (window.phase1Cutscene && window.phase1Cutscene.active) {
+        // 1페이즈 컷신: 옥상/강하/착지/포징 카메라 제어
+        const centerK = 1400;
+        camera.x = centerK - canvas.width / 2;
+      } else if (window.phase2Cutscene && window.phase2Cutscene.active) {
+        // 2페이즈 컷신: 맵 중앙 보스 출현 지점 포커스
+        camera.x = Math.round(canvas.width / 2 - canvas.width / 2);
+      } else {
+        camera.zoom += (1.0 - (camera.zoom || 1.0)) * 0.1;
+        camera.y += (0 - (camera.y || 0)) * 0.1;
+        let targetFocusX = player.x;
+        if (typeof kaitenFx !== 'undefined' && kaitenFx.isSpawned && kaitenFx.introState !== 'none' && kaitenFx.introState !== 'ready') {
+          targetFocusX = kaitenFx.x + kaitenFx.width / 2;
+        }
+        const targetCamX = targetFocusX - (canvas.width / 2);
+        camera.x += (targetCamX - camera.x) * 0.1;
+        if (camera.x < 0) camera.x = 0;
+        if (camera.x > WORLD_WIDTH - canvas.width) {
+          camera.x = Math.max(0, WORLD_WIDTH - canvas.width);
+        }
       }
 
       posDisplay.innerText = `X: ${Math.round(player.x)}`;
 
-      // 1-1. 카이텐저 1페이즈: 5인 전원 개전 즉시 참전 상태 유지 (순차 증원 불필요)
-      // (유저 요청: 1페이즈에서는 ATG를 채우지 않음)
+      // 1-1. 카이텐저 1페이즈: 5인 전원 개전 즉시 참전 상태 유지
       window.phase1Atg = 0;
 
-      // 1-2-B. 카이텐저 1페이즈 단일 공유체력 5,000,000 전소(0 이하) 시 즉시 화면 암전 및 2페이즈 전환 시퀀스
+      // 1-2-B. 카이텐저 1페이즈 단일 공유체력 5,000,000 전소(0 이하) 시 즉시 신규 2페이즈 합체 컷씬 발동
       const totalKaitenHp = kaitenzers.reduce((sum, k) => sum + (k.isDead ? 0 : Math.max(0, k.hp)), 0);
 
-      if (!phase1Defeated && !isPhase2Active && (window.phaseTransitionState === 'none' || !window.phaseTransitionState) && totalKaitenHp <= 0) {
+      if (!phase1Defeated && !isPhase2Active && (!window.phase2Cutscene || !window.phase2Cutscene.active) && totalKaitenHp <= 0) {
         phase1Defeated = true;
         isPhase1Retreating = false;
 
-        // 전장에 1회성 승리 알림 텍스트 출력
-        addDamageText(canvas.width / 2 + camera.x, 80, '🎉 PHASE 1 요격 성공! 카이텐저 전원 격파 완료!', '#10b981');
-        addDamageText(canvas.width / 2 + camera.x, 120, '⚡ "전원 퇴각! 최종 결전 병기 카이텐 FX Mk.0를 가동하라!"', '#facc15');
-
-        // 카이텐저 전원 즉시 모든 공격/스킬 해제 및 정지
+        // 카이텐저 전원 즉시 모든 공격/스킬 해제 및 영구 소멸 (시신 치우기)
         kaitenzers.forEach(k => {
           k.isDead = true;
           k.isActive = false;
+          k.isSpawned = false; // 전장에서 영구 제거하여 시신 잔존 방지!
           k.isSkillSealed = true;
           if (k.id === 'yellow') k.laserState = 'none';
           if (k.id === 'green') k.isOverheated = false;
         });
 
-        // 1페이즈 적들이 발사해둔 잔여 투사체 및 적 폭발 즉각 전량 소거 (2페이즈 시작 시 피격 방지)
+        // 1페이즈 적들이 발사해둔 잔여 투사체 및 적 폭발 즉각 전량 소거
         clearEnemyProjectiles();
 
-        // [화면 암전 시퀀스 1회성 발동]
-        window.phaseTransitionState = 'fade_out';
-        window.phaseTransitionTimer = 1.0;
-        window.phaseTransitionAlpha = 0;
+        // [신규 2페이즈 합체 컷씬 발동]
+        window.phase2Cutscene = {
+          active: true,
+          state: 'fade_out',
+          timer: 0,
+          subTimer: 0,
+          cutIndex: 0,
+          dockStep: 0,
+          fadeAlpha: 0
+        };
       }
 
-      // 1-2-C. [1페이즈 -> 2페이즈 화면 암전 전환 상태 머신]
-      if (typeof window.phaseTransitionState !== 'undefined' && window.phaseTransitionState !== 'none') {
-        window.phaseTransitionTimer -= dt;
-
-        // 전환 암전 중 잔여 투사체 및 적 폭발 지속 소거
-        clearEnemyProjectiles();
-
-        if (window.phaseTransitionState === 'fade_out') {
-          // 화면이 서서히 칠흑같이 어두워짐 (0 -> 1)
-          window.phaseTransitionAlpha = Math.min(1.0, 1.0 - Math.max(0, window.phaseTransitionTimer / 1.0));
-          if (window.phaseTransitionTimer <= 0) {
-            window.phaseTransitionState = 'blackout';
-            window.phaseTransitionTimer = 1.2; // 1.2초간 완전 암전 상태 유지
-            window.phaseTransitionAlpha = 1.0;
-            // 완전 암전 시점에 2페이즈 활성화 (플레이어 위치/방향은 리셋하지 않고 현재 위치 그대로 유지)
-            isPhase2Active = true;
-          }
-        } else if (window.phaseTransitionState === 'blackout') {
-          window.phaseTransitionAlpha = 1.0;
-          if (window.phaseTransitionTimer <= 0) {
-            window.phaseTransitionState = 'fade_in';
-            window.phaseTransitionTimer = 1.0; // 1초간 서서히 밝아짐
-          }
-        } else if (window.phaseTransitionState === 'fade_in') {
-          // 화면이 서서히 밝아지며 전장 공개 (1 -> 0)
-          window.phaseTransitionAlpha = Math.max(0, window.phaseTransitionTimer / 1.0);
-          if (window.phaseTransitionTimer <= 0) {
-            window.phaseTransitionState = 'none';
-            window.phaseTransitionAlpha = 0;
-            addDamageText(canvas.width / 2 + camera.x, 90, '⚡ KAITEN FX Mk.0 최종 결전 개시!', '#ef4444');
-          }
-        }
+      // 1-2-C. [신규 1페이즈 오프닝 & 2페이즈 합체 컷씬 상태 머신 업데이트]
+      if (window.phase1Cutscene && window.phase1Cutscene.active) {
+        updatePhase1Cutscene(dt);
+      }
+      if (window.phase2Cutscene && window.phase2Cutscene.active) {
+        updatePhase2Cutscene(dt);
       }
 
       // 1-3. 카이텐저 점프 물리 & 이동 AI
       kaitenzers.forEach(k => {
         if (!k.isSpawned || k.isDead || k.isRetreating) return;
+        if ((window.phase1Cutscene && window.phase1Cutscene.active) || (window.phase2Cutscene && window.phase2Cutscene.active)) return;
 
         // [빛의 검 : 아비 에슈흐 파이널] 시공간 결빙 히트스톱 중에는 완전 정지!
         if (k.isFrozen) {

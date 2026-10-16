@@ -317,8 +317,27 @@
       isTacticalDefActive: false
     };
 
-    // 독립 카메라 좌표 (화면 스크롤 기준)
-    const camera = { x: 0 };
+    // 독립 카메라 좌표 (화면 스크롤 기준 및 연출용 Y, Zoom)
+    const camera = { x: 0, y: 0, zoom: 1.0, targetZoom: 1.0 };
+
+    // [연출 시스템] 1페이즈 오프닝 & 2페이즈 합체 컷씬 전역 상태 객체
+    window.phase1Cutscene = {
+      active: true,
+      state: 'rooftop', // 'rooftop' | 'jump' | 'land' | 'weapon_spin' | 'red_pose' | 'team_pose' | 'explosion' | 'done'
+      timer: 0,
+      subTimer: 0,
+      rangers: []
+    };
+
+    window.phase2Cutscene = {
+      active: false,
+      state: 'none', // 'fade_out' | 'fade_in' | 'defeated_cuts' | 'weapon_raise' | 'sky_fall' | 'docking' | 'eye_flash_pose' | 'lightning_strike' | 'boss_title' | 'done'
+      timer: 0,
+      subTimer: 0,
+      cutIndex: 0,
+      dockStep: 0,
+      fadeAlpha: 0
+    };
 
 
 

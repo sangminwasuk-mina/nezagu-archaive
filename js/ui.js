@@ -1331,7 +1331,12 @@
       // [1페이즈 -> 2페이즈 전면 화면 암전 전환 오버레이 동기화]
       const transOverlay = document.getElementById('phase-transition-overlay');
       if (transOverlay) {
-        const alpha = (typeof window.phaseTransitionAlpha !== 'undefined') ? window.phaseTransitionAlpha : 0;
+        let alpha = 0;
+        if (window.phase2Cutscene && window.phase2Cutscene.active && typeof window.phase2Cutscene.fadeAlpha !== 'undefined') {
+          alpha = window.phase2Cutscene.fadeAlpha;
+        } else if (typeof window.phaseTransitionAlpha !== 'undefined') {
+          alpha = window.phaseTransitionAlpha;
+        }
         if (alpha > 0.01) {
           transOverlay.classList.remove('hidden');
           transOverlay.style.opacity = alpha.toFixed(2);
