@@ -4625,6 +4625,10 @@
           if (k.id === 'green') k.isOverheated = false;
         });
 
+        // 1페이즈 적들이 발사해둔 잔여 투사체 및 적 폭발 즉각 전량 소거 (2페이즈 시작 시 피격 방지)
+        bullets = bullets.filter(b => !b.isEnemyBullet);
+        explosions = explosions.filter(exp => exp.isFriendly);
+
         // [화면 암전 시퀀스 1회성 발동]
         window.phaseTransitionState = 'fade_out';
         window.phaseTransitionTimer = 1.0;
@@ -4635,6 +4639,10 @@
       if (typeof window.phaseTransitionState !== 'undefined' && window.phaseTransitionState !== 'none') {
         window.phaseTransitionTimer -= dt;
 
+        // 전환 암전 중 잔여 투사체 및 적 폭발 지속 소거
+        bullets = bullets.filter(b => !b.isEnemyBullet);
+        explosions = explosions.filter(exp => exp.isFriendly);
+
         if (window.phaseTransitionState === 'fade_out') {
           // 화면이 서서히 칠흑같이 어두워짐 (0 -> 1)
           window.phaseTransitionAlpha = Math.min(1.0, 1.0 - Math.max(0, window.phaseTransitionTimer / 1.0));
@@ -4642,11 +4650,8 @@
             window.phaseTransitionState = 'blackout';
             window.phaseTransitionTimer = 1.2; // 1.2초간 완전 암전 상태 유지
             window.phaseTransitionAlpha = 1.0;
-            // 완전 암전 시점에 2페이즈 활성화 및 안정적 플레이어 좌표 정돈
+            // 완전 암전 시점에 2페이즈 활성화 (플레이어 위치/방향은 리셋하지 않고 현재 위치 그대로 유지)
             isPhase2Active = true;
-            player.x = 400;
-            player.facing = 1;
-            addDamageText(canvas.width / 2 + camera.x, 110, '🤖 거대 로봇 카이텐 FX Mk.0 출격 시퀀스 접속!', '#f59e0b');
           }
         } else if (window.phaseTransitionState === 'blackout') {
           window.phaseTransitionAlpha = 1.0;
@@ -5072,6 +5077,8 @@
         if (currentMode === 'duo' && myRole === 'guest_striker') {
           // 2P 게스트: 보스 등장 시네마틱 타이머만 진행 (공격 및 세부 상태는 호스트가 동기화)
           if (kaitenFx.introState !== 'none' && kaitenFx.introState !== 'ready') {
+            bullets = bullets.filter(b => !b.isEnemyBullet);
+            explosions = explosions.filter(exp => exp.isFriendly);
             kaitenFx.introTimer -= dt;
             if (kaitenFx.introTimer <= 0) {
               if (kaitenFx.introState === 'fade_out') {
@@ -5108,6 +5115,8 @@
 
         // B. 등장 시네마틱 단계별 상태 머신 진행
         if (kaitenFx.isSpawned && kaitenFx.introState !== 'none' && kaitenFx.introState !== 'ready') {
+          bullets = bullets.filter(b => !b.isEnemyBullet);
+          explosions = explosions.filter(exp => exp.isFriendly);
           kaitenFx.introTimer -= dt;
 
           if (kaitenFx.introState === 'fade_out') {

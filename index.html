@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kaiten City - Weapon Attacks Complete</title>
-  <link rel="stylesheet" href="css/style.css?v=2.9.17">
+  <link rel="stylesheet" href="css/style.css?v=2.9.18">
 </head>
 <body>
   <!-- 메인 화면 (타이틀 오버레이) -->
@@ -632,11 +632,8 @@
       </div>
     </div>
 
-    <!-- [1페이즈 -> 2페이즈 화면 암전 전환 오버레이] -->
-    <div id="phase-transition-overlay" class="hidden">
-      <div class="trans-warning">WARNING : TOTAL ASSAULT PHASE 2</div>
-      <div class="trans-sub">-- KAITEN FX Mk.0 긴급 기동 시퀀스 접속 중 --</div>
-    </div>
+    <!-- [1페이즈 -> 2페이즈 화면 암전 전환 오버레이: 순수 암전 화면] -->
+    <div id="phase-transition-overlay" class="hidden"></div>
 
     <!-- 카이텐저 5인 상태 패널 (신규 보스 바로 대체되어 숨김) -->
     <div id="kaiten-status" class="panel hidden"></div>
@@ -752,15 +749,15 @@
   <canvas id="minimap" class="hidden"></canvas>
 
   <!-- WebRTC 순수 P2P 라이브러리 (로컬 내장 PeerJS) -->
-  <script src="js/peerjs.min.js?v=2.9.17"></script>
+  <script src="js/peerjs.min.js?v=2.9.18"></script>
   <script>window.Peer || document.write('<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"><\/script>');</script>
 
-  <!-- 게임 엔진 스크립트 모듈 순차 로드 (캐시 방지 v=2.9.17) -->
-  <script src="js/constants.js?v=2.9.17"></script>
-  <script src="js/entities.js?v=2.9.17"></script>
-  <script src="js/network.js?v=2.9.17"></script>
-  <script src="js/ui.js?v=2.9.17"></script>
-  <script src="js/render.js?v=2.9.17"></script>
-  <script src="js/main.js?v=2.9.17"></script>
+  <!-- 게임 엔진 스크립트 모듈 순차 로드 (캐시 방지 v=2.9.18) -->
+  <script src="js/constants.js?v=2.9.18"></script>
+  <script src="js/entities.js?v=2.9.18"></script>
+  <script src="js/network.js?v=2.9.18"></script>
+  <script src="js/ui.js?v=2.9.18"></script>
+  <script src="js/render.js?v=2.9.18"></script>
+  <script src="js/main.js?v=2.9.18"></script>
 </body>
 </html>
