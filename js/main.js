@@ -4710,13 +4710,18 @@
           return;
         }
 
-        // 점프 물리 연산 (중력) - 기절 중이어도 공중에 있다면 자연스럽게 바닥으로 착지!
+        // 점프 물리 연산 (중력 & 수평 관성) - 기절 중이어도 공중에 있다면 자연스럽게 바닥으로 착지!
         if (k.jumpY > 0 || k.vy > 0) {
           k.jumpY += k.vy;
           k.vy -= 0.65; // 중력 가속도
+          if (k.vx) {
+            k.x += k.vx;
+            k.vx *= 0.96;
+          }
           if (k.jumpY <= 0) {
             k.jumpY = 0;
             k.vy = 0;
+            k.vx = 0;
           }
         }
 
@@ -4725,43 +4730,73 @@
           return;
         }
 
-        // 점프 타이머 갱신 및 주기적 전술 점프 발동
-        k.jumpTimer -= dt;
-        if (k.jumpTimer <= 0) {
-          k.jumpTimer = 2.5 + Math.random() * 3.5; // 2.5~6초마다 점프
-          // 바닥에 있을 때 점프 발동
-          if (k.jumpY <= 0) {
-            k.vy = 12 + Math.random() * 4; // 점프 초속
-            addDamageText(k.x + k.size / 2, groundY - k.size - 10, 'JUMP!', '#94a3b8');
+        // 1. 포지션 측면 설정 (targetSide: -1 = 플레이어 좌측, +1 = 플레이어 우측)
+        // 블랙(선봉 기동)과 그린은 좌측 우회, 레드/핑크/옐로는 우측 기본 배치로 양각 포위 형성
+        if (typeof k.targetSide === 'undefined') {
+          if (k.id === 'black') k.targetSide = -1;
+          else if (k.id === 'green') k.targetSide = -1;
+          else k.targetSide = 1;
+        }
+
+        // 2. 포지션 셔플 & 동적 재배치 타이머 (줄서기 방지 & 순서 뒤섞기)
+        k.repositionTimer = (k.repositionTimer || (2.5 + Math.random() * 3.0)) - dt;
+        if (k.repositionTimer <= 0) {
+          k.repositionTimer = 3.5 + Math.random() * 3.5;
+          // 랜덤 거리 오프셋 (-80px ~ +80px)으로 1-2-3-4-5 고정 순서 완전 파괴
+          k.dynOffset = (Math.random() - 0.5) * 160;
+
+          // 기동성 있는 블랙/레드/그린은 가끔 플레이어 반대편으로 뛰어넘어 양각 전환
+          if ((k.id === 'black' || k.id === 'red' || k.id === 'green') && Math.random() < 0.38) {
+            k.targetSide = -k.targetSide;
           }
         }
 
-        const currentSpeed = k.baseSpeed;
+        // 3. 병종별 기준 사거리 범위 (랜덤 오프셋으로 매번 섞임)
+        let baseDist = 360;
+        if (k.id === 'black') baseDist = 230;      // HG 블랙: 근접 교란
+        else if (k.id === 'green') baseDist = 310;  // MG 그린: 전방 화력
+        else if (k.id === 'red') baseDist = 370;    // AR 레드: 중거리 지휘
+        else if (k.id === 'pink') baseDist = 450;   // RL 핑크: 후방 포격
+        else if (k.id === 'yellow') baseDist = 530; // SR 옐로: 최후방 저격
 
-        // 병종별 최적 교전 사거리 설정 (HG 근접 전방, SMG/AR 중간, SR/RL 후방 저격)
-        let preferredDist = 380;
-        if (k.id === 'black') preferredDist = 260; // HG 블랙: 전방 선봉
-        else if (k.id === 'green') preferredDist = 340; // MG 그린: 중거리 연사
-        else if (k.id === 'red') preferredDist = 420; // AR 레드: 정밀 3점사
-        else if (k.id === 'pink') preferredDist = 520; // RL 핑크: 후방 로켓
-        else if (k.id === 'yellow') preferredDist = 620; // SR 옐로: 최후방 저격
+        const targetDist = Math.max(160, baseDist + (k.dynOffset || 0));
+        // 목표 월드 X 좌표
+        const targetX = playerCenterX + (k.targetSide * targetDist);
+        const distToTarget = targetX - k.x;
+        const absDistToTarget = Math.abs(distToTarget);
 
-        // 플레이어 쪽으로 살짝 이동하거나 최적 간격 유지
-        const distToPlayer = playerCenterX - k.x;
-        const currentDist = Math.abs(distToPlayer);
-        if (currentDist > preferredDist + 40) {
-          k.x += Math.sign(distToPlayer) * currentSpeed;
-        } else if (currentDist < preferredDist - 40) {
-          k.x -= Math.sign(distToPlayer) * currentSpeed * 0.8;
+        const currentSpeed = k.baseSpeed * (k.jumpY > 0 ? 1.3 : 1.0);
+
+        if (absDistToTarget > 20) {
+          k.x += Math.sign(distToTarget) * Math.min(absDistToTarget, currentSpeed * 1.15);
         }
 
-        // [동료 간 겹침 방지 밀어내기 (Anti-clumping Separation)]
+        // 4. 점프 타이머: 바닥에서 도약할 때 수평 추진력(k.vx)을 함께 주어 역동적인 입체 도약!
+        k.jumpTimer -= dt;
+        if (k.jumpTimer <= 0) {
+          k.jumpTimer = 2.8 + Math.random() * 3.5;
+          if (k.jumpY <= 0) {
+            k.vy = 11 + Math.random() * 4;
+            // 목표 방향으로 공중 추진력 부여 (뒤로 빠지거나 앞으로 덮치기)
+            const jumpDir = Math.sign(distToTarget) || k.targetSide;
+            k.vx = jumpDir * (2.2 + Math.random() * 2.2);
+            addDamageText(k.x + k.size / 2, groundY - k.size - 10, 'LEAP!', k.color);
+          }
+        }
+
+        // 5. 맵 경계선 내 유지
+        const mapMaxX = typeof WORLD_WIDTH !== 'undefined' ? WORLD_WIDTH - 80 : 2500;
+        k.x = Math.max(80, Math.min(mapMaxX, k.x));
+
+        // 6. [동료 간 겹침 방지 밀어내기 (강력한 탄성 분리 - 겹침 0% 보장)]
         kaitenzers.forEach(other => {
           if (other !== k && other.isSpawned && !other.isDead && !other.isRetreating) {
             const overlapDist = k.x - other.x;
-            if (Math.abs(overlapDist) < 36) {
-              const push = (overlapDist >= 0 ? 1 : -1) * 22 * dt;
-              k.x += push;
+            const minDist = (k.size + other.size) * 0.72; // 최소 65px 이상 거리 유지
+            if (Math.abs(overlapDist) < minDist) {
+              const sign = (overlapDist >= 0 ? 1 : -1);
+              const pushForce = (minDist - Math.abs(overlapDist)) * 0.25;
+              k.x += sign * pushForce;
             }
           }
         });
