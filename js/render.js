@@ -2568,7 +2568,7 @@
             armShoulderX = 16;
             armShoulderY = -186;
             shoulderAngle = -(boss.aimAngle || 0); // 플레이어 높이에 따른 실시간 조준 각도!
-            elbowAngle = -0.28;
+            elbowAngle = 0; // 사격 시 일직선으로 뻗어 조준 방향 및 탄도 궤적과 100% 일치!
           }
 
           ctx.translate(armShoulderX, armShoulderY);
@@ -2621,7 +2621,7 @@
 
           // 팔꿈치 관절
           ctx.save();
-          ctx.translate(-8, 14);
+          ctx.translate(-8, 6);
           ctx.rotate(elbowAngle);
 
           // 팔꿈치 볼 조인트 원판
@@ -2636,39 +2636,39 @@
           // [유저 스케치 완벽 반영]: 핑크색 새우 팔뚝 완갑 위에 머신건 총신이 건틀릿 형태로 일체형 결합!
           // 하단: 핑크 새우 팔뚝 본체
           ctx.fillStyle = isPinkBroken ? '#64748b' : '#f472b6';
-          ctx.fillRect(-52, 6, 56, 24);
+          ctx.fillRect(-52, 0, 56, 22);
           ctx.strokeStyle = '#0f172a';
           ctx.lineWidth = 2.2;
-          ctx.strokeRect(-52, 6, 56, 24);
+          ctx.strokeRect(-52, 0, 56, 22);
 
           // 새우 살결 줄무늬
           ctx.fillStyle = isPinkBroken ? '#475569' : '#ec4899';
-          ctx.fillRect(-44, 9, 8, 18);
-          ctx.fillRect(-26, 9, 8, 18);
+          ctx.fillRect(-44, 3, 8, 16);
+          ctx.fillRect(-26, 3, 8, 16);
 
           // 상단: 팔뚝 위에 견고하게 마운트된 개틀링 건틀릿 하우징
           ctx.fillStyle = '#1e293b';
-          ctx.fillRect(-48, -12, 52, 18);
+          ctx.fillRect(-48, -16, 52, 16);
           ctx.strokeStyle = '#0f172a';
           ctx.lineWidth = 2;
-          ctx.strokeRect(-48, -12, 52, 18);
+          ctx.strokeRect(-48, -16, 52, 16);
 
           // 전방 돌출 6연장 총열 (사격 시 회전감 및 길이 연장)
           const gunLength = isFiringGatling ? 56 : (isHatchOpen ? 22 : 30);
           ctx.fillStyle = '#64748b';
-          ctx.fillRect(-48 - gunLength, -10, gunLength, 14);
+          ctx.fillRect(-48 - gunLength, -14, gunLength, 12);
           ctx.strokeStyle = '#0f172a';
-          ctx.strokeRect(-48 - gunLength, -10, gunLength, 14);
+          ctx.strokeRect(-48 - gunLength, -14, gunLength, 12);
 
           // 머즐 팁
           ctx.fillStyle = '#0f172a';
-          ctx.fillRect(-56 - gunLength, -11, 8, 16);
+          ctx.fillRect(-56 - gunLength, -15, 8, 14);
 
           // 머신건 사격 총구 화염 (Muzzle Flash - 초경량 연산, 렉 0%)
           if (isFiringGatling) {
             ctx.save();
             const muzzleTipX = -58 - gunLength;
-            const muzzleTipY = -3;
+            const muzzleTipY = -6;
 
             // 반투명 외곽 플래시
             ctx.fillStyle = 'rgba(251, 191, 36, 0.4)';

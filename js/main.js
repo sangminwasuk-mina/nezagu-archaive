@@ -5248,18 +5248,19 @@
             if (kaitenFx.chestHatchTimer < 0) kaitenFx.chestHatchTimer = 0;
           }
 
-          // 2.6) 플레이어 위치 추적 조준 각도 갱신 (오른팔 개틀링 조준 각도: 상향 -35도 ~ 초근접 급경사 하향 +75도)
-          const armMuzzleEstX = fxCenterX + (kaitenFx.facing * 90);
-          const armMuzzleEstY = groundY - 245;
-          const aimTarget = getEnemyTargetPos(armMuzzleEstX, armMuzzleEstY);
-          const aimDx = (aimTarget.x - armMuzzleEstX) * kaitenFx.facing; // 보스 전방 거리
-          const aimDy = aimTarget.y - armMuzzleEstY; // 수직 높이차
-          // 초근접 시에도 바로 발밑의 플레이어를 정확히 조준할 수 있도록
-          const effDx = Math.max(20, aimDx);
-          const rawAimAngle = Math.atan2(aimDy, effDx);
-          // -35도(-0.61 rad)부터 초근접 급경사 +75도(+1.31 rad)까지 시원하게 조준 가능!
-          const clampedAim = Math.max(-0.61, Math.min(1.31, rawAimAngle));
-          kaitenFx.aimAngle = (kaitenFx.aimAngle || 0) + (clampedAim - (kaitenFx.aimAngle || 0)) * Math.min(1, dt * 14);
+          // 2.6) 플레이어 위치 추적 조준 각도 갱신 (오른팔 개틀링 조준 각도: 상향 -35도 ~ 초근접 직하강 +86도)
+          const shoulderWorldX = fxCenterX - (kaitenFx.facing * 23);
+          const shoulderWorldY = groundY - 270;
+          const aimTarget = getEnemyTargetPos(shoulderWorldX, shoulderWorldY);
+          const targetDx = (aimTarget.x - shoulderWorldX) * kaitenFx.facing; // 보스 전방 거리
+          const targetDy = aimTarget.y - shoulderWorldY; // 플레이어 중심까지의 수직 낙차 (지면 기준 약 +235px)
+
+          // 초근접 시 바로 발밑의 플레이어도 정확히 조준할 수 있도록 (X거리 3px 이상이면 직하강 조준)
+          const effDx = Math.max(3, targetDx);
+          const rawAimAngle = Math.atan2(targetDy, effDx);
+          // -35도(-0.61 rad) 상향부터 초근접 직하강 +86도(+1.50 rad)까지 완벽 조준!
+          const clampedAim = Math.max(-0.61, Math.min(1.50, rawAimAngle));
+          kaitenFx.aimAngle = (kaitenFx.aimAngle || 0) + (clampedAim - (kaitenFx.aimAngle || 0)) * Math.min(1, dt * 18);
 
           // 3) [원작 메카 평타]: 0.5초 동안 미니건 15발 고속 난사 패턴
           if (!kaitenFx.isFiringSkill && !kaitenFx.isSlashing) {
@@ -5269,13 +5270,14 @@
                 kaitenFx.normalBurstTimer = 0;
                 kaitenFx.normalBurstCount--;
 
-                // 미니건 발사 위치: 핑크 팔뚝 상단에 마운트된 개틀링 총구 끝 (조준 각도 연동 & 초근접 보정)
+                // 미니건 발사 위치: 핑크 팔뚝 상단에 마운트된 개틀링 총구 끝 (렌더링 좌표와 100% 일치)
                 const shootAngle = kaitenFx.aimAngle || 0;
-                const armMuzzleDist = Math.max(25, Math.min(105, (aimTarget.x - fxCenterX) * kaitenFx.facing - 8));
-                const armMuzzleX = fxCenterX + kaitenFx.facing * (20 + Math.cos(shootAngle) * armMuzzleDist);
-                const armMuzzleY = (groundY - 245) + Math.sin(shootAngle) * armMuzzleDist;
+                const distToTarget = Math.hypot(targetDx, targetDy);
+                const armMuzzleDist = Math.min(176, Math.max(35, distToTarget - 25));
+                const armMuzzleX = shoulderWorldX + kaitenFx.facing * Math.cos(shootAngle) * armMuzzleDist;
+                const armMuzzleY = shoulderWorldY + Math.sin(shootAngle) * armMuzzleDist;
                 const bulletSpeed = 16.5;
-                const spread = (Math.random() - 0.5) * 1.6;
+                const spread = (Math.random() - 0.5) * 1.0;
 
                 spawnEnemyBullet({
                   type: 'fx_minigun',
@@ -5409,14 +5411,13 @@
                 kaitenFx.skillBurstTimer = 0;
                 kaitenFx.skillBurstCount--;
 
-                // 핑크 팔뚝 상단에 마운트된 개틀링 총구 위치 (조준 각도 연동 & 초근접 보정)
+                // 핑크 팔뚝 상단에 마운트된 개틀링 총구 위치 (렌더링 좌표와 100% 일치)
                 const shootAngle = kaitenFx.aimAngle || 0;
-                const armMuzzleEstX = fxCenterX + (kaitenFx.facing * 90);
-                const aimTarget = getEnemyTargetPos(armMuzzleEstX, groundY - 245);
-                const armMuzzleDist = Math.max(25, Math.min(105, (aimTarget.x - fxCenterX) * kaitenFx.facing - 8));
-                const armMuzzleX = fxCenterX + kaitenFx.facing * (20 + Math.cos(shootAngle) * armMuzzleDist);
-                const armMuzzleY = (groundY - 245) + Math.sin(shootAngle) * armMuzzleDist;
-                const spread = (Math.random() - 0.5) * 2.8;
+                const distToTarget = Math.hypot(targetDx, targetDy);
+                const armMuzzleDist = Math.min(176, Math.max(35, distToTarget - 25));
+                const armMuzzleX = shoulderWorldX + kaitenFx.facing * Math.cos(shootAngle) * armMuzzleDist;
+                const armMuzzleY = shoulderWorldY + Math.sin(shootAngle) * armMuzzleDist;
+                const spread = (Math.random() - 0.5) * 1.8;
 
                 spawnEnemyBullet({
                   type: 'fx_super_gatling',
