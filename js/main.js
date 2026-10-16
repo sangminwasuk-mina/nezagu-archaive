@@ -6467,9 +6467,45 @@
     }
 
 
+    let fpsFrames = 0;
+    let fpsLastSampleTime = performance.now();
+    let currentFps = 60;
+    let fpsValEl = null;
+    let fpsDotEl = null;
+
     function loop(now) {
       const dt = (now - lastTime) / 1000;
       lastTime = now;
+
+      // 실시간 FPS 측정 (250ms 주기 정밀 계산 및 상태 색상 연동)
+      fpsFrames++;
+      if (now - fpsLastSampleTime >= 250) {
+        currentFps = Math.round((fpsFrames * 1000) / (now - fpsLastSampleTime));
+        fpsFrames = 0;
+        fpsLastSampleTime = now;
+
+        if (!fpsValEl) fpsValEl = document.getElementById('fps-val');
+        if (!fpsDotEl) fpsDotEl = document.getElementById('fps-dot');
+
+        if (fpsValEl) {
+          fpsValEl.textContent = currentFps;
+        }
+        if (fpsDotEl) {
+          if (currentFps >= 50) {
+            fpsDotEl.style.backgroundColor = '#4ade80';
+            fpsDotEl.style.boxShadow = '0 0 7px #4ade80';
+            if (fpsValEl) fpsValEl.style.color = '#4ade80';
+          } else if (currentFps >= 30) {
+            fpsDotEl.style.backgroundColor = '#facc15';
+            fpsDotEl.style.boxShadow = '0 0 7px #facc15';
+            if (fpsValEl) fpsValEl.style.color = '#facc15';
+          } else {
+            fpsDotEl.style.backgroundColor = '#f87171';
+            fpsDotEl.style.boxShadow = '0 0 7px #f87171';
+            if (fpsValEl) fpsValEl.style.color = '#f87171';
+          }
+        }
+      }
 
       try {
         // 'battle' 상태(출격 완료)일 때만 전투 AI/물리/공격 로직 실행

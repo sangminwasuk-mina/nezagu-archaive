@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kaiten City - Weapon Attacks Complete</title>
-  <link rel="stylesheet" href="css/style.css?v=2.9.10">
+  <link rel="stylesheet" href="css/style.css?v=2.9.11">
 </head>
 <body>
   <!-- 메인 화면 (타이틀 오버레이) -->
@@ -652,8 +652,13 @@
     <div id="kaiten-status" class="panel hidden"></div>
   </div>
 
-  <!-- [신규 UI] 우측 상단 HUD: 도움말(+) 버튼 -->
-  <div id="top-right-hud" class="hidden">
+  <!-- [신규 UI] 우측 상단 HUD: 실시간 FPS 측정기 + 도움말(+) 버튼 -->
+  <div id="top-right-hud">
+    <div id="fps-counter" title="실시간 프레임레이트">
+      <span class="fps-dot" id="fps-dot"></span>
+      <span id="fps-val">60</span>
+      <span class="fps-unit">FPS</span>
+    </div>
     <!-- 도움말(+) 버튼 -->
     <button id="btn-open-controls-help" title="전투 조작키 안내 (단축키: = / +)">
       <span>도움말 (+)</span>
@@ -757,15 +762,15 @@
   <canvas id="minimap" class="hidden"></canvas>
 
   <!-- WebRTC 순수 P2P 라이브러리 (로컬 내장 PeerJS) -->
-  <script src="js/peerjs.min.js?v=2.9.10"></script>
+  <script src="js/peerjs.min.js?v=2.9.11"></script>
   <script>window.Peer || document.write('<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"><\/script>');</script>
 
-  <!-- 게임 엔진 스크립트 모듈 순차 로드 (캐시 방지 v=2.9.10) -->
-  <script src="js/constants.js?v=2.9.10"></script>
-  <script src="js/entities.js?v=2.9.10"></script>
-  <script src="js/network.js?v=2.9.10"></script>
-  <script src="js/ui.js?v=2.9.10"></script>
-  <script src="js/render.js?v=2.9.10"></script>
-  <script src="js/main.js?v=2.9.10"></script>
+  <!-- 게임 엔진 스크립트 모듈 순차 로드 (캐시 방지 v=2.9.11) -->
+  <script src="js/constants.js?v=2.9.11"></script>
+  <script src="js/entities.js?v=2.9.11"></script>
+  <script src="js/network.js?v=2.9.11"></script>
+  <script src="js/ui.js?v=2.9.11"></script>
+  <script src="js/render.js?v=2.9.11"></script>
+  <script src="js/main.js?v=2.9.11"></script>
 </body>
 </html>

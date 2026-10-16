@@ -1377,7 +1377,7 @@
     }
 
     /* ========================================================
-       [신규 UI] 우측 상단 HUD (도움말 버튼)
+       [신규 UI] 우측 상단 HUD (실시간 FPS 측정기 + 도움말 버튼)
        ======================================================== */
     #top-right-hud {
       position: fixed;
@@ -1386,12 +1386,54 @@
       z-index: 95;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       pointer-events: auto;
       transition: opacity 0.2s ease;
     }
     #top-right-hud.hidden {
       display: none !important;
+    }
+
+    /* 실시간 FPS 카운터 뱃지 */
+    #fps-counter {
+      transform: skewX(-12deg);
+      background: rgba(15, 23, 42, 0.9);
+      border: 1.5px solid rgba(56, 189, 248, 0.45);
+      padding: 5px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+      user-select: none;
+    }
+    #fps-counter > * {
+      display: inline-block;
+      transform: skewX(12deg);
+    }
+    .fps-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: #4ade80;
+      box-shadow: 0 0 7px #4ade80;
+      transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    #fps-val {
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 13.5px;
+      font-weight: 900;
+      color: #4ade80;
+      min-width: 22px;
+      text-align: right;
+      letter-spacing: 0.5px;
+      transition: color 0.2s ease;
+    }
+    .fps-unit {
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #94a3b8;
+      letter-spacing: 0.5px;
     }
 
     /* 스킬 슬롯 아래쪽 사선 코스트 바 컨테이너 (적 체력바와 간섭 방지) */

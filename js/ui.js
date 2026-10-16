@@ -15,7 +15,7 @@
       const tacticalDeck = document.getElementById('tactical-deck');
       if (tacticalDeck) tacticalDeck.classList.add('hidden');
       const topRightHud = document.getElementById('top-right-hud');
-      if (topRightHud) topRightHud.classList.add('hidden');
+      if (topRightHud) topRightHud.classList.remove('hidden');
       const helpModal = document.getElementById('controls-help-modal');
       if (helpModal) helpModal.classList.add('hidden');
       supporterModal.classList.add('hidden');
