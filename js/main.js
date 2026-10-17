@@ -2682,7 +2682,7 @@
       player.color = '#334155';
 
       // 3. 무기 스펙 BLACK FANG 465 변환 & 무한 탄창
-      player.mainWeapon.name = 'AR (BLACK FANG 465)';
+      player.mainWeapon.name = '[신비] AR (BLACK FANG 465)';
       player.mainWeapon.dmg = 1000; // 공격력 1000으로 너프
       player.mainWeapon.range = 750; // 사거리 750px
       player.mainWeapon.fireDelay = 0.20;

@@ -746,33 +746,33 @@
       const isAR = (isMain && player.mainWeapon && player.mainWeapon.id === 'ar_white_fang');
       const isSMG = (isMain && player.mainWeapon && player.mainWeapon.id === 'smg_fox45');
       const isTactical = (!isMain && player.subWeapon && player.subWeapon.id === 'hg_tactical');
-      let weaponName = isTactical ? 'HG (상식적 수단)' : 'HG (보조 권총)';
+      let weaponName = isTactical ? '[일반] HG (상식적 수단)' : '[일반] HG (보조 권총)';
       let weaponColor = isTactical ? '#38bdf8' : '#94a3b8';
       if (isMain) {
         if (isAR) {
           if (player.isColorActive) {
-            weaponName = 'AR (BLACK FANG 465)';
+            weaponName = '[신비] AR (BLACK FANG 465)';
             weaponColor = '#64748b';
           } else {
-            weaponName = 'AR (WHITE FANG 465)';
+            weaponName = '[폭발] AR (WHITE FANG 465)';
             weaponColor = '#06b6d4';
           }
         } else if (isSG) {
-          weaponName = player.sgSkillActive ? `SG (기괴멸렬 [${player.sgSkillShotsLeft}/6회])` : 'SG (블러디 앤 건 파우더)';
+          weaponName = player.sgSkillActive ? `[관통] SG (기괴멸렬 [${player.sgSkillShotsLeft}/6회])` : '[관통] SG (블러디 앤 건 파우더)';
           weaponColor = '#ef4444';
         } else if (isRG) {
           if (player.isAbiEshuhActive) {
-            weaponName = 'RG (슈퍼노바 for 아비 에슈흐)';
+            weaponName = '[신비] RG (슈퍼노바 for 아비 에슈흐)';
             weaponColor = '#00ffff';
           } else {
-            weaponName = 'RG (빛의검 : 슈퍼노바)';
+            weaponName = '[신비] RG (빛의검 : 슈퍼노바)';
             weaponColor = '#38bdf8';
           }
         } else if (isSMG) {
-          weaponName = player.isTacticalDefActive ? 'SMG (FOX 45식 기관단총) [🛡️전술 방어]' : 'SMG (FOX 45식 기관단총)';
+          weaponName = player.isTacticalDefActive ? '[폭발] SMG (FOX 45식 기관단총) [🛡️전술 방어]' : '[폭발] SMG (FOX 45식 기관단총)';
           weaponColor = '#f59e0b';
         } else {
-          weaponName = 'MG (종막의 디스트로이어)';
+          weaponName = '[폭발] MG (종막의 디스트로이어)';
           weaponColor = '#facc15';
         }
 
@@ -780,20 +780,14 @@
         const posBadge = player.position ? ` [${player.position}]` : '';
         weaponName += posBadge;
 
-        // 방어 장갑 & 공격 유형 뱃지
+        // 방어 장갑 뱃지 추가
         const armNames = { light: '경장갑', heavy: '중장갑', composite: '복합장갑', special: '특수장갑', elastic: '탄력장갑', normal: '일반' };
-        const atkNames = { explosive: '폭발', pierce: '관통', mystic: '신비', decompose: '분해', sonic: '진동', normal: '일반' };
         const armLabel = armNames[player.armorType] || '일반';
-        const curAtk = (isAR && player.isColorActive) ? ATTACK_TYPES.MYSTIC : (cur.attackType || ATTACK_TYPES.NORMAL);
-        const atkLabel = atkNames[curAtk] || '일반';
-        weaponName += ` [${armLabel}] [${atkLabel}]`;
+        weaponName += ` [방어: ${armLabel}]`;
       } else {
         const armNames = { light: '경장갑', heavy: '중장갑', composite: '복합장갑', special: '특수장갑', elastic: '탄력장갑', normal: '일반' };
-        const atkNames = { explosive: '폭발', pierce: '관통', mystic: '신비', decompose: '분해', sonic: '진동', normal: '일반' };
         const armLabel = armNames[player.armorType] || '일반';
-        const curAtk = cur.attackType || ATTACK_TYPES.NORMAL;
-        const atkLabel = atkNames[curAtk] || '일반';
-        weaponName += ` [${armLabel}] [${atkLabel}]`;
+        weaponName += ` [방어: ${armLabel}]`;
       }
 
       document.getElementById('currentWeaponName').innerText = weaponName;
@@ -1049,29 +1043,29 @@
     // [신규 UI] 무기별 스킬 기본 정보 및 코스트 설정 (유저 스케치 반영)
     const WEAPON_SKILL_CONFIG = {
       mg_destructor: {
-        skill1: { name: '종막: 이스보셋', cost: 6 },
-        skill2: { name: '개연 : 이스보셋', cost: 10 },
-        special: { name: '선도부장', cost: 0, isSpecial: true, canUse: p => (p.hp / p.maxHp <= 0.50) && !p.specialSkillUsed }
+        skill1: { name: '[폭발] 종막: 이스보셋', cost: 6 },
+        skill2: { name: '[폭발] 개연 : 이스보셋', cost: 10 },
+        special: { name: '[폭발] 선도부장', cost: 0, isSpecial: true, canUse: p => (p.hp / p.maxHp <= 0.50) && !p.specialSkillUsed }
       },
       rg_supernova: {
-        skill1: { name: '각성 : 빛의 검', cost: 3 },
-        skill2: { name: '슈퍼노바 방출', cost: 7 },
-        special: { name: '아비 에슈흐', cost: 0, isSpecial: true, canUse: p => !p.specialSkillUsed && (p.spentCostTotal >= 150) }
+        skill1: { name: '[신비] 밸런스 붕괴', cost: 5 },
+        skill2: { name: '[신비] 슈퍼노바 방출', cost: 10 },
+        special: { name: '[신비] 시스템 : 아비 에슈흐', cost: 0, isSpecial: true, canUse: p => !p.specialSkillUsed && (p.spentCostTotal >= 150) }
       },
       sg_bloody_gunpowder: {
-        skill1: { name: '기괴멸렬', cost: 4 },
-        skill2: { name: '격류 난사', cost: 5 },
-        special: { name: '불사(不死)', cost: 0, isSpecial: true, canUse: p => !p.specialSkillUsed }
+        skill1: { name: '[관통] 기괴멸렬', cost: 4 },
+        skill2: { name: '[신비] 격류 난사', cost: 4 },
+        special: { name: '[폭발] 불사(不死)', cost: 0, isSpecial: true, canUse: p => !p.specialSkillUsed }
       },
       ar_white_fang: {
-        skill1: { name: '드론 소환', cost: 3 },
-        skill2: { name: '라이딩 그레네이드', cost: 3 },
-        special: { name: '테러화(恐怖化)', cost: 0, isSpecial: true, canUse: p => p.isColorActive || !p.specialSkillUsed }
+        skill1: { name: '[폭발] 드론 소환', cost: 3 },
+        skill2: { name: '[신비] 라이딩 그레네이드', cost: 3 },
+        special: { name: '[신비] 테러화(恐怖化)', cost: 0, isSpecial: true, canUse: p => p.isColorActive || !p.specialSkillUsed }
       },
       smg_fox45: {
-        skill1: { name: '철벽의 방어', cost: 3 },
-        skill2: { name: '공세 전환', cost: 2 },
-        special: { name: '전술 방패 전개', cost: 4, isSpecial: true, canUse: p => (p.foxShieldCooldown <= 0) && (p.cost >= 4) }
+        skill1: { name: '[폭발] 철벽의 방어', cost: 3 },
+        skill2: { name: '[폭발] 공세 전환', cost: 2 },
+        special: { name: '[폭발] 전술 방패 전개', cost: 4, isSpecial: true, canUse: p => (p.foxShieldCooldown <= 0) && (p.cost >= 4) }
       }
     };
 
@@ -1089,7 +1083,7 @@
       const magEl = document.getElementById('deck-ammo-mag');
       const aimBadgeEl = document.getElementById('deck-aim-badge');
 
-      if (nameEl) nameEl.innerText = curW.name ? curW.name.split(' ')[0] : '무기';
+      if (nameEl) nameEl.innerText = curW.name || '무기';
       if (curAmmoEl) {
         if (curW.isReloading) {
           curAmmoEl.innerText = '장전 중';
@@ -1149,20 +1143,20 @@
 
       // 아비 에슈흐 상태 시 전용 스킬명/코스트
       if (player.isAbiEshuhActive) {
-        s1Name = '용기의 마법';
+        s1Name = '[신비] 용기의 마법';
         s1Cost = 5;
-        s2Name = '빛의 난사';
+        s2Name = '[신비] 빛의 난사';
         s2Cost = 10;
-        specName = player.abiFinalCanTrigger ? '피니셔 발동' : '아비 에슈흐';
+        specName = player.abiFinalCanTrigger ? '[신비] 피니셔 발동' : '[신비] 아비 에슈흐';
         specCost = 0;
         specCan = player.abiFinalCanTrigger;
       } else if (player.isColorActive) {
         // 테러화 상태 시 전용 스킬명/코스트
-        s1Name = '화력 강화';
+        s1Name = '[신비] 화력 강화';
         s1Cost = 0;
-        s2Name = '수류탄·개(改)';
+        s2Name = '[신비] 수류탄·개(改)';
         s2Cost = (player.hp / player.maxHp <= 0.50) ? 2 : 3;
-        specName = '테러화(恐怖化)';
+        specName = '[신비] 테러화(恐怖化)';
         specCost = 0;
         specCan = false;
       } else if (curW.id === 'smg_fox45') {
@@ -1175,7 +1169,7 @@
         if (player.rgChargeStage >= 2) s1Cost = 10;
       } else if (curW.id === 'mg_destructor') {
         if (player.mgStanceActive) {
-          s2Name = '이스보셋 사격';
+          s2Name = '[폭발] 이스보셋 사격';
           s2Cost = 0;
         }
       }
