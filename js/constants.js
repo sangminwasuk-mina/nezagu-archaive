@@ -822,6 +822,46 @@
           tag: '가호',
           desc: '현재 준비 중인 항목입니다.'
         }
+      ],
+
+      // 난이도
+      difficulty: [
+        {
+          id: 'diff_extreme',
+          name: 'Extreme',
+          color: '#facc15',
+          tag: '플레이 가능',
+          badge: 'EXTREME',
+          isDev: false,
+          desc: '• KAITEN FX Mk.0 정규 작전|• 현재 플레이 가능한 기본 총력전 난이도입니다.'
+        },
+        {
+          id: 'diff_insane',
+          name: 'Insane',
+          color: '#a855f7',
+          tag: '제작 중',
+          badge: 'INSANE',
+          isDev: true,
+          desc: '• KAITEN FX Mk.0 상위 난이도 작전|• 현재 제작 중입니다.'
+        },
+        {
+          id: 'diff_torment',
+          name: 'Torment',
+          color: '#ef4444',
+          tag: '제작 중',
+          badge: 'TORMENT',
+          isDev: true,
+          desc: '• KAITEN FX Mk.0 최고 난도 작전|• 현재 제작 중입니다.'
+        },
+        {
+          id: 'diff_lunatic',
+          name: 'Lunatic',
+          color: '#ec4899',
+          tag: '제작 중',
+          badge: 'LUNATIC',
+          isDev: true,
+          desc: '• KAITEN FX Mk.0 초극한 난이도 작전|• 현재 제작 중입니다.'
+        }
       ]
     };
 
@@ -834,8 +874,10 @@
       slot4: EQUIPMENT_DATABASE.subskills[1], // 긴급 구호 세트 B
       slot5: EQUIPMENT_DATABASE.subskills[2], // 단련된 체력
       slot8: EQUIPMENT_DATABASE.slot8[0], // 없음
-      slot9: EQUIPMENT_DATABASE.slot9[0]  // 없음
+      slot9: EQUIPMENT_DATABASE.slot9[0], // 없음
+      difficulty: null // 아래 초기화 시점 또는 EQUIPMENT_DATABASE.difficulty[0]
     };
+    playerLoadout.difficulty = EQUIPMENT_DATABASE.difficulty[0];
 
 
 

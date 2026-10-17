@@ -357,6 +357,17 @@
             <span class="supporter-card-sub">${pLoad.slot6 ? pLoad.slot6.desc : ''}</span>
           </div>
         </div>
+
+        <!-- 4. 난이도 -->
+        <div style="margin-bottom: 8px;">
+          <div class="supporter-card-item" style="border-color: #facc15;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span class="supporter-card-title" style="color: #facc15;">총력전 난이도</span>
+              <span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: rgba(250, 204, 21, 0.2); border: 1px solid #facc15; color: #facc15; font-weight: bold;">${pLoad.difficulty ? pLoad.difficulty.name : 'Extreme'}</span>
+            </div>
+            <span class="supporter-card-sub" style="margin-top: 4px;">${pLoad.difficulty ? pLoad.difficulty.desc.split('|').join(' • ') : 'KAITEN FX Mk.0 정규 작전'}</span>
+          </div>
+        </div>
       `;
     }
 
@@ -451,36 +462,48 @@
         modalTitle.innerText = '작전 가호 선택';
         items = EQUIPMENT_DATABASE.slot9;
         currentItem = playerLoadout.slot9;
+      } else if (slotId === 'difficulty' || slotId === 'slot_diff') {
+        modalTitle.innerText = '난이도 선택';
+        items = EQUIPMENT_DATABASE.difficulty;
+        currentItem = playerLoadout.difficulty;
       }
-
 
       // 카드 목록 렌더링
       items.forEach(item => {
         const card = document.createElement('div');
         const isCurrent = currentItem && currentItem.id === item.id;
         const isUsedInOtherSlot = usedItemIdsInOtherSlots.has(item.id);
+        const isDev = !!item.isDev;
 
-        card.className = `modal-item-card ${isCurrent ? 'current' : ''} ${isUsedInOtherSlot ? 'disabled' : ''}`;
+        card.className = `modal-item-card ${isCurrent ? 'current' : ''} ${isUsedInOtherSlot ? 'disabled' : ''} ${isDev ? 'dev-card' : ''}`;
         
         let tagText = item.tag || '선택';
         let tagClass = 'modal-item-tag';
         if (isCurrent) {
-          tagText = '장착 중';
+          tagText = (slotId === 'difficulty' || slotId === 'slot_diff') ? '선택됨' : '장착 중';
+        } else if (isDev) {
+          tagText = '제작 중';
+          tagClass += ' dev-tag';
         } else if (isUsedInOtherSlot) {
           tagText = '다른 슬롯 장착 중';
           tagClass += ' in-use';
         }
 
+        const descFormatted = item.desc ? item.desc.split('|').join('<br>') : '';
         card.innerHTML = `
           <div class="modal-item-top">
             <span class="modal-item-name" style="color: ${item.color || '#fff'};">${item.name}</span>
             <span class="${tagClass}">${tagText}</span>
           </div>
-          <div class="modal-item-desc">${item.desc}</div>
+          <div class="modal-item-desc">${descFormatted}</div>
           ${item.skillName ? `<div style="font-size: 11px; color: #f43f5e; margin-top: 3px;"><b>[전용스킬] ${item.skillName}</b>: ${item.skillDesc}</div>` : ''}
         `;
 
-        if (!isUsedInOtherSlot) {
+        if (isDev) {
+          card.addEventListener('click', () => {
+            alert(`⚠️ "KAITEN FX MK.0" 보스의 "${item.name}" 난이도는 현재 제작 중입니다.`);
+          });
+        } else if (!isUsedInOtherSlot) {
           card.addEventListener('click', () => {
             selectItemForSlot(slotId, item);
             selectionModal.classList.add('hidden');
@@ -573,6 +596,22 @@
         } else if (slotId === 'slot9') {
           document.getElementById('slot-9-name').innerText = item.name;
           document.getElementById('slot-9-desc').innerText = item.desc;
+        } else if (slotId === 'difficulty' || slotId === 'slot_diff') {
+          const diffEl = document.getElementById('slot-diff-name');
+          if (diffEl) {
+            diffEl.innerText = item.name;
+            diffEl.style.color = item.color || '#facc15';
+          }
+          const badgeEl = document.getElementById('slot-diff-badge');
+          if (badgeEl) {
+            badgeEl.innerText = item.badge || item.name.toUpperCase();
+            badgeEl.style.color = item.color || '#facc15';
+            badgeEl.style.borderColor = item.color || '#facc15';
+          }
+          const descEl = document.getElementById('slot-diff-desc');
+          if (descEl) {
+            descEl.innerHTML = item.desc ? `<div>${item.desc.split('|').join('</div><div>')}</div>` : '총력전 난이도를 설정합니다.';
+          }
         }
 
         if (typeof applyMaintenanceLoadoutToPlayer === 'function') {
@@ -607,6 +646,10 @@
     document.getElementById('slot-card-5').addEventListener('click', () => openSlotSelectionModal('slot5'));
     document.getElementById('slot-card-8').addEventListener('click', () => openSlotSelectionModal('slot8'));
     document.getElementById('slot-card-9').addEventListener('click', () => openSlotSelectionModal('slot9'));
+    const slotCardDiff = document.getElementById('slot-card-diff');
+    if (slotCardDiff) {
+      slotCardDiff.addEventListener('click', () => openSlotSelectionModal('difficulty'));
+    }
 
     // 스킬 상세 정보 모달 열기 (인게임 전용 모달, 시스템 alert 대체)
     function openSkillDetailModal(detailData, fallbackWeaponName, fallbackSlotLabel) {
