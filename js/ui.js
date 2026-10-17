@@ -779,6 +779,21 @@
         // 포지션 뱃지 추가 ([FRONT], [MIDDLE], [BACK])
         const posBadge = player.position ? ` [${player.position}]` : '';
         weaponName += posBadge;
+
+        // 방어 장갑 & 공격 유형 뱃지
+        const armNames = { light: '경장갑', heavy: '중장갑', composite: '복합장갑', special: '특수장갑', elastic: '탄력장갑', normal: '일반' };
+        const atkNames = { explosive: '폭발', pierce: '관통', mystic: '신비', decompose: '분해', sonic: '진동', normal: '일반' };
+        const armLabel = armNames[player.armorType] || '일반';
+        const curAtk = (isAR && player.isColorActive) ? ATTACK_TYPES.MYSTIC : (cur.attackType || ATTACK_TYPES.NORMAL);
+        const atkLabel = atkNames[curAtk] || '일반';
+        weaponName += ` [${armLabel}] [${atkLabel}]`;
+      } else {
+        const armNames = { light: '경장갑', heavy: '중장갑', composite: '복합장갑', special: '특수장갑', elastic: '탄력장갑', normal: '일반' };
+        const atkNames = { explosive: '폭발', pierce: '관통', mystic: '신비', decompose: '분해', sonic: '진동', normal: '일반' };
+        const armLabel = armNames[player.armorType] || '일반';
+        const curAtk = cur.attackType || ATTACK_TYPES.NORMAL;
+        const atkLabel = atkNames[curAtk] || '일반';
+        weaponName += ` [${armLabel}] [${atkLabel}]`;
       }
 
       document.getElementById('currentWeaponName').innerText = weaponName;

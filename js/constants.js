@@ -314,11 +314,11 @@
           color: '#facc15',
           role: '딜러',
           position: 'BACK',
-          armorType: ARMOR_TYPES.NORMAL, // 무기 장착 시 플레이어 방어 장갑 (기본값: 일반)
-          attackType: ATTACK_TYPES.NORMAL, // 기본 사격 공격 유형 (기본값: 일반)
-          skill1AttackType: ATTACK_TYPES.NORMAL, // 메인스킬 1 공격 유형
-          skill2AttackType: ATTACK_TYPES.NORMAL, // 메인스킬 2 공격 유형
-          specialAttackType: ATTACK_TYPES.NORMAL, // 특수스킬 공격 유형
+          armorType: ARMOR_TYPES.HEAVY, // 방어 장갑: 중장갑
+          attackType: ATTACK_TYPES.EXPLOSION, // 기본 사격 공격 유형: 폭발
+          skill1AttackType: ATTACK_TYPES.EXPLOSION, // 메인스킬 1 공격 유형: 폭발
+          skill2AttackType: ATTACK_TYPES.EXPLOSION, // 메인스킬 2 공격 유형: 폭발
+          specialAttackType: ATTACK_TYPES.EXPLOSION, // 특수스킬 공격 유형: 폭발
           desc: '• 장전: 40발 (연사) | 피해량: 400 | 포지션: BACK (1,420px) | 딜레이: 0.11초 | 재장전: 2.5초 | 탄창: 무제한',
           skillName: '종막: 이스보셋',
           skillDesc: '• 소모: <b>6 코스트</b> | 라인 관통 <b>28발</b> 난사 (발당 600%)',
@@ -368,11 +368,11 @@
           color: '#38bdf8',
           role: '딜러',
           position: 'BACK',
-          armorType: ARMOR_TYPES.NORMAL, // 무기 장착 시 플레이어 방어 장갑 (기본값: 일반)
-          attackType: ATTACK_TYPES.NORMAL, // 기본 사격 공격 유형 (기본값: 일반)
-          skill1AttackType: ATTACK_TYPES.NORMAL, // 메인스킬 1 공격 유형
-          skill2AttackType: ATTACK_TYPES.NORMAL, // 메인스킬 2 공격 유형
-          specialAttackType: ATTACK_TYPES.NORMAL, // 특수스킬 공격 유형
+          armorType: ARMOR_TYPES.SPECIAL, // 방어 장갑: 특수장갑 (아비 에슈흐 시 복합장갑으로 전환)
+          attackType: ATTACK_TYPES.MYSTIC, // 기본 사격 공격 유형: 신비
+          skill1AttackType: ATTACK_TYPES.MYSTIC, // 메인스킬 1 공격 유형: 신비
+          skill2AttackType: ATTACK_TYPES.MYSTIC, // 메인스킬 2 공격 유형: 신비
+          specialAttackType: ATTACK_TYPES.MYSTIC, // 특수스킬 (아비 에슈흐 전 공격): 신비
           desc: '• 장전: 5발 (단발식) | 피해량: 4,100 | 포지션: BACK (1,420px) | 딜레이: 0.70초 | 재장전: 3.0초 | 탄창: 무제한',
           skillName: '밸런스 붕괴',
           skillDesc: '• 소모: <b>5 코스트</b> | 쿨타임 2.5초 | 1.2s 차징 관통탄 (270%, 재사용 시 1/2/3배 증폭)',
@@ -423,11 +423,11 @@
           color: '#ef4444',
           role: '딜러',
           position: 'FRONT',
-          armorType: ARMOR_TYPES.NORMAL, // 무기 장착 시 플레이어 방어 장갑 (기본값: 일반)
-          attackType: ATTACK_TYPES.NORMAL, // 기본 사격 공격 유형 (기본값: 일반)
-          skill1AttackType: ATTACK_TYPES.NORMAL, // 메인스킬 1 공격 유형
-          skill2AttackType: ATTACK_TYPES.NORMAL, // 메인스킬 2 공격 유형
-          specialAttackType: ATTACK_TYPES.NORMAL, // 특수스킬 공격 유형
+          armorType: ARMOR_TYPES.HEAVY, // 방어 장갑: 중장갑
+          attackType: ATTACK_TYPES.PIERCE, // 기본 사격 공격 유형: 관통
+          skill1AttackType: ATTACK_TYPES.PIERCE, // 메인스킬 1 (기괴멸렬): 관통
+          skill2AttackType: ATTACK_TYPES.MYSTIC, // 메인스킬 2 (격류 난사): 신비
+          specialAttackType: ATTACK_TYPES.EXPLOSION, // 특수스킬 (불사 혈기 폭풍): 폭발
           desc: '• 장전: 4발 (단발식) | 피해량: 500*6 (3,000) | 포지션: FRONT (400px) | 딜레이: 0.25초 | 재장전: 0.75초 | 탄창: 무제한',
           skillName: '기괴멸렬',
           skillDesc: '• 소모: <b>4 코스트</b> | 쿨타임 2.5초 | 탄창 3발 사격 & 즉시재장전 | 6회 산탄 강화 사격',
@@ -476,11 +476,11 @@
           color: '#06b6d4',
           role: '딜러',
           position: 'MIDDLE',
-          armorType: ARMOR_TYPES.NORMAL, // 무기 장착 시 플레이어 방어 장갑 (기본값: 일반)
-          attackType: ATTACK_TYPES.NORMAL, // 기본 사격 공격 유형 (기본값: 일반)
-          skill1AttackType: ATTACK_TYPES.NORMAL, // 메인스킬 1 공격 유형
-          skill2AttackType: ATTACK_TYPES.NORMAL, // 메인스킬 2 공격 유형
-          specialAttackType: ATTACK_TYPES.NORMAL, // 특수스킬 공격 유형
+          armorType: ARMOR_TYPES.LIGHT, // 방어 장갑: 경장갑 (테러화 시 특수장갑으로 전환)
+          attackType: ATTACK_TYPES.EXPLOSION, // 기본 사격 공격 유형: 폭발 (테러화 시 신비)
+          skill1AttackType: ATTACK_TYPES.EXPLOSION, // 메인스킬 1 (드론 소환): 폭발 (테러화 시 신비)
+          skill2AttackType: ATTACK_TYPES.MYSTIC, // 메인스킬 2 (라이딩 그레네이드): 신비 (테러화 시 신비)
+          specialAttackType: ATTACK_TYPES.MYSTIC, // 특수스킬 (테러화): 신비
           desc: '• 장전: 14발 (연발) | 피해량: 350 | 포지션: MIDDLE (750px) | 딜레이: 0.25초 | 재장전: 0.8초 | 탄창: 무제한',
           skillName: '드론 소환 : 화력 지원',
           skillDesc: '• 소모: <b>3 코스트</b> | 쿨타임 2.5초 | 2초간 화력지원 드론 소환 (발당 590% 미사일 20발 난사)',
@@ -531,11 +531,11 @@
           color: '#f59e0b',
           role: '탱커',
           position: 'MIDDLE',
-          armorType: ARMOR_TYPES.NORMAL, // 무기 장착 시 플레이어 방어 장갑 (기본값: 일반)
-          attackType: ATTACK_TYPES.NORMAL, // 기본 사격 공격 유형 (기본값: 일반)
-          skill1AttackType: ATTACK_TYPES.NORMAL, // 메인스킬 1 공격 유형
-          skill2AttackType: ATTACK_TYPES.NORMAL, // 메인스킬 2 공격 유형
-          specialAttackType: ATTACK_TYPES.NORMAL, // 특수스킬 공격 유형
+          armorType: ARMOR_TYPES.LIGHT, // 방어 장갑: 경장갑
+          attackType: ATTACK_TYPES.EXPLOSION, // 기본 사격 공격 유형: 폭발
+          skill1AttackType: ATTACK_TYPES.EXPLOSION, // 메인스킬 1 (철벽의 방어): 폭발
+          skill2AttackType: ATTACK_TYPES.EXPLOSION, // 메인스킬 2 (공세 전환): 폭발
+          specialAttackType: ATTACK_TYPES.EXPLOSION, // 특수스킬 (전술 방패 전개): 폭발
           desc: '• 장전: 12발 (초고속 연사) | 피해량: 280 | 포지션: MIDDLE (850px) | 딜레이: 0.10초 | 재장전: 1.0초 | 탄창: 무제한',
           skillName: '철벽의 방어',
           skillDesc: '• 소모: <b>3 / 4 코스트</b> | 단일 770% / 540% & 기절 (2.5초 / 4.6초) (적중 시 소형 폭발)',

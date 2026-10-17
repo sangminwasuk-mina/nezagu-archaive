@@ -358,6 +358,7 @@
 
       // 3.5. [방어 장갑 & 공격 유형 시스템] 무기에 정의된 방어장갑/공격타입을 플레이어에게 동기화
       player.armorType = selectedMain.armorType || ARMOR_TYPES.NORMAL;
+      player.mainWeapon.armorType = selectedMain.armorType || ARMOR_TYPES.NORMAL;
       player.mainWeapon.attackType = selectedMain.attackType || ATTACK_TYPES.NORMAL;
       player.mainWeapon.skill1AttackType = selectedMain.skill1AttackType || ATTACK_TYPES.NORMAL;
       player.mainWeapon.skill2AttackType = selectedMain.skill2AttackType || ATTACK_TYPES.NORMAL;
@@ -606,6 +607,7 @@
       player.colorDroneCharges = 1;
       player.colorErosionTimer = 0;
       player.specialAimAngle = 0;
+      player.armorType = (player.mainWeapon && player.mainWeapon.armorType) || ARMOR_TYPES.NORMAL;
 
       // [서포터 초기화 제거]
 
@@ -1225,6 +1227,7 @@
             isPlayerBullet: true,
             isCrit: isCrit,
             isImmortalBullet: isImmortalBullet,
+            attackType: isImmortalBullet ? ATTACK_TYPES.EXPLOSION : ATTACK_TYPES.PIERCE,
             type: isImmortalBullet ? 'sg_immortal_pellet' : 'sg_pellet',
             x: shootOriginX,
             y: shootOriginY,
@@ -1269,6 +1272,7 @@
         const arBullet = {
           isPlayerBullet: true,
           isCrit: isCrit,
+          attackType: isColorAR ? ATTACK_TYPES.MYSTIC : ATTACK_TYPES.EXPLOSION,
           type: 'ar_bullet',
           x: shootOriginX,
           y: shootOriginY,
@@ -1320,6 +1324,7 @@
                   isPlayerBullet: true,
                   isSkillBullet: true,
                   isCrit: droneCrit,
+                  attackType: ATTACK_TYPES.MYSTIC,
                   type: 'color_drone_bullet',
                   x: lX,
                   y: lY,
@@ -1355,6 +1360,7 @@
         const smgBullet = {
           isPlayerBullet: true,
           isCrit: isCrit,
+          attackType: ATTACK_TYPES.EXPLOSION,
           type: 'smg_bullet',
           x: shootOriginX,
           y: shootOriginY,
@@ -1384,6 +1390,9 @@
       const pBullet = {
         isPlayerBullet: true,
         isCrit: isCrit,
+        attackType: (player.activeWeaponSlot === 'main')
+          ? (isMG ? ATTACK_TYPES.EXPLOSION : (isRG ? ATTACK_TYPES.MYSTIC : (player.mainWeapon.attackType || ATTACK_TYPES.NORMAL)))
+          : (player.subWeapon.attackType || ATTACK_TYPES.NORMAL),
         type: 'player_bullet',
         x: shootOriginX,
         y: shootOriginY,
@@ -1523,6 +1532,7 @@
           isPlayerBullet: true,
           isSkillBullet: true,
           isCrit: isCrit,
+          attackType: ATTACK_TYPES.EXPLOSION,
           isPiercing: false, // 단일 타겟 (적중 시 소형 폭발)
           type: 'fox_shield_slam',
           x: shootOriginX,
@@ -1910,6 +1920,7 @@
           isPlayerBullet: true,
           isSkillBullet: true,
           isCrit: isCrit,
+          attackType: ATTACK_TYPES.EXPLOSION,
           isPiercing: false, // 단일 타겟 (관통 불가)
           type: 'fox_offensive_shift',
           x: shootOriginX,
@@ -2038,6 +2049,7 @@
         isSkillBullet: true,
         isPiercing: true, // 관통탄
         isCrit: isCrit,
+        attackType: ATTACK_TYPES.EXPLOSION,
         type: 'mg_melody_bullet',
         stage: stage,
         stageName: stageName,
@@ -2127,6 +2139,7 @@
           isPlayerBullet: true,
           isSkillBullet: true,
           isCrit: isCrit,
+          attackType: ATTACK_TYPES.MYSTIC,
           type: 'sg_torrent_pellet',
           x: shootOriginX,
           y: shootOriginY,
@@ -2326,6 +2339,7 @@
         isSkillBullet: true,
         isPiercing: true, // 모든 적 관통!
         isCrit: isCrit,
+        attackType: ATTACK_TYPES.MYSTIC,
         type: 'rg_energy_ball', // 전용 거대 관통 에너지탄
         chargeLevel: player.chargeLevel,
         x: shootOriginX,
@@ -2408,6 +2422,7 @@
         isSkillBullet: true,
         isPiercing: true, // 적을 관통함!
         isCrit: isCrit,
+        attackType: ATTACK_TYPES.EXPLOSION,
         type: 'mg_ishbosheth_bullet', // 종막: 이스보셋 전용 보라빛 네온 관통탄
         x: shootOriginX,
         y: shootOriginY,
@@ -2556,6 +2571,7 @@
         // RG 아비 에슈흐 폼 체인지 발동! (0코스트 1회성)
         player.specialSkillUsed = true;
         player.isAbiEshuhActive = true;
+        player.armorType = ARMOR_TYPES.COMPOSITE; // [방어 장갑 전환] 아비 에슈흐 시 복합장갑
         player.abiTransforming = true;
         player.abiTransformTimer = 0.5; // 0.5초 빛과 데이터 입자 트랜스폼 시퀀스
         player.isHovering = true; // 비행 호버링 모드 전환
@@ -2577,6 +2593,7 @@
         player.vy = 0;
 
         addDamageText(player.x, player.y - 45, '💎 [시스템 : 아비 에슈흐] 폼 체인지 가동! (200 에너지)', '#00ffff');
+        addDamageText(player.x, player.y - 70, '🛡️ [복합장갑 전환]', '#22c55e');
         if (currentMode === 'duo' && typeof sendNetPacket === 'function') {
           sendNetPacket({
             type: 'SYNC',
@@ -2657,6 +2674,7 @@
       // 1. 최대 체력 135% 증가 및 최대치로 부활, 받는 회복량 20% 감소 디버프
       player.maxHp = Math.round(player.baseMaxHp * 1.35); // 65,000 * 1.35 = 87,750
       player.hp = player.maxHp;
+      player.armorType = ARMOR_TYPES.SPECIAL; // [방어 장갑 전환] 테러화 시 특수장갑으로 전환
       player.healingReceivedPenalty = 0.20; // 테러화 고유 디버프: 받는 회복량 20% 감소
 
       // 2. 외형 흑회색 변경
@@ -2699,6 +2717,7 @@
       }
 
       addDamageText(player.x, player.y - 45, '🖤 [특수스킬: 테러화(恐怖化)] 각성 부활! (BLACK FANG 465)', '#94a3b8');
+      addDamageText(player.x, player.y - 70, '🛡️ [특수장갑 전환]', '#38bdf8');
       if (currentMode === 'duo' && typeof sendNetPacket === 'function') {
         sendNetPacket({
           type: 'SYNC',
@@ -2770,6 +2789,7 @@
       const grenadeBullet = {
         isPlayerBullet: true,
         isCrit: isCrit,
+        attackType: ATTACK_TYPES.MYSTIC,
         type: 'color_grenade',
         x: shootOriginX,
         y: shootOriginY,
@@ -2821,6 +2841,7 @@
                 isPlayerBullet: true,
                 isSkillBullet: true,
                 isCrit: isCrit,
+                attackType: ATTACK_TYPES.MYSTIC,
                 type: 'white_fang_missile',
                 x: launchX,
                 y: launchY,
@@ -2938,6 +2959,7 @@
         isSpecialBullet: true,
         isPiercing: true,
         isCrit: isCrit,
+        attackType: ATTACK_TYPES.EXPLOSION,
         type: 'mg_special_bullet',
         phase: phase,
         isBerserk: isBerserk,
@@ -3131,6 +3153,7 @@
         isSkillBullet: true,
         isPiercing: true,
         isCrit: isCrit,
+        attackType: ATTACK_TYPES.MYSTIC,
         type: 'abi_laser',
         stage: stage,
         x: shootOriginX,
@@ -3228,6 +3251,7 @@
           isPlayerBullet: true,
           isSkillBullet: true,
           isCrit: isCrit,
+          attackType: ATTACK_TYPES.MYSTIC,
           type: 'abi_missile',
           x: mX,
           y: mY,
@@ -3317,6 +3341,7 @@
         isPlayerBullet: true,
         isSkillBullet: true,
         isCrit: isCrit,
+        attackType: ATTACK_TYPES.MYSTIC,
         type: isEnhanced ? 'abi_enhanced_bullet' : 'abi_bullet',
         isPiercing: isEnhanced, // 강화탄은 관통!
         x: shootOriginX,
@@ -3467,7 +3492,7 @@
     }
 
     // [WHITE FANG 465] 화력 지원 드론 미사일 폭발 처리 함수
-    function triggerWhiteFangMissileExplosion(x, y, dmg) {
+    function triggerWhiteFangMissileExplosion(x, y, dmg, attackType = ATTACK_TYPES.EXPLOSION) {
       explosions.push({
         x: x,
         y: y,
@@ -3476,7 +3501,7 @@
         dmg: dmg,
         hasDealtDamage: true, // 아군 미사일 폭발
         isFriendly: true,
-        color: '#06b6d4',
+        color: attackType === ATTACK_TYPES.MYSTIC ? '#38bdf8' : '#06b6d4',
         alpha: 1
       });
       let hitCount = 0;
@@ -3486,19 +3511,28 @@
           const kCenterY = (canvas.height - GROUND_OFFSET) - (k.jumpY || 0) - k.size / 2;
           const d = Math.hypot(kCenterX - x, kCenterY - y);
           if (d <= 75) {
-            applyKaitenzerSharedDamage(dmg);
+            const eff = (typeof getDamageEffectiveness === 'function')
+              ? getDamageEffectiveness(attackType, k.armorType || ARMOR_TYPES.NORMAL)
+              : { mult: 1.0, label: 'NORMAL', color: '#ffffff' };
+            const effectiveDmg = Math.round(dmg * eff.mult);
+            applyKaitenzerSharedDamage(effectiveDmg);
             if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
               sendNetPacket({
                 type: 'ENEMY_DAMAGE',
                 targetType: 'kaiten',
                 targetId: k.id,
-                damage: dmg,
+                damage: effectiveDmg,
                 isCrit: false
               });
             }
             hitCount++;
             if (hitCount <= 2) {
-              addDamageText(kCenterX, kCenterY - 25, `💥 -${dmg}`, '#06b6d4');
+              addDamageText(kCenterX, kCenterY - 25, `💥 -${effectiveDmg.toLocaleString()}`, '#06b6d4');
+              if (eff.label === 'WEAK') {
+                addDamageText(kCenterX, kCenterY - 45, '⚡ WEAK!!', eff.color);
+              } else if (eff.label === 'RESIST') {
+                addDamageText(kCenterX, kCenterY - 45, '🛡️ RESIST', eff.color);
+              }
             }
             if (k.isDead) {
               addDamageText(kCenterX, (canvas.height - GROUND_OFFSET) - k.size - 25, `💀 [카이텐저 전원 격파!]`, '#94a3b8');
@@ -3521,7 +3555,10 @@
               addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 180, '🛡️ [SHIELD BREAK] 실드 가드 파괴!', '#22c55e');
             }
           }
-          const finalExplosionDmg = Math.round(dmg * dmgMult);
+          const eff = (typeof getDamageEffectiveness === 'function')
+            ? getDamageEffectiveness(attackType, kaitenFx.armorType || ARMOR_TYPES.NORMAL)
+            : { mult: 1.0, label: 'NORMAL', color: '#ffffff' };
+          const finalExplosionDmg = Math.round(dmg * dmgMult * eff.mult);
           kaitenFx.hp = Math.max(0, kaitenFx.hp - finalExplosionDmg);
           if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
             sendNetPacket({
@@ -3543,6 +3580,11 @@
             }
           }
           addDamageText(fxCenterX + (Math.random() - 0.5) * 40, (canvas.height - GROUND_OFFSET) - 170, `💥 -${finalExplosionDmg.toLocaleString()}`, '#06b6d4');
+          if (eff.label === 'WEAK') {
+            addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 200, '⚡ WEAK!!', eff.color);
+          } else if (eff.label === 'RESIST') {
+            addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 200, '🛡️ RESIST', eff.color);
+          }
           if (kaitenFx.hp <= 0) {
             kaitenFx.hp = 0;
             kaitenFx.isDead = true;
@@ -3572,6 +3614,7 @@
       const grenadeBullet = {
         isPlayerBullet: true,
         isCrit: isCrit,
+        attackType: ATTACK_TYPES.MYSTIC,
         type: 'riding_grenade',
         x: shootOriginX,
         y: shootOriginY,
@@ -3613,9 +3656,20 @@
           const kCenterY = (canvas.height - GROUND_OFFSET) - (k.jumpY || 0) - k.size / 2;
           const d = Math.hypot(kCenterX - x, kCenterY - y);
           if (d <= 121) {
+            // [상성 연산: 신비 공격 vs 방어 장갑]
+            const eff = (typeof getDamageEffectiveness === 'function')
+              ? getDamageEffectiveness(ATTACK_TYPES.MYSTIC, k.armorType || ARMOR_TYPES.NORMAL)
+              : { mult: 1.0, label: 'NORMAL', color: '#ffffff' };
+            const effectiveDmg = Math.round(dmg * eff.mult);
+
             // 1) 660% 범위 대미지 적용
-            applyKaitenzerSharedDamage(dmg);
-            addDamageText(kCenterX, kCenterY - 25, `💥 -${dmg}`, '#06b6d4');
+            applyKaitenzerSharedDamage(effectiveDmg);
+            addDamageText(kCenterX, kCenterY - 25, `💥 -${effectiveDmg.toLocaleString()}`, '#06b6d4');
+            if (eff.label === 'WEAK') {
+              addDamageText(kCenterX, kCenterY - 60, '⚡ WEAK!!', eff.color);
+            } else if (eff.label === 'RESIST') {
+              addDamageText(kCenterX, kCenterY - 60, '🛡️ RESIST', eff.color);
+            }
 
             // 2) 공격력 35% 감소 디버프 부여 (12초 지속)
             k.atkDebuffTimer = 12.0;
@@ -3625,7 +3679,7 @@
                 type: 'ENEMY_DAMAGE',
                 targetType: 'kaiten',
                 targetId: k.id,
-                damage: dmg,
+                damage: effectiveDmg,
                 isCrit: false,
                 atkDebuffRatio: 0.35,
                 atkDebuffTimer: 12.0
@@ -3654,7 +3708,10 @@
               addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 180, '🛡️ [SHIELD BREAK] 실드 가드 파괴!', '#22c55e');
             }
           }
-          const finalExplosionDmg = Math.round(dmg * dmgMult);
+          const eff = (typeof getDamageEffectiveness === 'function')
+            ? getDamageEffectiveness(ATTACK_TYPES.MYSTIC, kaitenFx.armorType || ARMOR_TYPES.NORMAL)
+            : { mult: 1.0, label: 'NORMAL', color: '#ffffff' };
+          const finalExplosionDmg = Math.round(dmg * dmgMult * eff.mult);
           kaitenFx.hp = Math.max(0, kaitenFx.hp - finalExplosionDmg);
           if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
             sendNetPacket({
@@ -3678,6 +3735,11 @@
             }
           }
           addDamageText(fxCenterX + (Math.random() - 0.5) * 40, (canvas.height - GROUND_OFFSET) - 170, `💥 -${finalExplosionDmg.toLocaleString()}`, '#06b6d4');
+          if (eff.label === 'WEAK') {
+            addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 230, '⚡ WEAK!!', eff.color);
+          } else if (eff.label === 'RESIST') {
+            addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 230, '🛡️ RESIST', eff.color);
+          }
           // 12초간 공격력 35% 감소 디버프 부여
           kaitenFx.atkDebuffTimer = 12.0;
           kaitenFx.atkDebuffRatio = 0.35;
@@ -3728,19 +3790,29 @@
           const kCenterY = (canvas.height - GROUND_OFFSET) - (k.jumpY || 0) - k.size / 2;
           const d = Math.hypot(kCenterX - x, kCenterY - y);
           if (d <= 120) {
-            applyKaitenzerSharedDamage(dmg);
+            // [상성 연산: 신비 공격 vs 방어 장갑]
+            const eff = (typeof getDamageEffectiveness === 'function')
+              ? getDamageEffectiveness(ATTACK_TYPES.MYSTIC, k.armorType || ARMOR_TYPES.NORMAL)
+              : { mult: 1.0, label: 'NORMAL', color: '#ffffff' };
+            const effectiveDmg = Math.round(dmg * eff.mult);
+            applyKaitenzerSharedDamage(effectiveDmg);
             k.stunTimer = Math.max(k.stunTimer || 0, 0.5);
             if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
               sendNetPacket({
                 type: 'ENEMY_DAMAGE',
                 targetType: 'kaiten',
                 targetId: k.id,
-                damage: dmg,
+                damage: effectiveDmg,
                 isCrit: false,
                 stunDuration: 0.5
               });
             }
-            addDamageText(kCenterX, kCenterY - 25, `💥 -${dmg.toLocaleString()}`, '#94a3b8');
+            addDamageText(kCenterX, kCenterY - 25, `💥 -${effectiveDmg.toLocaleString()}`, '#94a3b8');
+            if (eff.label === 'WEAK') {
+              addDamageText(kCenterX, kCenterY - 65, '⚡ WEAK!!', eff.color);
+            } else if (eff.label === 'RESIST') {
+              addDamageText(kCenterX, kCenterY - 65, '🛡️ RESIST', eff.color);
+            }
             addDamageText(kCenterX, kCenterY - 45, '💫 [기절 0.5s]', '#facc15');
 
             if (k.isDead) {
@@ -3764,7 +3836,10 @@
               addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 180, '🛡️ [SHIELD BREAK] 실드 가드 파괴!', '#22c55e');
             }
           }
-          const finalExplosionDmg = Math.round(dmg * dmgMult);
+          const eff = (typeof getDamageEffectiveness === 'function')
+            ? getDamageEffectiveness(ATTACK_TYPES.MYSTIC, kaitenFx.armorType || ARMOR_TYPES.NORMAL)
+            : { mult: 1.0, label: 'NORMAL', color: '#ffffff' };
+          const finalExplosionDmg = Math.round(dmg * dmgMult * eff.mult);
           kaitenFx.hp = Math.max(0, kaitenFx.hp - finalExplosionDmg);
           kaitenFx.stunTimer = Math.max(kaitenFx.stunTimer || 0, 0.5);
           if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
@@ -3788,6 +3863,11 @@
             }
           }
           addDamageText(fxCenterX + (Math.random() - 0.5) * 40, (canvas.height - GROUND_OFFSET) - 170, `💥 -${finalExplosionDmg.toLocaleString()}`, '#94a3b8');
+          if (eff.label === 'WEAK') {
+            addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 230, '⚡ WEAK!!', eff.color);
+          } else if (eff.label === 'RESIST') {
+            addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 230, '🛡️ RESIST', eff.color);
+          }
           addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 210, '💫 [기절 0.5s]', '#facc15');
           if (kaitenFx.hp <= 0) {
             kaitenFx.hp = 0;
@@ -4144,7 +4224,11 @@
             const enemies = player.abiFinalHitEnemies || [];
             enemies.forEach(k => {
               if (k.isSpawned && !k.isDead) {
-                const dmg = finisherBaseDmg;
+                // [상성 연산: 신비 공격 vs 방어 장갑]
+                const eff = (typeof getDamageEffectiveness === 'function')
+                  ? getDamageEffectiveness(ATTACK_TYPES.MYSTIC, k.armorType || ARMOR_TYPES.NORMAL)
+                  : { mult: 1.0, label: 'NORMAL', color: '#ffffff' };
+                const dmg = Math.round(finisherBaseDmg * eff.mult);
                 applyKaitenzerSharedDamage(dmg);
                 if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
                   sendNetPacket({
@@ -4158,8 +4242,13 @@
                 const kCenterX = k.x + k.size / 2;
                 const kCenterY = (canvas.height - GROUND_OFFSET) - (k.jumpY || 0) - k.size / 2;
                 addDamageText(kCenterX, kCenterY - 30, `💥 -${dmg.toLocaleString()} (3,675%)`, '#00ffff');
+                if (eff.label === 'WEAK') {
+                  addDamageText(kCenterX, kCenterY - 55, '⚡ WEAK!!', eff.color);
+                } else if (eff.label === 'RESIST') {
+                  addDamageText(kCenterX, kCenterY - 55, '🛡️ RESIST', eff.color);
+                }
                 if (k.isDead) {
-                  addDamageText(kCenterX, kCenterY - 50, `💀 [카이텐저 전원 격파!]`, '#fbbf24');
+                  addDamageText(kCenterX, kCenterY - 75, `💀 [카이텐저 전원 격파!]`, '#fbbf24');
                 }
               }
             });
@@ -4167,7 +4256,10 @@
             if (player.abiFinalHitFx && player.abiFinalHitFx.isSpawned && !player.abiFinalHitFx.isDead) {
               const b = player.abiFinalHitFx;
               let dmgMult = b.shieldActive ? 0.5 : 1.0;
-              const dmg = Math.round(finisherBaseDmg * dmgMult);
+              const eff = (typeof getDamageEffectiveness === 'function')
+                ? getDamageEffectiveness(ATTACK_TYPES.MYSTIC, b.armorType || ARMOR_TYPES.NORMAL)
+                : { mult: 1.0, label: 'NORMAL', color: '#ffffff' };
+              const dmg = Math.round(finisherBaseDmg * dmgMult * eff.mult);
               b.hp = Math.max(0, b.hp - dmg);
               if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
                 sendNetPacket({
@@ -4182,6 +4274,11 @@
               const bCenterX = b.x + b.width / 2;
               const bCenterY = (canvas.height - GROUND_OFFSET) - b.height / 2;
               addDamageText(bCenterX, bCenterY - 30, `💥 -${dmg.toLocaleString()} (3,675%)`, '#00ffff');
+              if (eff.label === 'WEAK') {
+                addDamageText(bCenterX, bCenterY - 55, '⚡ WEAK!!', eff.color);
+              } else if (eff.label === 'RESIST') {
+                addDamageText(bCenterX, bCenterY - 55, '🛡️ RESIST', eff.color);
+              }
               if (b.hp <= 0) {
                 b.hp = 0;
                 b.isDead = true;
@@ -4211,6 +4308,7 @@
           if (player.abiFinalFlashTimer <= 0) {
             // 아비 에슈흐 상태 완전 해제 & 5초 기절 페널티
             player.isAbiEshuhActive = false;
+            player.armorType = ARMOR_TYPES.SPECIAL; // [방어 장갑 복귀] 특수장갑 복귀
             player.isHovering = false;
             player.abiFinalPhase = 'none';
             player.abiFinalReady = false;
@@ -4224,6 +4322,7 @@
             player.vy = 0;
             player.vx = 0;
             addDamageText(player.x, player.y - 45, '⚠️ [시스템 과부하] 아비 에슈흐 해제! 5초간 기절!', '#ef4444');
+            addDamageText(player.x, player.y - 70, '🛡️ [특수장갑 복귀]', '#38bdf8');
             updateWeaponHUD();
           }
         }
@@ -4779,6 +4878,7 @@
                 isPlayerBullet: true,
                 isSkillBullet: true,
                 isCrit: isCrit,
+                attackType: ATTACK_TYPES.EXPLOSION,
                 type: 'white_fang_missile',
                 x: launchX,
                 y: launchY,
@@ -6174,7 +6274,7 @@
         }
         if ((b.type === 'abi_missile' || b.type === 'white_fang_missile') && (b.y >= groundY - 6 || b.life <= 0)) {
           if (b.type === 'white_fang_missile') {
-            triggerWhiteFangMissileExplosion(b.x, Math.min(groundY - 10, b.y), b.dmg);
+            triggerWhiteFangMissileExplosion(b.x, Math.min(groundY - 10, b.y), b.dmg, b.attackType || ATTACK_TYPES.EXPLOSION);
           } else {
             triggerAbiMissileExplosion(b.x, Math.min(groundY - 10, b.y), b.dmg);
           }
@@ -6219,7 +6319,7 @@
             } else if (b.type === 'color_grenade') {
               triggerColorGrenadeExplosion(b.x, b.y, 0);
             } else if (b.type === 'white_fang_missile') {
-              triggerWhiteFangMissileExplosion(b.x, b.y, 0);
+              triggerWhiteFangMissileExplosion(b.x, b.y, 0, b.attackType || ATTACK_TYPES.EXPLOSION);
             } else if (b.type === 'abi_missile') {
               triggerAbiMissileExplosion(b.x, b.y, 0);
             } else if (b.type === 'fox_shield_slam') {
@@ -6322,7 +6422,7 @@
 
             if (b.type === 'abi_missile' || b.type === 'white_fang_missile') {
               if (b.type === 'white_fang_missile') {
-                triggerWhiteFangMissileExplosion(b.x, b.y, b.dmg);
+                triggerWhiteFangMissileExplosion(b.x, b.y, b.dmg, b.attackType || ATTACK_TYPES.EXPLOSION);
               } else {
                 triggerAbiMissileExplosion(b.x, b.y, b.dmg);
               }
@@ -6472,7 +6572,7 @@
             if (b.type === 'abi_missile' || b.type === 'white_fang_missile') {
               // 미사일 직격 시 즉시 범위 폭발 유발 후 소멸
               if (b.type === 'white_fang_missile') {
-                triggerWhiteFangMissileExplosion(b.x, b.y, b.dmg);
+                triggerWhiteFangMissileExplosion(b.x, b.y, b.dmg, b.attackType || ATTACK_TYPES.EXPLOSION);
               } else {
                 triggerAbiMissileExplosion(b.x, b.y, b.dmg);
               }
