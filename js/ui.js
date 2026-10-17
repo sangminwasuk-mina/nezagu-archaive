@@ -833,12 +833,13 @@
       if (skill1Text) {
         if (isMain && isAR) {
           if (player.isColorActive) {
-            if (player.colorDroneCharges <= 0) {
-              skill1Text.innerHTML = `화력강화[K]: <b style="color:#64748b;">소진 (0/2)</b>`;
+            const hasColorDrone = window.whiteFangDrones && window.whiteFangDrones.some(d => d.isColorDrone);
+            if (hasColorDrone) {
+              skill1Text.innerHTML = `화력강화[K]: <b style="color:#06b6d4;">가동 중 (30s)</b>`;
             } else if (player.skillCooldown > 0) {
               skill1Text.innerHTML = `화력강화[K]: <b style="color:#f59e0b;">쿨 ${player.skillCooldown.toFixed(1)}s</b>`;
             } else {
-              skill1Text.innerHTML = `화력강화[K]: <b style="color:#94a3b8;">드론 (${player.colorDroneCharges}/2회, HP20%)</b>`;
+              skill1Text.innerHTML = `화력강화[K]: <b style="color:#94a3b8;">준비 (HP 20%)</b>`;
             }
           } else if (player.skillCooldown > 0) {
             skill1Text.innerHTML = `드론[K]: <b style="color:#f59e0b;">쿨 ${player.skillCooldown.toFixed(1)}s</b>`;
@@ -1167,9 +1168,17 @@
       const isStunned = (player.stunTimer > 0) || (player.abiStunTimer > 0);
 
       // 카드 1: 메인스킬 1 (K)
+      let s1Cooldown = player.skillCooldown || 0;
+      let s1CanUse = !isStunned && (player.cost >= s1Cost);
+      if (curW.id === 'ar_white_fang' && player.isColorActive) {
+        const hasColorDrone = window.whiteFangDrones && window.whiteFangDrones.some(d => d.isColorDrone);
+        if (hasColorDrone) {
+          s1CanUse = false;
+        }
+      }
       updateDeckSkillCard(1, s1Name, s1Cost, {
-        cooldown: (curW.id === 'ar_white_fang' && player.isColorActive && player.colorDroneCharges <= 0) ? 999 : 0,
-        canUse: !isStunned && (player.cost >= s1Cost)
+        cooldown: s1Cooldown,
+        canUse: s1CanUse
       });
 
       // 카드 2: 메인스킬 2 (L)

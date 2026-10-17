@@ -2713,11 +2713,7 @@
       window.whiteFangDrones = window.whiteFangDrones || [];
       const colorDrones = window.whiteFangDrones.filter(d => d.isColorDrone);
       if (colorDrones.length >= 1) {
-        addDamageText(player.x, player.y - 20, '이미 화력 강화 드론이 가동 중입니다! (최대 1대)', '#ef4444');
-        return;
-      }
-      if (player.colorDroneCharges <= 0) {
-        addDamageText(player.x, player.y - 20, '화력 강화 사용 횟수 초과! (최대 1회)', '#ef4444');
+        addDamageText(player.x, player.y - 20, '이미 화력 강화 드론이 가동 중입니다! (한 번에 1대만 운용 가능)', '#ef4444');
         return;
       }
       const selfDmg = Math.round(player.maxHp * 0.20);
@@ -2729,7 +2725,6 @@
       // 체력 20% 자해 소모
       player.hp = Math.max(1, player.hp - selfDmg);
       addDamageText(player.x, player.y - 20, `🩸 -${selfDmg.toLocaleString()} (체력 20% 소모)`, '#ef4444');
-      player.colorDroneCharges--;
 
       const dX = player.x + (player.width / 2) + (player.facing * 54) - (player.facing * 10);
       const dY = player.y - 42;
