@@ -216,9 +216,9 @@
       player.cost = Math.max(0, player.cost - amount);
       if (!player.isAbiEshuhActive) {
         player.spentCostTotal = (player.spentCostTotal || 0) + amount;
-        // RG 아비 에슈흐 해금 검사 (10 코스트 소모 시 해금)
+        // RG 아비 에슈흐 해금 검사 (150 코스트 소모 시 해금)
         if (player.mainWeapon && player.mainWeapon.id === 'rg_supernova') {
-          if (player.spentCostTotal >= 10 && !player.specialSkillUnlocked && !player.specialSkillUsed) {
+          if (player.spentCostTotal >= 150 && !player.specialSkillUnlocked && !player.specialSkillUsed) {
             player.specialSkillUnlocked = true;
             addDamageText(player.x, player.y - 35, '💎 [시스템 : 아비 에슈흐] 특수 스킬 해금! (S키)', '#38bdf8');
           }
@@ -324,7 +324,16 @@
       player.mainWeapon.maxMags = Infinity;
       player.mainWeapon.mags = Infinity;
       player.mainWeapon.reloadDuration = mainStats.reloadTime || 2.5;
+      player.mainWeapon.dmg = mainStats.dmg || 400;
       player.mainWeapon.isReloading = false;
+      player.isColorActive = false;
+      player.healingReceivedPenalty = 0;
+      player.calmBreathActive = false;
+      player.calmBreathTimer = 0;
+      player.calmBreathUsed = false;
+      player.colorDroneCharges = 1;
+      player.colorErosionTimer = 0;
+      player.specialAimAngle = 0;
 
       // 선택한 보조 무기 스탯 적용 (HG 루거 P08 vs HG 상식적 수단)
       const selectedSub = (playerLoadout && playerLoadout.slot7) || EQUIPMENT_DATABASE.slot7[0];
@@ -589,6 +598,14 @@
       player.immortalStack = 0;
       player.immortalTotalDmgDealt = 0;
       player.immortalHpRatioAtStart = 1.0;
+      player.isColorActive = false;
+      player.healingReceivedPenalty = 0;
+      player.calmBreathActive = false;
+      player.calmBreathTimer = 0;
+      player.calmBreathUsed = false;
+      player.colorDroneCharges = 1;
+      player.colorErosionTimer = 0;
+      player.specialAimAngle = 0;
 
       // [서포터 초기화 제거]
 
@@ -1261,17 +1278,17 @@
           dmg: finalDmg,
           color: isColorAR ? (isCrit ? '#cbd5e1' : '#64748b') : (isCrit ? '#fef08a' : '#22d3ee'),
           size: isCrit ? (isColorAR ? 6.5 : 6) : (isColorAR ? 5.5 : 4.5),
-          life: isColorAR ? 50 : 30 // 일반 AR: 30틱 * 25속도 = 750px (MIDDLE) | 색채 AR: 50틱 * 25속도 = 1,250px
+          life: 30 // 일반 AR 및 테러화 AR: 사거리 750px (30틱 * 25속도 = 750px)
         };
         bullets.push(arBullet);
 
-        // [색채 1스킬: 화력 강화 드론] 사격 시마다 250% 지원 탄환 1~3발 발사 (가장 가까운 적 타겟팅)
+        // [테러화 1스킬: 화력 강화 드론] 사격 시마다 230% 지원 탄환 2~3발 발사 (가장 가까운 적 타겟팅)
         if (isColorAR && window.whiteFangDrones && window.whiteFangDrones.length > 0) {
           const colorDrones = window.whiteFangDrones.filter(d => d.isColorDrone);
           colorDrones.forEach(drone => {
-            const droneShots = Math.floor(Math.random() * 3) + 1; // 1~3발
-            const droneAtk = isHpLow ? 1440 : 1200;
-            let droneBaseDmg = Math.round(droneAtk * 2.50); // 250% (3,000 / 3,600)
+            const droneShots = Math.floor(Math.random() * 2) + 2; // 2~3발
+            const droneAtk = isHpLow ? 1200 : 1000;
+            let droneBaseDmg = Math.round(droneAtk * 2.30); // 230% (2,300 / 2,760)
             droneBaseDmg = calcPlayerAttackDamage(droneBaseDmg);
             const droneCrit = checkCritSuccess(player.crit, 100);
             const droneCritMult = calculateCritDamageMultiplier(player.critDmg, 50, 0);
@@ -1410,10 +1427,10 @@
 
       const isRG = (player.mainWeapon.id === 'rg_supernova');
 
-      // [RG: 밸런스 붕괴] 차징 중 재사용 처리 (추가 +5코스트 소모하여 1.5배/2.0배 강화)
+      // [RG: 밸런스 붕괴] 차징 중 재사용 처리 (추가 +5코스트 소모하여 2.0배/3.0배 강화)
       if (isRG && player.isChargingSkill) {
         if (player.chargeLevel >= 3) {
-          addDamageText(player.x, player.y - 30, '⚡ 이미 최대 출력 (2.0배)!', '#38bdf8');
+          addDamageText(player.x, player.y - 30, '⚡ 이미 최대 출력 (3.0배)!', '#38bdf8');
           return;
         }
         if (player.cost < 5) {
@@ -1424,9 +1441,9 @@
         spendPlayerCost(5);
         player.chargeLevel++;
         if (player.chargeLevel === 2) {
-          addDamageText(player.x, player.y - 30, '⚡ [밸런스 붕괴] 1차 증폭! (1.5배 피해)', '#38bdf8');
+          addDamageText(player.x, player.y - 30, '⚡ [밸런스 붕괴] 1차 증폭! (2.0배 피해)', '#38bdf8');
         } else if (player.chargeLevel === 3) {
-          addDamageText(player.x, player.y - 30, '💥 [밸런스 붕괴] 최대 과충전! (2.0배 피해)', '#facc15');
+          addDamageText(player.x, player.y - 30, '💥 [밸런스 붕괴] 최대 과충전! (3.0배 피해)', '#facc15');
         }
         return;
       }
@@ -1456,8 +1473,8 @@
         spendPlayerCost(reqCost);
         player.skillCooldown = 2.5;
 
-        const mult = isTactical ? 3.50 : 5.50;
-        let skill1BaseDmg = Math.round(250 * mult);
+        const mult = isTactical ? 5.40 : 7.70;
+        let skill1BaseDmg = Math.round(280 * mult);
         skill1BaseDmg = calcPlayerAttackDamage(skill1BaseDmg);
 
         const isCrit = checkCritSuccess(player.crit, 100);
@@ -1544,7 +1561,7 @@
           });
         }
 
-        addDamageText(player.x, player.y - 30, `🛡️ [철벽의 방어] 발사! (${isTactical ? '350% / 기절 4.6s' : '550% / 기절 2.5s'})`, isTactical ? '#38bdf8' : '#f59e0b');
+        addDamageText(player.x, player.y - 30, `🛡️ [철벽의 방어] 발사! (${isTactical ? '540% / 기절 4.6s' : '770% / 기절 2.5s'})`, isTactical ? '#38bdf8' : '#f59e0b');
         updateWeaponHUD();
         return;
       }
@@ -1555,7 +1572,7 @@
           return;
         }
 
-        // 색채 각성 상태: [화력 강화] 드론 소환 (체력 20% 소모, 최대 2회)
+        // 테러화 각성 상태: [화력 강화] 드론 소환 (체력 20% 소모, 최대 1회)
         if (player.isColorActive) {
           spawnColorDrone();
           player.skillCooldown = 2.5;
@@ -1741,30 +1758,30 @@
           }
 
           if (player.mgStanceShotStage === 0) {
-            // 1타: [선율의 첫 번째 음] (3,500%, 관통 -35%)
+            // 1타: [선율의 첫 번째 음] (4,500%, 관통 -35%)
             fireMGStanceMelodyBullet(1);
             player.mgStanceShotStage = 1;
             player.mgStanceShotDelay = 1.5;
-            addDamageText(player.x, player.y - 30, '🎵 [선율의 첫 번째 음] 발사! (3,500%)', '#c084fc');
+            addDamageText(player.x, player.y - 30, '🎵 [선율의 첫 번째 음] 발사! (4,500%)', '#c084fc');
             updateWeaponHUD();
             return;
           } else if (player.mgStanceShotStage === 1) {
-            // 2타: [선율의 두 번째 음] (5,500%, 관통 -45%)
+            // 2타: [선율의 두 번째 음] (7,000%, 관통 -45%)
             fireMGStanceMelodyBullet(2);
             player.mgStanceShotStage = 2;
             player.mgStanceShotDelay = 1.5;
-            addDamageText(player.x, player.y - 30, '🎶 [선율의 두 번째 음] 발사! (5,500%)', '#e879f9');
+            addDamageText(player.x, player.y - 30, '🎶 [선율의 두 번째 음] 발사! (7,000%)', '#e879f9');
             updateWeaponHUD();
             return;
           } else if (player.mgStanceShotStage === 2) {
-            // 3타: [종연의 선율] (7,000%, 관통 -25%) -> 발사 후 즉시 자세 해제 및 쿨타임 시작!
+            // 3타: [종연의 선율] (11,500% + 최대체력 2%, 관통 -25%) -> 발사 후 즉시 자세 해제 및 쿨타임 시작!
             fireMGStanceMelodyBullet(3);
             player.mgStanceShotStage = 0; // 스택 초기화
             player.mgStanceActive = false; // 자세 해제
             player.mgStanceTimer = 0;
             player.mgStanceShotDelay = 0;
             player.mgSkill2Cooldown = 2.5; // 2.5초 쿨타임 시작!
-            addDamageText(player.x, player.y - 35, '🎼 [종연의 선율] 마침표 발사! (7,000%)', '#a855f7');
+            addDamageText(player.x, player.y - 35, '🎼 [종연의 선율] 마침표 발사! (11,500%+최대체력 2%)', '#a855f7');
             updateWeaponHUD();
             return;
           }
@@ -1790,7 +1807,7 @@
         return;
       }
 
-      // [AR: WHITE FANG 465] 2스킬: 라이딩 그레네이드 (3 코스트) / 색채: 수류탄 투척·개(改) (3코스트, HP 50% 이하 2코스트)
+      // [AR: WHITE FANG 465] 2스킬: 라이딩 그레네이드 (3 코스트) / 테러화: 수류탄 투척·개(改) (3코스트, HP 50% 이하 2코스트)
       const isAR = (player.mainWeapon.id === 'ar_white_fang');
       if (isAR) {
         if (player.arSkill2Cooldown > 0) {
@@ -1808,7 +1825,7 @@
           spendPlayerCost(reqCost);
           player.arSkill2Cooldown = player.arSkill2CooldownMax || 2.5;
           throwColorGrenade();
-          addDamageText(player.x, player.y - 30, `💣 [수류탄 투척·개(改)] 투척! (550% 광역)`, '#94a3b8');
+          addDamageText(player.x, player.y - 30, `💣 [수류탄 투척·개(改)] 투척! (620% & 기절 0.5s)`, '#94a3b8');
           updateWeaponHUD();
           return;
         }
@@ -1820,7 +1837,7 @@
         spendPlayerCost(3);
         player.arSkill2Cooldown = player.arSkill2CooldownMax || 2.5;
         throwRidingGrenade();
-        addDamageText(player.x, player.y - 30, '💣 [라이딩 그레네이드] 투척! (630% & 공-30%)', '#06b6d4');
+        addDamageText(player.x, player.y - 30, '💣 [라이딩 그레네이드] 투척! (660% & 공-35%)', '#06b6d4');
         updateWeaponHUD();
         return;
       }
@@ -1834,7 +1851,7 @@
         }
 
         const isTactical = (player.isTacticalDefActive && player.tacticalShield > 0);
-        const reqCost = isTactical ? 4 : 3;
+        const reqCost = isTactical ? 3 : 2;
         if (player.cost < reqCost) {
           addDamageText(player.x, player.y - 20, `코스트 부족! (${reqCost} 필요)`, '#ef4444');
           return;
@@ -1843,8 +1860,8 @@
         spendPlayerCost(reqCost);
         player.foxSkill2Cooldown = 2.5;
 
-        const mult = isTactical ? 3.00 : 4.20;
-        let skill2BaseDmg = Math.round(250 * mult);
+        const mult = isTactical ? 4.10 : 5.50;
+        let skill2BaseDmg = Math.round(280 * mult);
         skill2BaseDmg = calcPlayerAttackDamage(skill2BaseDmg);
 
         const isCrit = checkCritSuccess(player.crit, 100);
@@ -1931,7 +1948,7 @@
           });
         }
 
-        addDamageText(player.x, player.y - 30, `🎯 [공세 전환] 발사! (${isTactical ? '300% / 치저 -44%' : '420% / 치저 -22%'})`, '#fb923c');
+        addDamageText(player.x, player.y - 30, `🎯 [공세 전환] 발사! (${isTactical ? '410% / 치저 -44%' : '550% / 치저 -22%'})`, '#fb923c');
         updateWeaponHUD();
         return;
       }
@@ -1947,20 +1964,20 @@
       const groundY = canvas.height - GROUND_OFFSET;
       const shootOriginY = player.y + player.height * 0.58;
 
-      let mult = 35.0; // 1음 3,500%
+      let mult = 45.0; // 1음 4,500%
       let decay = 0.35; // 관통 시 35% 감소
       let bulletColor = '#c084fc'; // 1음: 연보라빛 네온
       let bulletSize = 14;
       let stageName = '선율의 첫 번째 음';
 
       if (stage === 2) {
-        mult = 55.0; // 2음 5,500%
+        mult = 70.0; // 2음 7,000%
         decay = 0.45; // 관통 시 45% 감소
         bulletColor = '#d946ef'; // 2음: 난초보라빛 네온
         bulletSize = 17;
         stageName = '선율의 두 번째 음';
       } else if (stage === 3) {
-        mult = 70.0; // 종연 7,000%
+        mult = 115.0; // 종연 11,500% (+ 최대체력의 2%)
         decay = 0.25; // 관통 시 25% 감소
         bulletColor = '#a855f7'; // 종연: 짙은 전격 보라빛 네온
         bulletSize = 21;
@@ -2132,14 +2149,14 @@
       }
     }
 
-    // RG [빛의 검/각성 : 슈퍼노바] 0.1초 틱 관통 레이저 타격 처리 (총 40타, 틱당 115% = 4,715 피해)
+    // RG [빛의 검/각성 : 슈퍼노바] 0.1초 틱 관통 레이저 타격 처리 (총 40타, 틱당 120% = 4,920 피해)
     function fireRGAwakeLaserTick() {
       const activePassives = [playerLoadout.slot3.id, playerLoadout.slot4.id, playerLoadout.slot5.id];
       const groundY = canvas.height - GROUND_OFFSET;
       const originX = player.x + (player.rgAwakeFacing > 0 ? player.width + 10 : -10);
       const originY = player.y + player.height * 0.58;
 
-      let baseTickDmg = Math.round(4100 * 1.15);
+      let baseTickDmg = Math.round(4100 * 1.20);
       baseTickDmg = calcPlayerAttackDamage(baseTickDmg);
 
       // [전투 스탯 엔진] 치명타 및 치명 대미지 연산
@@ -2247,12 +2264,12 @@
     // RG 밸런스 붕괴 거대 관통 에너지탄 발사 함수
     function fireRGSkillBullet() {
       const activePassives = [playerLoadout.slot3.id, playerLoadout.slot4.id, playerLoadout.slot5.id];
-      let baseSkillDmg = calcPlayerAttackDamage(Math.round(4100 * 6.10));
+      let baseSkillDmg = calcPlayerAttackDamage(Math.round(4100 * 2.70));
 
-      // 차징 단계별 증폭 배율 (1단계: 1.0배, 2단계: 1.5배, 3단계: 2.0배)
+      // 차징 단계별 증폭 배율 (1단계: 1.0배, 2단계: 2.0배, 3단계: 3.0배)
       let levelMult = 1.0;
-      if (player.chargeLevel === 2) levelMult = 1.5;
-      else if (player.chargeLevel === 3) levelMult = 2.0;
+      if (player.chargeLevel === 2) levelMult = 2.0;
+      else if (player.chargeLevel === 3) levelMult = 3.0;
 
       let calculatedDmg = Math.round(baseSkillDmg * levelMult);
 
@@ -2532,7 +2549,7 @@
           return;
         }
         if (!player.specialSkillUnlocked) {
-          addDamageText(player.x, player.y - 25, `누적 코스트 10 이상 소모 시 해금! (현재 ${player.spentCostTotal || 0}/10)`, '#ef4444');
+          addDamageText(player.x, player.y - 25, `누적 코스트 150 이상 소모 시 해금! (현재 ${player.spentCostTotal || 0}/150)`, '#ef4444');
           return;
         }
 
@@ -2570,17 +2587,17 @@
         return;
       }
 
-      // [AR: WHITE FANG 465] 특수스킬: 색채(色彩)
+      // [AR: WHITE FANG 465] 특수스킬: 테러화(恐怖化)
       if (player.mainWeapon.id === 'ar_white_fang') {
         if (player.isColorActive) {
-          addDamageText(player.x, player.y - 20, '이미 색채 각성 상태입니다!', '#94a3b8');
+          addDamageText(player.x, player.y - 20, '이미 테러화 상태입니다!', '#94a3b8');
           return;
         }
         if (player.specialSkillUsed) {
           addDamageText(player.x, player.y - 20, '전투당 1회만 사용 가능합니다!', '#94a3b8');
           return;
         }
-        addDamageText(player.x, player.y - 25, '🔒 [색채: 사망 시 1회 자동 각성 발동]', '#64748b');
+        addDamageText(player.x, player.y - 25, '🔒 [테러화(恐怖化): 사망 시 1회 자동 각성 발동]', '#64748b');
         return;
       }
 
@@ -2603,10 +2620,10 @@
         player.mainWeapon.isReloading = false;
         player.mainWeapon.reloadTimer = 0;
 
-        // 2) 최대 체력의 12% 전술 보호막 생성 (15초 유지)
-        player.tacticalShieldMax = Math.round(player.maxHp * 0.12);
+        // 2) 최대 체력의 15% 전술 보호막 생성 (17초 유지)
+        player.tacticalShieldMax = Math.round(player.maxHp * 0.15);
         player.tacticalShield = player.tacticalShieldMax;
-        player.tacticalShieldTimer = 15.0;
+        player.tacticalShieldTimer = 17.0;
         player.isTacticalDefActive = true;
 
         // 3) 청록빛 홀로그램 방패 전개 파티클
@@ -2631,15 +2648,16 @@
       }
     }
 
-    // [AR: WHITE FANG 465] 사망 시 특수스킬 [색채(色彩)] 1회 자동 각성 & BLACK FANG 465 변환
+    // [AR: WHITE FANG 465] 사망 시 특수스킬 [테러화(恐怖化)] 1회 자동 각성 & BLACK FANG 465 변환
     function triggerColorAwakening() {
       if (player.isColorActive || player.specialSkillUsed) return;
       player.specialSkillUsed = true;
       player.isColorActive = true;
 
-      // 1. 최대 체력 150% 증가 및 최대치로 부활
-      player.maxHp = Math.round(player.baseMaxHp * 1.50); // 65,000 * 1.5 = 97,500
+      // 1. 최대 체력 135% 증가 및 최대치로 부활, 받는 회복량 20% 감소 디버프
+      player.maxHp = Math.round(player.baseMaxHp * 1.35); // 65,000 * 1.35 = 87,750
       player.hp = player.maxHp;
+      player.healingReceivedPenalty = 0.20; // 테러화 고유 디버프: 받는 회복량 20% 감소
 
       // 2. 외형 흑회색 변경
       player.originalColor = player.color || '#0284c7';
@@ -2647,21 +2665,22 @@
 
       // 3. 무기 스펙 BLACK FANG 465 변환 & 무한 탄창
       player.mainWeapon.name = 'AR (BLACK FANG 465)';
-      player.mainWeapon.dmg = 1200;
+      player.mainWeapon.dmg = 1000; // 공격력 1000으로 너프
+      player.mainWeapon.range = 750; // 사거리 750px
       player.mainWeapon.fireDelay = 0.20;
       player.mainWeapon.ammo = 999;
       player.mainWeapon.maxAmmo = 999;
       player.mainWeapon.isReloading = false;
-      player.crit += 180; // 치명타 확률 +10% 추가 증가
-      player.critDmg += 50; // 치명 대미지 350% -> 400%
-      player.stability = Math.max(100, player.stability - 1000); // 1500 -> 500
+      player.crit += 90; // 치명타 확률 +5% 추가 증가
+      player.critDmg += 70; // 치명 대미지 350% -> 420%
+      player.stability = 650; // 안정 수치 650
 
       // 4. 타이머 및 상태 초기화
       player.colorErosionTimer = 0;
       player.calmBreathActive = false;
       player.calmBreathTimer = 0;
       player.calmBreathUsed = false;
-      player.colorDroneCharges = 2;
+      player.colorDroneCharges = 1; // 최대 1회 운용
 
       // 각성 충격파 및 연기 파티클
       for (let i = 0; i < 40; i++) {
@@ -2679,7 +2698,7 @@
         });
       }
 
-      addDamageText(player.x, player.y - 45, '🖤 [특수스킬: 색채(色彩)] 각성 부활! (BLACK FANG 465)', '#94a3b8');
+      addDamageText(player.x, player.y - 45, '🖤 [특수스킬: 테러화(恐怖化)] 각성 부활! (BLACK FANG 465)', '#94a3b8');
       if (currentMode === 'duo' && typeof sendNetPacket === 'function') {
         sendNetPacket({
           type: 'SYNC',
@@ -2689,10 +2708,16 @@
       updateWeaponHUD();
     }
 
-    // [색채 메인스킬 1] 화력 강화 드론 소환 (최대 체력 20% 소모, 40초 유지, 사격 시마다 250% 탄환 1~3발)
+    // [테러화 메인스킬 1] 화력 강화 드론 소환 (최대 체력 20% 소모, 30초 유지, 사격 시마다 230% 탄환 2~3발, 최대 1대)
     function spawnColorDrone() {
+      window.whiteFangDrones = window.whiteFangDrones || [];
+      const colorDrones = window.whiteFangDrones.filter(d => d.isColorDrone);
+      if (colorDrones.length >= 1) {
+        addDamageText(player.x, player.y - 20, '이미 화력 강화 드론이 가동 중입니다! (최대 1대)', '#ef4444');
+        return;
+      }
       if (player.colorDroneCharges <= 0) {
-        addDamageText(player.x, player.y - 20, '화력 강화 사용 횟수 초과! (최대 2회)', '#ef4444');
+        addDamageText(player.x, player.y - 20, '화력 강화 사용 횟수 초과! (최대 1회)', '#ef4444');
         return;
       }
       const selfDmg = Math.round(player.maxHp * 0.20);
@@ -2706,21 +2731,17 @@
       addDamageText(player.x, player.y - 20, `🩸 -${selfDmg.toLocaleString()} (체력 20% 소모)`, '#ef4444');
       player.colorDroneCharges--;
 
-      window.whiteFangDrones = window.whiteFangDrones || [];
-      const colorDrones = window.whiteFangDrones.filter(d => d.isColorDrone);
-      const isSecondDrone = colorDrones.length >= 1;
-      const sideMult = isSecondDrone ? -1 : 1;
-      const dX = player.x + (player.width / 2) + (player.facing * sideMult * 54) - (player.facing * 10);
+      const dX = player.x + (player.width / 2) + (player.facing * 54) - (player.facing * 10);
       const dY = player.y - 42;
 
       const drone = {
         x: dX,
         y: dY,
         facing: player.facing,
-        duration: 40.0,
-        timer: 40.0,
+        duration: 30.0,
+        timer: 30.0,
         fireTimer: 0,
-        isColorDrone: true, // 색채 드론 구분
+        isColorDrone: true, // 테러화 드론 구분
         shotsFired: 0,
         podAlternator: 0,
         flashTimer: 0,
@@ -2728,17 +2749,16 @@
       };
       window.whiteFangDrones.push(drone);
 
-      const droneLabel = isSecondDrone ? '2호기 (후방)' : '1호기 (전방)';
-      addDamageText(player.x, player.y - 35, `🛸 [화력 강화] ${droneLabel} 가동! (양측 호버링)`, '#94a3b8');
+      addDamageText(player.x, player.y - 35, '🛸 [화력 강화] 전술 드론 가동! (30s 지속)', '#94a3b8');
       updateWeaponHUD();
     }
 
-    // [색채 메인스킬 2] 수류탄 투척·개(改) (3코스트 / HP 50% 이하 시 2코스트, 550% 범위 피해, 드론 15발 미사일 연계)
+    // [테러화 메인스킬 2] 수류탄 투척·개(改) (3코스트 / HP 50% 이하 시 2코스트, 620% 범위 피해 + 0.5s 기절, 드론 12발 미사일 연계)
     function throwColorGrenade() {
       const activePassives = [playerLoadout.slot3.id, playerLoadout.slot4.id, playerLoadout.slot5.id];
       const isHpLow = (player.hp / player.maxHp) <= 0.30;
-      let atkStat = isHpLow ? 1440 : 1200; // HP 30% 이하 시 공격력 20% 증가 (1,440)
-      let baseDmg = calcPlayerAttackDamage(Math.round(atkStat * 5.50)); // 공격력의 550%
+      let atkStat = isHpLow ? 1200 : 1000; // HP 30% 이하 시 공격력 20% 증가 (1,200)
+      let baseDmg = calcPlayerAttackDamage(Math.round(atkStat * 6.20)); // 공격력의 620%
 
       const isCrit = checkCritSuccess(player.crit, 100);
       const critMult = calculateCritDamageMultiplier(player.critDmg, 50, 0);
@@ -2762,6 +2782,7 @@
         vy: throwVy,
         gravity: 0.28,
         dmg: finalDmg,
+        stunDuration: 0.5,
         color: isCrit ? '#fef08a' : '#64748b',
         size: 12,
         life: 120
@@ -2771,14 +2792,14 @@
         sendNetPacket({ type: 'SYNC', bulletEvent: grenadeBullet });
       }
 
-      // 드론 화력 집중 연계: 가동 중인 색채 드론이 있을 경우 드론당 15발 미사일(300% 피해) 일제 난사!
+      // 드론 화력 집중 연계: 가동 중인 드론이 있을 경우 12발 미사일(240% 피해) 일제 난사!
       if (window.whiteFangDrones && window.whiteFangDrones.length > 0) {
         const colorDrones = window.whiteFangDrones.filter(d => d.isColorDrone);
         colorDrones.forEach(drone => {
-          let missileDmg = calcPlayerAttackDamage(Math.round(atkStat * 3.0)); // 300%
+          let missileDmg = calcPlayerAttackDamage(Math.round(atkStat * 2.40)); // 240%
           const finalMissileDmg = isCrit ? Math.round(missileDmg * critMult) : missileDmg;
 
-          for (let m = 0; m < 15; m++) {
+          for (let m = 0; m < 12; m++) {
             setTimeout(() => {
               const launchX = drone.x + (drone.podAlternator === 0 ? -13 : 13) * drone.facing;
               const launchY = drone.y - 4;
@@ -2822,11 +2843,11 @@
               if (currentMode === 'duo' && typeof sendNetPacket === 'function') {
                 sendNetPacket({ type: 'SYNC', bulletEvent: wMissile });
               }
-            }, m * 40); // 0.04초 간격으로 15발 연속 사출
+            }, m * 40); // 0.04초 간격으로 12발 연속 사출
           }
         });
         if (colorDrones.length > 0) {
-          addDamageText(player.x, player.y - 45, '🚀 [드론 전탄 일제사격!] 300% 미사일 15발 난사!', '#cbd5e1');
+          addDamageText(player.x, player.y - 45, '🚀 [드론 전탄 일제사격!] 240% 미사일 12발 난사!', '#cbd5e1');
         }
       }
 
@@ -2914,6 +2935,7 @@
           bAngle = player.facing > 0 ? 0 : Math.PI;
         }
       }
+      player.specialAimAngle = bAngle;
 
       const specialBullet = {
         isPlayerBullet: true,
@@ -3052,22 +3074,23 @@
 
       if (player.abiFinalReady || player.abiFinalPhase !== 'none' || player.abiStunTimer > 0) return;
 
+      const weaponAtk = (player.mainWeapon && player.mainWeapon.dmg) ? player.mainWeapon.dmg : 4100;
       let stage = 1;
       let costReq = 1;
-      let baseDmg = 5000;
+      let baseDmg = Math.round(weaponAtk * 0.90); // 1단계 90%
       let range = 280; // 1단계: 샷건 400px의 약 2/3 (단거리)
       let beamThick = 18;
 
       if (chargeTime >= 0.6) {
         stage = 3;
         costReq = 3;
-        baseDmg = 12000;
+        baseDmg = Math.round(weaponAtk * 2.70); // 3단계 270%
         range = 3500; // 장거리 전장 관통
         beamThick = 34;
       } else if (chargeTime >= 0.3) {
         stage = 2;
         costReq = 2;
-        baseDmg = 8500;
+        baseDmg = Math.round(weaponAtk * 1.80); // 2단계 180%
         range = 750; // 중거리
         beamThick = 26;
       }
@@ -3078,8 +3101,8 @@
           return;
         }
         costReq = Math.max(1, Math.floor(player.cost));
-        if (costReq === 1) { stage = 1; baseDmg = 5000; range = 280; }
-        else if (costReq === 2) { stage = 2; baseDmg = 8500; range = 750; }
+        if (costReq === 1) { stage = 1; baseDmg = Math.round(weaponAtk * 0.90); range = 280; }
+        else if (costReq === 2) { stage = 2; baseDmg = Math.round(weaponAtk * 1.80); range = 750; }
       }
 
       spendPlayerCost(costReq);
@@ -3154,7 +3177,7 @@
       updateWeaponHUD();
     }
 
-    // [아비 에슈흐 1스킬 (X/Q)]: 용기의 마법 (유도 미사일 4발, 6코스트, 발당 7,500)
+    // [아비 에슈흐 1스킬 (X/Q)]: 용기의 마법 (유도 미사일 3발, 5코스트, 발당 210%)
     function fireAbiMissiles() {
       if (!player.isAbiEshuhActive) return;
       if (player.abiFinalReady || player.abiFinalPhase !== 'none' || player.abiStunTimer > 0) return;
@@ -3175,13 +3198,13 @@
         return;
       }
 
-      if (player.cost < 6) {
-        addDamageText(player.x, player.y - 25, `코스트 부족! (6 필요 / 현재 ${Math.floor(player.cost)})`, '#ef4444');
+      if (player.cost < 5) {
+        addDamageText(player.x, player.y - 25, `코스트 부족! (5 필요 / 현재 ${Math.floor(player.cost)})`, '#ef4444');
         checkAbiCostZero();
         return;
       }
 
-      spendPlayerCost(6);
+      spendPlayerCost(5);
       player.abiMissileHistory.push(now);
 
       if (player.abiMissileHistory.length >= 3) {
@@ -3190,17 +3213,17 @@
       }
 
       const activePassives = [playerLoadout.slot3.id, playerLoadout.slot4.id, playerLoadout.slot5.id];
-      let baseDmg = calcPlayerAttackDamage(7500);
+      const weaponAtk = (player.mainWeapon && player.mainWeapon.dmg) ? player.mainWeapon.dmg : 4100;
+      let baseDmg = calcPlayerAttackDamage(Math.round(weaponAtk * 2.10)); // 발당 210%
       const isCrit = checkCritSuccess(player.crit, 100);
       const critMult = calculateCritDamageMultiplier(player.critDmg, 50, 0);
       const finalDmg = isCrit ? Math.round(baseDmg * critMult) : baseDmg;
 
-      // 4연장 미사일 (좌/우 날개 포드에서 2발씩 총 4발이 하늘로 높이 솟구쳤다가 적을 향해 급강하 호밍)
+      // 3연장 미사일 (좌/중앙/우 날개 포드에서 총 3발 사출)
       const wingOffsets = [
-        { x: -16, y: -22, vx: -player.facing * 5, vy: -15 },
-        { x: -8,  y: -26, vx: -player.facing * 2.5, vy: -18 },
-        { x: 8,   y: -26, vx: player.facing * 2.5,  vy: -18 },
-        { x: 16,  y: -22, vx: player.facing * 5,  vy: -15 }
+        { x: -14, y: -22, vx: -player.facing * 4, vy: -16 },
+        { x: 0,   y: -26, vx: 0,                  vy: -18 },
+        { x: 14,  y: -22, vx: player.facing * 4,  vy: -16 }
       ];
 
       wingOffsets.forEach(w => {
@@ -3228,12 +3251,12 @@
         }
       });
 
-      addDamageText(player.x, player.y - 30, '🚀 [용기의 마법] 4연장 미사일 사출!', '#38bdf8');
+      addDamageText(player.x, player.y - 30, '🚀 [용기의 마법] 3연장 미사일 사출! (발당 210%)', '#38bdf8');
       checkAbiCostZero();
       updateWeaponHUD();
     }
 
-    // [아비 에슈흐 2스킬 (C/E)]: 빛의 난사 (10코스트, 3초간 50도 부채꼴 4:1 난사)
+    // [아비 에슈흐 2스킬 (C/E)]: 빛의 난사 (10코스트, 2.5초간 40도 부채꼴 4:1 난사)
     function fireAbiBarrage() {
       if (!player.isAbiEshuhActive) return;
       if (player.abiFinalReady || player.abiFinalPhase !== 'none' || player.abiStunTimer > 0) return;
@@ -3255,17 +3278,18 @@
 
       spendPlayerCost(10);
       player.abiBarrageFiring = true;
-      player.abiBarrageTimer = 3.0;
+      player.abiBarrageTimer = 2.5; // 2.5초 (0.5초 감소)
       player.abiBarrageShotTimer = 0;
-      addDamageText(player.x, player.y - 35, '✨ [빛의 난사] 3초간 부채꼴 연사 개시!', '#00ffff');
+      addDamageText(player.x, player.y - 35, '✨ [빛의 난사] 2.5초간 부채꼴 연사 개시!', '#00ffff');
       checkAbiCostZero();
       updateWeaponHUD();
     }
 
-    // 빛의 난사 단발 탄환 생성 (일반탄 4,500 / 강화탄 9,500, 4:1 비율)
+    // 빛의 난사 단발 탄환 생성 (일반탄 110% / 강화탄 250%, 4:1 비율, 40도 부채꼴)
     function fireSingleBarrageBullet(isEnhanced) {
       const activePassives = [playerLoadout.slot3.id, playerLoadout.slot4.id, playerLoadout.slot5.id];
-      let baseDmg = calcPlayerAttackDamage(isEnhanced ? 9500 : 4500);
+      const weaponAtk = (player.mainWeapon && player.mainWeapon.dmg) ? player.mainWeapon.dmg : 4100;
+      let baseDmg = calcPlayerAttackDamage(Math.round(weaponAtk * (isEnhanced ? 2.50 : 1.10)));
       // [전투 스탯 엔진] 치명타 및 치명 대미지 연산
       const isCrit = checkCritSuccess(player.crit, 100);
       const critMult = calculateCritDamageMultiplier(player.critDmg, 50, 0);
@@ -3289,8 +3313,8 @@
         baseAngle = Math.atan2(closest.y - shootOriginY, closest.x - shootOriginX);
       }
 
-      // 부채꼴 50도 각도 확산 (±25도)
-      const spreadAngle = (Math.random() - 0.5) * (50 * Math.PI / 180);
+      // 부채꼴 40도 각도 확산 (±20도)
+      const spreadAngle = (Math.random() - 0.5) * (40 * Math.PI / 180);
       const finalAngle = baseAngle + spreadAngle;
       const speed = isEnhanced ? 42 : 38;
 
@@ -3418,7 +3442,7 @@
         maxShots: 20, // 총 20발
         podAlternator: 0,
         flashTimer: 0,
-        baseDmg: 300 * 6, // 공격력의 600% = 1,800
+        baseDmg: Math.round(350 * 5.90), // 공격력의 590% = 2,065
         id: Date.now() + Math.random()
       };
       window.whiteFangDrones.push(drone);
@@ -3533,10 +3557,10 @@
       }
     }
 
-    // [WHITE FANG 465] 라이딩 그레네이드 투척 함수 (3코스트, 공격력 630% 범위 피해, 10초간 공격력 30% 감소)
+    // [WHITE FANG 465] 라이딩 그레네이드 투척 함수 (3코스트, 공격력 660% 범위 피해, 12초간 공격력 35% 감소)
     function throwRidingGrenade() {
       const activePassives = [playerLoadout.slot3.id, playerLoadout.slot4.id, playerLoadout.slot5.id];
-      let baseDmg = calcPlayerAttackDamage(Math.round(300 * 6.30)); // 300 * 630% = 1,890
+      let baseDmg = calcPlayerAttackDamage(Math.round(350 * 6.60)); // 350 * 660% = 2,310
 
       const isCrit = checkCritSuccess(player.crit, 100);
       const critMult = calculateCritDamageMultiplier(player.critDmg, 50, 0);
@@ -3574,13 +3598,13 @@
       }
     }
 
-    // [WHITE FANG 465] 라이딩 그레네이드 폭발 처리 (범위 피해 및 공격력 -30% 디버프 부여)
+    // [WHITE FANG 465] 라이딩 그레네이드 폭발 처리 (범위 피해 및 공격력 -35% 디버프 12초 부여)
     function triggerRidingGrenadeExplosion(x, y, dmg) {
       explosions.push({
         x: x,
         y: y,
         radius: 12,
-        maxRadius: 100, // 넓은 폭발 반경
+        maxRadius: 110, // 폭발 반경 +10% 상향 (100 -> 110)
         dmg: dmg,
         hasDealtDamage: true,
         isFriendly: true,
@@ -3593,14 +3617,14 @@
           const kCenterX = k.x + k.size / 2;
           const kCenterY = (canvas.height - GROUND_OFFSET) - (k.jumpY || 0) - k.size / 2;
           const d = Math.hypot(kCenterX - x, kCenterY - y);
-          if (d <= 110) {
-            // 1) 630% 범위 대미지 적용
+          if (d <= 121) {
+            // 1) 660% 범위 대미지 적용
             applyKaitenzerSharedDamage(dmg);
             addDamageText(kCenterX, kCenterY - 25, `💥 -${dmg}`, '#06b6d4');
 
-            // 2) 공격력 30% 감소 디버프 부여 (10초 지속)
-            k.atkDebuffTimer = 10.0;
-            k.atkDebuffRatio = 0.30;
+            // 2) 공격력 35% 감소 디버프 부여 (12초 지속)
+            k.atkDebuffTimer = 12.0;
+            k.atkDebuffRatio = 0.35;
             if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
               sendNetPacket({
                 type: 'ENEMY_DAMAGE',
@@ -3608,11 +3632,11 @@
                 targetId: k.id,
                 damage: dmg,
                 isCrit: false,
-                atkDebuffRatio: 0.30,
-                atkDebuffTimer: 10.0
+                atkDebuffRatio: 0.35,
+                atkDebuffTimer: 12.0
               });
             }
-            addDamageText(kCenterX, kCenterY - 45, `🔻 [ATK -30%]`, '#38bdf8');
+            addDamageText(kCenterX, kCenterY - 45, `🔻 [ATK -35%]`, '#38bdf8');
 
             if (k.isDead) {
               addDamageText(kCenterX, (canvas.height - GROUND_OFFSET) - k.size - 25, `💀 [카이텐저 전원 격파!]`, '#94a3b8');
@@ -3621,12 +3645,12 @@
         }
       });
 
-      // 2페이즈 KAITEN FX Mk.0 거대 보스 폭발 피해 및 공격력 -30% 디버프
+      // 2페이즈 KAITEN FX Mk.0 거대 보스 폭발 피해 및 공격력 -35% 디버프
       if (typeof kaitenFx !== 'undefined' && kaitenFx.isSpawned && !kaitenFx.isDead && kaitenFx.introState !== 'none') {
         const fxCenterX = kaitenFx.x + kaitenFx.width / 2;
         const fxCenterY = (canvas.height - GROUND_OFFSET) - kaitenFx.height / 2;
         const d = Math.hypot(fxCenterX - x, fxCenterY - y);
-        if (d <= 170) {
+        if (d <= 187) {
           let dmgMult = kaitenFx.shieldActive ? 0.5 : 1.0;
           if (kaitenFx.shieldActive) {
             kaitenFx.shieldHitCount = (kaitenFx.shieldHitCount || 0) + 1;
@@ -3645,8 +3669,8 @@
               damage: finalExplosionDmg,
               isCrit: false,
               part: kaitenFx.activePart,
-              atkDebuffRatio: 0.30,
-              atkDebuffTimer: 10.0
+              atkDebuffRatio: 0.35,
+              atkDebuffTimer: 12.0
             });
           }
           if (kaitenFx.activePart && kaitenFx.parts[kaitenFx.activePart] && !kaitenFx.parts[kaitenFx.activePart].isBroken) {
@@ -3659,10 +3683,10 @@
             }
           }
           addDamageText(fxCenterX + (Math.random() - 0.5) * 40, (canvas.height - GROUND_OFFSET) - 170, `💥 -${finalExplosionDmg.toLocaleString()}`, '#06b6d4');
-          // 10초간 공격력 30% 감소 디버프 부여
-          kaitenFx.atkDebuffTimer = 10.0;
-          kaitenFx.atkDebuffRatio = 0.30;
-          addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 210, '🔻 [ATK -30%]', '#38bdf8');
+          // 12초간 공격력 35% 감소 디버프 부여
+          kaitenFx.atkDebuffTimer = 12.0;
+          kaitenFx.atkDebuffRatio = 0.35;
+          addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 210, '🔻 [ATK -35%]', '#38bdf8');
 
           if (kaitenFx.hp <= 0) {
             kaitenFx.hp = 0;
@@ -3710,16 +3734,19 @@
           const d = Math.hypot(kCenterX - x, kCenterY - y);
           if (d <= 120) {
             applyKaitenzerSharedDamage(dmg);
+            k.stunTimer = Math.max(k.stunTimer || 0, 0.5);
             if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
               sendNetPacket({
                 type: 'ENEMY_DAMAGE',
                 targetType: 'kaiten',
                 targetId: k.id,
                 damage: dmg,
-                isCrit: false
+                isCrit: false,
+                stunDuration: 0.5
               });
             }
             addDamageText(kCenterX, kCenterY - 25, `💥 -${dmg.toLocaleString()}`, '#94a3b8');
+            addDamageText(kCenterX, kCenterY - 45, '💫 [기절 0.5s]', '#facc15');
 
             if (k.isDead) {
               addDamageText(kCenterX, (canvas.height - GROUND_OFFSET) - k.size - 25, `💀 [카이텐저 전원 격파!]`, '#94a3b8');
@@ -3744,6 +3771,7 @@
           }
           const finalExplosionDmg = Math.round(dmg * dmgMult);
           kaitenFx.hp = Math.max(0, kaitenFx.hp - finalExplosionDmg);
+          kaitenFx.stunTimer = Math.max(kaitenFx.stunTimer || 0, 0.5);
           if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
             sendNetPacket({
               type: 'ENEMY_DAMAGE',
@@ -3751,7 +3779,8 @@
               targetId: 'kaiten_fx',
               damage: finalExplosionDmg,
               isCrit: false,
-              part: kaitenFx.activePart
+              part: kaitenFx.activePart,
+              stunDuration: 0.5
             });
           }
           if (kaitenFx.activePart && kaitenFx.parts[kaitenFx.activePart] && !kaitenFx.parts[kaitenFx.activePart].isBroken) {
@@ -3764,6 +3793,7 @@
             }
           }
           addDamageText(fxCenterX + (Math.random() - 0.5) * 40, (canvas.height - GROUND_OFFSET) - 170, `💥 -${finalExplosionDmg.toLocaleString()}`, '#94a3b8');
+          addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 210, '💫 [기절 0.5s]', '#facc15');
           if (kaitenFx.hp <= 0) {
             kaitenFx.hp = 0;
             kaitenFx.isDead = true;
@@ -4109,14 +4139,17 @@
           player.vy = 0;
 
           if (player.abiFinalHitstopTimer <= 0) {
-            // 섬광 폭발 & 데미지 인가
+            // 섬광 폭발 & 데미지 인가 (공격력의 3,675% 확정 피해, 치명타 미발동)
             player.abiFinalPhase = 'flash_burst';
             player.abiFinalFlashTimer = 0.28;
+
+            const weaponAtk = (player.mainWeapon && player.mainWeapon.dmg) ? player.mainWeapon.dmg : 4100;
+            const finisherBaseDmg = calcPlayerAttackDamage(Math.round(weaponAtk * 36.75));
 
             const enemies = player.abiFinalHitEnemies || [];
             enemies.forEach(k => {
               if (k.isSpawned && !k.isDead) {
-                const dmg = Math.round(k.hp * 0.05 + 53000);
+                const dmg = finisherBaseDmg;
                 applyKaitenzerSharedDamage(dmg);
                 if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
                   sendNetPacket({
@@ -4129,7 +4162,7 @@
                 }
                 const kCenterX = k.x + k.size / 2;
                 const kCenterY = (canvas.height - GROUND_OFFSET) - (k.jumpY || 0) - k.size / 2;
-                addDamageText(kCenterX, kCenterY - 30, `💥 -${dmg.toLocaleString()} (체력5%+53,000)`, '#00ffff');
+                addDamageText(kCenterX, kCenterY - 30, `💥 -${dmg.toLocaleString()} (3,675%)`, '#00ffff');
                 if (k.isDead) {
                   addDamageText(kCenterX, kCenterY - 50, `💀 [카이텐저 전원 격파!]`, '#fbbf24');
                 }
@@ -4139,7 +4172,7 @@
             if (player.abiFinalHitFx && player.abiFinalHitFx.isSpawned && !player.abiFinalHitFx.isDead) {
               const b = player.abiFinalHitFx;
               let dmgMult = b.shieldActive ? 0.5 : 1.0;
-              const dmg = Math.round((b.hp * 0.05 + 53000) * dmgMult);
+              const dmg = Math.round(finisherBaseDmg * dmgMult);
               b.hp = Math.max(0, b.hp - dmg);
               if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
                 sendNetPacket({
@@ -4153,7 +4186,7 @@
               }
               const bCenterX = b.x + b.width / 2;
               const bCenterY = (canvas.height - GROUND_OFFSET) - b.height / 2;
-              addDamageText(bCenterX, bCenterY - 30, `💥 -${dmg.toLocaleString()} (체력5%+53,000)`, '#00ffff');
+              addDamageText(bCenterX, bCenterY - 30, `💥 -${dmg.toLocaleString()} (3,675%)`, '#00ffff');
               if (b.hp <= 0) {
                 b.hp = 0;
                 b.isDead = true;
@@ -4298,7 +4331,10 @@
         player.tacticalShieldTimer -= dt;
         if (player.tacticalShieldTimer <= 0) {
           if (player.tacticalShield > 0) {
-            const healAmount = Math.round(player.tacticalShield * 0.50);
+            let healAmount = Math.round(player.tacticalShield * 0.50);
+            if (player.healingReceivedPenalty) {
+              healAmount = Math.round(healAmount * (1 - player.healingReceivedPenalty));
+            }
             const actualHeal = Math.min(player.maxHp - player.hp, healAmount);
             player.hp = Math.min(player.maxHp, player.hp + actualHeal);
             addDamageText(player.x, player.y - 40, `💚 전술 보호막 만료 전환 +${actualHeal.toLocaleString()}`, '#10b981');
@@ -4321,7 +4357,10 @@
         if (player.emergencyAidTimer >= 45.0) {
           player.emergencyAidTimer = 0;
           if (player.hp < player.maxHp && !player.isImmortalActive) {
-            const healAmount = 3500;
+            let healAmount = 3500;
+            if (player.healingReceivedPenalty) {
+              healAmount = Math.round(healAmount * (1 - player.healingReceivedPenalty));
+            }
             const actualHeal = Math.min(player.maxHp - player.hp, healAmount);
             player.hp = Math.min(player.maxHp, player.hp + actualHeal);
             addDamageText(player.x, player.y - 35, `💚 +${actualHeal.toLocaleString()} HP [긴급 구호 B]`, '#22c55e');
@@ -4505,6 +4544,33 @@
         player.vx = 0; // 제자리 고정
         player.specialTimer += dt;
 
+        // 조준 각도 및 방향 실시간 갱신 (선도부장 탄도 스포트라이트 조명 동기화)
+        const redKaiten = kaitenzers.find(k => k.id === 'red');
+        const isRedTaunting = redKaiten && redKaiten.isSpawned && !redKaiten.isDead && redKaiten.isActive;
+        const groundY = canvas.height - GROUND_OFFSET;
+        const shootOriginY = player.y + player.height * 0.58;
+        const muzzleOffset = 58;
+
+        if (isRedTaunting) {
+          player.facing = (redKaiten.x + redKaiten.size / 2 >= player.x + player.width / 2) ? 1 : -1;
+          const shootOriginX = player.x + (player.facing > 0 ? player.width + muzzleOffset : -muzzleOffset);
+          const dx = (redKaiten.x + redKaiten.size / 2) - shootOriginX;
+          const dy = (groundY - redKaiten.size / 2) - shootOriginY;
+          player.specialAimAngle = Math.atan2(dy, dx);
+        } else {
+          const pCenterX = player.x + player.width / 2;
+          const closestEnemy = getClosestActiveEnemy(pCenterX, shootOriginY);
+          if (closestEnemy && closestEnemy.entity) {
+            player.facing = closestEnemy.x >= pCenterX ? 1 : -1;
+            const shootOriginX = player.x + (player.facing > 0 ? player.width + muzzleOffset : -muzzleOffset);
+            const dx = closestEnemy.x - shootOriginX;
+            const dy = closestEnemy.y - shootOriginY;
+            player.specialAimAngle = Math.atan2(dy, dx);
+          } else {
+            player.specialAimAngle = player.facing > 0 ? 0 : Math.PI;
+          }
+        }
+
         if (player.specialTimer < 2.0) {
           player.specialPhase = 1;
         } else if (player.specialTimer < 4.0) {
@@ -4563,7 +4629,10 @@
 
           const healPotential = Math.round(player.immortalTotalDmgDealt * 0.05);
           const maxHealLimit = Math.round(player.maxHp * 0.50);
-          const actualHeal = Math.min(maxHealLimit, healPotential);
+          let actualHeal = Math.min(maxHealLimit, healPotential);
+          if (player.healingReceivedPenalty) {
+            actualHeal = Math.round(actualHeal * (1 - player.healingReceivedPenalty));
+          }
 
           if (actualHeal > 0) {
             player.hp = Math.min(player.maxHp, player.hp + actualHeal);
@@ -6312,6 +6381,10 @@
                 };
 
             let finalDmg = Math.round(combatResult.damage * dmgMult);
+            if (b.type === 'mg_melody_bullet' && b.stage === 3) {
+              const fxMaxHp = kaitenFx.maxHp || 10000000;
+              finalDmg += Math.round(fxMaxHp * 0.02);
+            }
             kaitenFx.hp = Math.max(0, kaitenFx.hp - finalDmg);
 
             // [2인 멀티플레이 동기화]: 2P 게스트 타격 시 1P 호스트에게 권위적 대미지 확정 전송
@@ -6462,6 +6535,10 @@
             }
 
             let finalDmg = Math.round(combatResult.damage * buffFactor);
+            if (b.type === 'mg_melody_bullet' && b.stage === 3) {
+              const totalKaitenMaxHp = kaitenzers.reduce((sum, r) => sum + (r.maxHp || 1000000), 0) || 5000000;
+              finalDmg += Math.round(totalKaitenMaxHp * 0.02);
+            }
             applyKaitenzerSharedDamage(finalDmg);
 
             // [2인 멀티플레이 동기화]: 2P 게스트 타격 시 1P 호스트에게 권위적 대미지 확정 전송

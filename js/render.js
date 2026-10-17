@@ -6325,10 +6325,15 @@
           ctx.fill();
 
           // (B) 총알이 질주하는 전방 탄도 축 집중 조명 빔 (Bullet Trajectory Searchlight Cone)
-          const beamEndX = sFacing > 0 ? canvas.width + 160 : -160;
+          const aimAngle = shooter.specialAimAngle !== undefined ? shooter.specialAimAngle : (sFacing > 0 ? 0 : Math.PI);
+          const beamDist = Math.max(canvas.width, canvas.height) + 200;
           const beamHeight = sBerserk ? 130 : 95;
 
-          const beamGrad = ctx.createLinearGradient(0, sMuzzleY - beamHeight, 0, sMuzzleY + beamHeight);
+          ctx.save();
+          ctx.translate(sMuzzleX, sMuzzleY);
+          ctx.rotate(aimAngle);
+
+          const beamGrad = ctx.createLinearGradient(0, -beamHeight, 0, beamHeight);
           beamGrad.addColorStop(0, 'rgba(147, 51, 234, 0)');
           beamGrad.addColorStop(0.28, sBerserk ? 'rgba(168, 85, 247, 0.45)' : 'rgba(192, 132, 252, 0.32)');
           beamGrad.addColorStop(0.5, sBerserk ? 'rgba(255, 245, 255, 0.95)' : 'rgba(245, 208, 254, 0.8)');
@@ -6337,10 +6342,10 @@
 
           ctx.fillStyle = beamGrad;
           ctx.beginPath();
-          ctx.moveTo(sMuzzleX, sMuzzleY - 14);
-          ctx.lineTo(beamEndX, sMuzzleY - beamHeight);
-          ctx.lineTo(beamEndX, sMuzzleY + beamHeight);
-          ctx.lineTo(sMuzzleX, sMuzzleY + 14);
+          ctx.moveTo(0, -14);
+          ctx.lineTo(beamDist, -beamHeight);
+          ctx.lineTo(beamDist, beamHeight);
+          ctx.lineTo(0, 14);
           ctx.closePath();
           ctx.fill();
 
@@ -6348,9 +6353,11 @@
           ctx.strokeStyle = sBerserk ? '#ffffff' : '#f5d0fe';
           ctx.lineWidth = sBerserk ? 4.5 : 3.0;
           ctx.beginPath();
-          ctx.moveTo(sMuzzleX, sMuzzleY);
-          ctx.lineTo(beamEndX, sMuzzleY);
+          ctx.moveTo(0, 0);
+          ctx.lineTo(beamDist, 0);
           ctx.stroke();
+
+          ctx.restore();
         });
 
         ctx.restore();

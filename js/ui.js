@@ -1040,7 +1040,7 @@
       rg_supernova: {
         skill1: { name: '각성 : 빛의 검', cost: 3 },
         skill2: { name: '슈퍼노바 방출', cost: 7 },
-        special: { name: '아비 에슈흐', cost: 0, isSpecial: true, canUse: p => !p.specialSkillUsed }
+        special: { name: '아비 에슈흐', cost: 0, isSpecial: true, canUse: p => !p.specialSkillUsed && (p.spentCostTotal >= 150) }
       },
       sg_bloody_gunpowder: {
         skill1: { name: '기괴멸렬', cost: 4 },
@@ -1048,14 +1048,14 @@
         special: { name: '불사(不死)', cost: 0, isSpecial: true, canUse: p => !p.specialSkillUsed }
       },
       ar_white_fang: {
-        skill1: { name: '라이딩 그레네이드', cost: 3 },
-        skill2: { name: '페이탈 팡', cost: 6 },
-        special: { name: '색채 각성', cost: 0, isSpecial: true, canUse: p => p.isColorActive || !p.specialSkillUsed }
+        skill1: { name: '드론 소환', cost: 3 },
+        skill2: { name: '라이딩 그레네이드', cost: 3 },
+        special: { name: '테러화(恐怖化)', cost: 0, isSpecial: true, canUse: p => p.isColorActive || !p.specialSkillUsed }
       },
       smg_fox45: {
-        skill1: { name: '철벽의 방어', cost: 2 },
-        skill2: { name: '공세 전환', cost: 4 },
-        special: { name: '전술 방패', cost: 4, isSpecial: true, canUse: p => (p.foxShieldCooldown <= 0) && (p.cost >= 4) }
+        skill1: { name: '철벽의 방어', cost: 3 },
+        skill2: { name: '공세 전환', cost: 2 },
+        special: { name: '전술 방패 전개', cost: 4, isSpecial: true, canUse: p => (p.foxShieldCooldown <= 0) && (p.cost >= 4) }
       }
     };
 
@@ -1116,31 +1116,71 @@
         curCostText.innerText = Math.floor(player.cost || 0);
       }
 
-      // 3. 4개 스킬 카드 슬롯 갱신
+      // 3. 4개 스킬 카드 슬롯 동적 갱신
       const wCfg = WEAPON_SKILL_CONFIG[curW.id] || {
         skill1: { name: curW.skillName || '메인1', cost: 4 },
         skill2: { name: curW.skill2Name || '메인2', cost: 6 },
         special: { name: curW.specialSkillName || '특수', cost: 0, isSpecial: true, canUse: () => true }
       };
 
-      const isStunned = (player.stunTimer > 0);
+      let s1Name = wCfg.skill1.name;
+      let s1Cost = wCfg.skill1.cost;
+      let s2Name = wCfg.skill2.name;
+      let s2Cost = wCfg.skill2.cost;
+      let specName = wCfg.special.name;
+      let specCost = wCfg.special.cost;
+      let specCan = wCfg.special.canUse ? wCfg.special.canUse(player) : false;
+
+      // 아비 에슈흐 상태 시 전용 스킬명/코스트
+      if (player.isAbiEshuhActive) {
+        s1Name = '용기의 마법';
+        s1Cost = 5;
+        s2Name = '빛의 난사';
+        s2Cost = 10;
+        specName = player.abiFinalCanTrigger ? '피니셔 발동' : '아비 에슈흐';
+        specCost = 0;
+        specCan = player.abiFinalCanTrigger;
+      } else if (player.isColorActive) {
+        // 테러화 상태 시 전용 스킬명/코스트
+        s1Name = '화력 강화';
+        s1Cost = 0;
+        s2Name = '수류탄·개(改)';
+        s2Cost = (player.hp / player.maxHp <= 0.50) ? 2 : 3;
+        specName = '테러화(恐怖化)';
+        specCost = 0;
+        specCan = false;
+      } else if (curW.id === 'smg_fox45') {
+        // FOX 45식: 전술 보호막 연계 동적 코스트 (1스킬 3/4, 2스킬 2/3)
+        const hasShield = player.foxShieldActive && player.tacticalShield > 0;
+        s1Cost = hasShield ? 4 : 3;
+        s2Cost = hasShield ? 3 : 2;
+      } else if (curW.id === 'rg_supernova') {
+        // RG 1스킬 차징 단계별 코스트
+        if (player.rgChargeStage >= 2) s1Cost = 10;
+      } else if (curW.id === 'mg_destructor') {
+        if (player.mgStanceActive) {
+          s2Name = '이스보셋 사격';
+          s2Cost = 0;
+        }
+      }
+
+      const isStunned = (player.stunTimer > 0) || (player.abiStunTimer > 0);
 
       // 카드 1: 메인스킬 1 (K)
-      updateDeckSkillCard(1, wCfg.skill1.name, wCfg.skill1.cost, {
-        cooldown: 0,
-        canUse: !isStunned && (player.cost >= wCfg.skill1.cost)
+      updateDeckSkillCard(1, s1Name, s1Cost, {
+        cooldown: (curW.id === 'ar_white_fang' && player.isColorActive && player.colorDroneCharges <= 0) ? 999 : 0,
+        canUse: !isStunned && (player.cost >= s1Cost)
       });
 
       // 카드 2: 메인스킬 2 (L)
-      updateDeckSkillCard(2, wCfg.skill2.name, wCfg.skill2.cost, {
-        cooldown: 0,
-        canUse: !isStunned && (player.cost >= wCfg.skill2.cost)
+      updateDeckSkillCard(2, s2Name, s2Cost, {
+        cooldown: player.arSkill2Cooldown || player.foxSkill2Cooldown || 0,
+        canUse: !isStunned && (player.cost >= s2Cost)
       });
 
       // 카드 3: 특수스킬 (S)
-      const specCan = wCfg.special.canUse ? wCfg.special.canUse(player) : false;
       const specCd = curW.id === 'smg_fox45' ? (player.foxShieldCooldown || 0) : 0;
-      updateDeckSkillCard(3, wCfg.special.name, wCfg.special.cost, {
+      updateDeckSkillCard(3, specName, specCost, {
         cooldown: specCd,
         canUse: !isStunned && specCan,
         isSpecial: true
