@@ -583,14 +583,22 @@
       atgTimer: 0,
       atgMaxDuration: 45, // 45초
 
-      // 파츠 시스템 ([무한히 타오르는 뜨거운 마음]: 20초 순환)
+      // 파츠 시스템 ([무한히 타오르는 뜨거운 마음]: 25초 순환)
       activePart: 'pink', // 'pink'(오른팔) | 'red'(가슴) | 'green'(왼팔)
       partCycleTimer: 0,
-      partCycleDuration: 20, // 20초 주기
+      partCycleDuration: 25, // 25초 주기
       partSkillDelayTimer: 2.0, // 파츠 전환 후 2초 뒤 스킬 1회 시전
       partSkillTriggered: false,
       partSkillCount: 0,
       allPartsBrokenNotified: false,
+
+      // 상태이상 & 그로기 시스템
+      stunTimer: 0,
+      partGroggyTimer: 0, // 파츠 파괴 시 5초간 무릎 꿇기 그로기
+      isPartGroggy: false,
+      groggyDmgMultiplier: 1.5, // 그로기 중 받는 피해 1.5배 (150%) 증폭
+      // 패시브: [무한히 회전하는 초밥] - CC기 지속시간 75% 감소 (단, 파츠 파괴 5초 그로기는 제외)
+      ccReductionRate: 0.75,
 
       // 3개 핵심 파츠별 내구도 (최대체력의 24% = 1,800,000)
       partMaxHp: 1800000,

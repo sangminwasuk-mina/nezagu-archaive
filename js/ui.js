@@ -1331,6 +1331,31 @@
     }
 
     function updateUI() {
+      // [연출 컷씬 재생 중 모든 인게임 UI 완전 숨김 처리]
+      const isCutsceneActive = (window.phase1Cutscene && window.phase1Cutscene.active) || 
+                               (window.phase2Cutscene && window.phase2Cutscene.active);
+
+      const topHud = getCachedEl('top-hud');
+      const tacticalDeck = getCachedEl('tactical-deck');
+      const topRightHud = getCachedEl('top-right-hud');
+      const minimap = getCachedEl('minimap');
+      const bossHud = getCachedEl('ba-boss-hud');
+
+      if (isCutsceneActive) {
+        if (topHud && !topHud.classList.contains('hidden')) topHud.classList.add('hidden');
+        if (tacticalDeck && !tacticalDeck.classList.contains('hidden')) tacticalDeck.classList.add('hidden');
+        if (topRightHud && !topRightHud.classList.contains('hidden')) topRightHud.classList.add('hidden');
+        if (minimap && !minimap.classList.contains('hidden')) minimap.classList.add('hidden');
+        if (bossHud && !bossHud.classList.contains('hidden')) bossHud.classList.add('hidden');
+        return; // 컷신 중에는 세부 DOM 조작 스킵
+      } else if (currentGameState === 'battle') {
+        if (topHud && topHud.classList.contains('hidden')) topHud.classList.remove('hidden');
+        if (tacticalDeck && tacticalDeck.classList.contains('hidden')) tacticalDeck.classList.remove('hidden');
+        if (topRightHud && topRightHud.classList.contains('hidden')) topRightHud.classList.remove('hidden');
+        if (minimap && minimap.classList.contains('hidden')) minimap.classList.remove('hidden');
+        if (bossHud && bossHud.classList.contains('hidden')) bossHud.classList.remove('hidden');
+      }
+
       // 플레이어 무기, 탄약, 코스트(2.5초마다 자연회복) HUD 매 프레임 실시간 동기화
       updateWeaponHUD();
       updateTacticalDeck();

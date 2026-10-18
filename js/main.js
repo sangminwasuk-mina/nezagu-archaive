@@ -697,6 +697,7 @@
         kaitenFx.atgTimer = 0;
         kaitenFx.activePart = 'pink';
         kaitenFx.partCycleTimer = 0;
+        kaitenFx.partCycleDuration = 25; // 25초 주기
         kaitenFx.partSkillDelayTimer = 2.0;
         kaitenFx.partSkillTriggered = false;
         kaitenFx.partSkillCount = 0;
@@ -708,6 +709,11 @@
         kaitenFx.isFiringNormal = false;
         kaitenFx.introState = 'none';
         kaitenFx.introTimer = 0;
+        kaitenFx.stunTimer = 0;
+        kaitenFx.partGroggyTimer = 0;
+        kaitenFx.isPartGroggy = false;
+        kaitenFx.groggyDmgMultiplier = 1.5;
+        kaitenFx.ccReductionRate = 0.75;
         kaitenFx.partMaxHp = Math.round(kaitenFx.maxHp * 0.24); // 24%
         ['pink', 'red', 'green'].forEach(p => {
           if (kaitenFx.parts[p]) {
@@ -717,6 +723,25 @@
           }
         });
       }
+    }
+
+    // [2페이즈 KAITEN FX 파츠 파괴 시 무릎 꿇기 그로기 (5초 기절 & 받는 피해 1.5배 & 시간 정지)]
+    function triggerPartBrokenGroggy(curPart, centerX, groundY) {
+      if (!curPart || curPart.isBroken) return;
+      curPart.hp = 0;
+      curPart.isBroken = true;
+      addDamageText(centerX, groundY - 220, `💥 [${curPart.name}] 파괴 완료!`, curPart.color);
+
+      // 5초간 무릎 꿇기 그로기 발동
+      kaitenFx.partGroggyTimer = 5.0;
+      kaitenFx.isPartGroggy = true;
+      kaitenFx.isMoving = false;
+      kaitenFx.isFiringSkill = false;
+      kaitenFx.isFiringNormal = false;
+      kaitenFx.shieldActive = false;
+      addDamageText(centerX, groundY - 250, '🧎 [무릎 꿇기] 파츠 파괴 그로기! 5초 기절 & 받는 피해 1.5배!!', '#facc15');
+
+      checkAndNotifyAllPartsBroken(centerX, groundY - 270);
     }
 
     // [2페이즈 KAITEN FX 전 파츠 파괴 알림 헬퍼]
@@ -2250,7 +2275,8 @@
                 addDamageText(kaitenFx.x + kaitenFx.width / 2, groundY - 180, '🛡️ [SHIELD BREAK] 실드 가드 파괴!', '#22c55e');
               }
             }
-            const tickDmg = Math.round(finalTickDmg * dmgMult);
+            const groggyMult = (kaitenFx.partGroggyTimer > 0) ? (kaitenFx.groggyDmgMultiplier || 1.5) : 1.0;
+            const tickDmg = Math.round(finalTickDmg * dmgMult * groggyMult);
             kaitenFx.hp = Math.max(0, kaitenFx.hp - tickDmg);
 
             // [2인 멀티 동기화] 2P 각성 슈퍼노바 보스 레이저 타격 전송
@@ -2268,10 +2294,7 @@
               const curPart = kaitenFx.parts[kaitenFx.activePart];
               curPart.hp = Math.max(0, curPart.hp - tickDmg);
               if (curPart.hp <= 0) {
-                curPart.hp = 0;
-                curPart.isBroken = true;
-                addDamageText(kaitenFx.x + kaitenFx.width / 2, groundY - 220, `💥 [${curPart.name}] 파괴 완료!`, curPart.color);
-                checkAndNotifyAllPartsBroken(kaitenFx.x + kaitenFx.width / 2, groundY - 250);
+                triggerPartBrokenGroggy(curPart, kaitenFx.x + kaitenFx.width / 2, groundY);
               }
             }
             if (isCrit) {
@@ -3429,7 +3452,8 @@
               addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 180, '🛡️ [SHIELD BREAK] 실드 가드 파괴!', '#22c55e');
             }
           }
-          const finalExplosionDmg = Math.round(dmg * dmgMult);
+          const groggyMult = (kaitenFx.partGroggyTimer > 0) ? (kaitenFx.groggyDmgMultiplier || 1.5) : 1.0;
+          const finalExplosionDmg = Math.round(dmg * dmgMult * groggyMult);
           kaitenFx.hp = Math.max(0, kaitenFx.hp - finalExplosionDmg);
           if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
             sendNetPacket({
@@ -3445,10 +3469,7 @@
             const curPart = kaitenFx.parts[kaitenFx.activePart];
             curPart.hp = Math.max(0, curPart.hp - finalExplosionDmg);
             if (curPart.hp <= 0) {
-              curPart.hp = 0;
-              curPart.isBroken = true;
-              addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 220, `💥 [${curPart.name}] 파괴 완료!`, curPart.color);
-              checkAndNotifyAllPartsBroken(fxCenterX, (canvas.height - GROUND_OFFSET) - 250);
+              triggerPartBrokenGroggy(curPart, fxCenterX, canvas.height - GROUND_OFFSET);
             }
           }
           addDamageText(fxCenterX, fxCenterY - 30, `💥 -${finalExplosionDmg.toLocaleString()}`, '#00ffff');
@@ -3574,7 +3595,8 @@
           const eff = (typeof getDamageEffectiveness === 'function')
             ? getDamageEffectiveness(attackType, kaitenFx.armorType || ARMOR_TYPES.NORMAL)
             : { mult: 1.0, label: 'NORMAL', color: '#ffffff' };
-          const finalExplosionDmg = Math.round(dmg * dmgMult * eff.mult);
+          const groggyMult = (kaitenFx.partGroggyTimer > 0) ? (kaitenFx.groggyDmgMultiplier || 1.5) : 1.0;
+          const finalExplosionDmg = Math.round(dmg * dmgMult * eff.mult * groggyMult);
           kaitenFx.hp = Math.max(0, kaitenFx.hp - finalExplosionDmg);
           if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
             sendNetPacket({
@@ -3590,10 +3612,7 @@
             const curPart = kaitenFx.parts[kaitenFx.activePart];
             curPart.hp = Math.max(0, curPart.hp - finalExplosionDmg);
             if (curPart.hp <= 0) {
-              curPart.hp = 0;
-              curPart.isBroken = true;
-              addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 220, `💥 [${curPart.name}] 파괴 완료!`, curPart.color);
-              checkAndNotifyAllPartsBroken(fxCenterX, (canvas.height - GROUND_OFFSET) - 250);
+              triggerPartBrokenGroggy(curPart, fxCenterX, canvas.height - GROUND_OFFSET);
             }
           }
           addDamageText(fxCenterX + (Math.random() - 0.5) * 40, (canvas.height - GROUND_OFFSET) - 170, `💥 -${finalExplosionDmg.toLocaleString()}`, '#06b6d4');
@@ -3728,7 +3747,8 @@
           const eff = (typeof getDamageEffectiveness === 'function')
             ? getDamageEffectiveness(ATTACK_TYPES.MYSTIC, kaitenFx.armorType || ARMOR_TYPES.NORMAL)
             : { mult: 1.0, label: 'NORMAL', color: '#ffffff' };
-          const finalExplosionDmg = Math.round(dmg * dmgMult * eff.mult);
+          const groggyMult = (kaitenFx.partGroggyTimer > 0) ? (kaitenFx.groggyDmgMultiplier || 1.5) : 1.0;
+          const finalExplosionDmg = Math.round(dmg * dmgMult * eff.mult * groggyMult);
           kaitenFx.hp = Math.max(0, kaitenFx.hp - finalExplosionDmg);
           if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
             sendNetPacket({
@@ -3746,10 +3766,7 @@
             const curPart = kaitenFx.parts[kaitenFx.activePart];
             curPart.hp = Math.max(0, curPart.hp - finalExplosionDmg);
             if (curPart.hp <= 0) {
-              curPart.hp = 0;
-              curPart.isBroken = true;
-              addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 220, `💥 [${curPart.name}] 파괴 완료!`, curPart.color);
-              checkAndNotifyAllPartsBroken(fxCenterX, (canvas.height - GROUND_OFFSET) - 250);
+              triggerPartBrokenGroggy(curPart, fxCenterX, canvas.height - GROUND_OFFSET);
             }
           }
           addDamageText(fxCenterX + (Math.random() - 0.5) * 40, (canvas.height - GROUND_OFFSET) - 170, `💥 -${finalExplosionDmg.toLocaleString()}`, '#06b6d4');
@@ -3857,9 +3874,12 @@
           const eff = (typeof getDamageEffectiveness === 'function')
             ? getDamageEffectiveness(ATTACK_TYPES.MYSTIC, kaitenFx.armorType || ARMOR_TYPES.NORMAL)
             : { mult: 1.0, label: 'NORMAL', color: '#ffffff' };
-          const finalExplosionDmg = Math.round(dmg * dmgMult * eff.mult);
+          const groggyMult = (kaitenFx.partGroggyTimer > 0) ? (kaitenFx.groggyDmgMultiplier || 1.5) : 1.0;
+          const finalExplosionDmg = Math.round(dmg * dmgMult * eff.mult * groggyMult);
           kaitenFx.hp = Math.max(0, kaitenFx.hp - finalExplosionDmg);
-          kaitenFx.stunTimer = Math.max(kaitenFx.stunTimer || 0, 0.5);
+          const baseStun = 0.5;
+          const reducedStun = baseStun * (1 - (kaitenFx.ccReductionRate || 0.75));
+          kaitenFx.stunTimer = Math.max(kaitenFx.stunTimer || 0, reducedStun);
           if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
             sendNetPacket({
               type: 'ENEMY_DAMAGE',
@@ -3868,17 +3888,14 @@
               damage: finalExplosionDmg,
               isCrit: false,
               part: kaitenFx.activePart,
-              stunDuration: 0.5
+              stunDuration: reducedStun
             });
           }
           if (kaitenFx.activePart && kaitenFx.parts[kaitenFx.activePart] && !kaitenFx.parts[kaitenFx.activePart].isBroken) {
             const curPart = kaitenFx.parts[kaitenFx.activePart];
             curPart.hp = Math.max(0, curPart.hp - finalExplosionDmg);
             if (curPart.hp <= 0) {
-              curPart.hp = 0;
-              curPart.isBroken = true;
-              addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 220, `💥 [${curPart.name}] 파괴 완료!`, curPart.color);
-              checkAndNotifyAllPartsBroken(fxCenterX, (canvas.height - GROUND_OFFSET) - 250);
+              triggerPartBrokenGroggy(curPart, fxCenterX, canvas.height - GROUND_OFFSET);
             }
           }
           addDamageText(fxCenterX + (Math.random() - 0.5) * 40, (canvas.height - GROUND_OFFSET) - 170, `💥 -${finalExplosionDmg.toLocaleString()}`, '#94a3b8');
@@ -3887,7 +3904,7 @@
           } else if (eff.label === 'RESIST') {
             addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 230, '🛡️ RESIST', eff.color);
           }
-          addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 210, '💫 [기절 0.5s]', '#facc15');
+          addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 210, `💫 [무한히 회전하는 초밥] 기절 75% 감소 [${reducedStun.toFixed(2)}s]`, '#facc15');
           if (kaitenFx.hp <= 0) {
             kaitenFx.hp = 0;
             kaitenFx.isDead = true;
@@ -5712,12 +5729,44 @@
 
         // C. [실전 전투 AI & 물리 이동 & 미니건 평타 패턴]
         if (kaitenFx.isSpawned && !kaitenFx.isDead && kaitenFx.introState === 'ready') {
-          // [실시간 ATG 연속 충전]: 42초 기준 0% -> 100% 충전
-          kaitenFx.atg = Math.min(100, (kaitenFx.atg || 0) + dt * (100 / 42));
+          // [파츠 파괴 5초 무릎 꿇기 그로기 타이머]
+          const isPartGroggy = (kaitenFx.partGroggyTimer > 0);
+          if (isPartGroggy) {
+            kaitenFx.partGroggyTimer -= dt;
+            kaitenFx.isPartGroggy = true;
+            kaitenFx.isMoving = false;
+            kaitenFx.isFiringSkill = false;
+            kaitenFx.isFiringNormal = false;
+            kaitenFx.shieldActive = false;
 
-          // [FOX 45식: 철벽의 방어 기절 타이머]
-          const isFxStunned = (kaitenFx.stunTimer > 0);
-          if (isFxStunned) {
+            // 그로기 스파크 & 연기 파티클 방출
+            if (Math.random() < 0.35 && specialParticles.length < 80) {
+              const sparkX = kaitenFx.x + kaitenFx.width / 2 + (Math.random() - 0.5) * 120;
+              const sparkY = groundY - 60 - Math.random() * 100;
+              specialParticles.push({
+                type: 'spark',
+                x: sparkX,
+                y: sparkY,
+                vx: (Math.random() - 0.5) * 5,
+                vy: -Math.random() * 4 - 2,
+                color: '#facc15',
+                size: Math.random() * 4 + 2,
+                life: 14,
+                maxLife: 14,
+                alpha: 1
+              });
+            }
+
+            if (kaitenFx.partGroggyTimer <= 0) {
+              kaitenFx.partGroggyTimer = 0;
+              kaitenFx.isPartGroggy = false;
+              addDamageText(kaitenFx.x + kaitenFx.width / 2, groundY - 240, '✅ KAITEN FX 그로기 회복! 다음 파츠 가동', '#22c55e');
+            }
+          }
+
+          // [일반 기절 타이머: FOX 45식 방패 등 CC기 (패시브 75% 감소 적용됨)]
+          const isFxStunned = (kaitenFx.stunTimer > 0) || isPartGroggy;
+          if (kaitenFx.stunTimer > 0) {
             kaitenFx.stunTimer -= dt;
             if (kaitenFx.stunTimer <= 0) {
               kaitenFx.stunTimer = 0;
@@ -5852,53 +5901,60 @@
             }
           }
 
-          // 4) [원작 핵심 기믹]: 20초 파츠 순환 사이클 ([무한히 타오르는 뜨거운 마음])
+          // 4) [원작 핵심 기믹]: 25초 파츠 순환 사이클 ([무한히 타오르는 뜨거운 마음])
           const cycleOrder = ['pink', 'red', 'green'];
           const intactParts = cycleOrder.filter(p => !kaitenFx.parts[p].isBroken);
+
+          function advanceToNextPart() {
+            const currentIntact = cycleOrder.filter(p => !kaitenFx.parts[p].isBroken);
+            if (currentIntact.length === 0) {
+              kaitenFx.activePart = 'none';
+              kaitenFx.shieldActive = false;
+              kaitenFx.isFiringSkill = false;
+              return;
+            }
+            const curIdx = cycleOrder.indexOf(kaitenFx.activePart);
+            let nextPart = null;
+            for (let step = 1; step <= cycleOrder.length; step++) {
+              const candidate = cycleOrder[(curIdx + step) % cycleOrder.length];
+              if (!kaitenFx.parts[candidate].isBroken) {
+                nextPart = candidate;
+                break;
+              }
+            }
+            if (!nextPart) nextPart = currentIntact[0];
+
+            kaitenFx.activePart = nextPart;
+            if (nextPart !== 'green') kaitenFx.shieldActive = false;
+            kaitenFx.partCycleTimer = 0;
+            kaitenFx.partSkillDelayTimer = 2.0;
+            kaitenFx.partSkillTriggered = false;
+            kaitenFx.partSkillCount = 0;
+
+            const partObj = kaitenFx.parts[nextPart];
+            addDamageText(fxCenterX, groundY - 260, `🔄 [파츠 전환] ${partObj.name}`, partObj.color);
+          }
 
           if (intactParts.length === 0) {
             kaitenFx.activePart = 'none';
             kaitenFx.shieldActive = false;
             kaitenFx.isFiringSkill = false;
           } else {
-            if (kaitenFx.activePart === 'none' || (kaitenFx.parts[kaitenFx.activePart] && kaitenFx.parts[kaitenFx.activePart].isBroken)) {
-              kaitenFx.activePart = intactParts[0];
-              kaitenFx.partCycleTimer = 0;
-              kaitenFx.partSkillDelayTimer = 2.0;
-              kaitenFx.partSkillTriggered = false;
-              kaitenFx.partSkillCount = 0;
-              if (kaitenFx.activePart !== 'green') kaitenFx.shieldActive = false;
-            }
-
-            kaitenFx.partCycleTimer += dt;
-            if (kaitenFx.partCycleTimer >= kaitenFx.partCycleDuration) {
-              kaitenFx.partCycleTimer = 0;
-
-              const curIdx = cycleOrder.indexOf(kaitenFx.activePart);
-              let nextPart = null;
-              for (let step = 1; step <= cycleOrder.length; step++) {
-                const candidate = cycleOrder[(curIdx + step) % cycleOrder.length];
-                if (!kaitenFx.parts[candidate].isBroken) {
-                  nextPart = candidate;
-                  break;
+            // 그로기 중(무릎 꿇기 5초)에는 파츠 시간이 완전히 멈추고 파츠가 바뀌지 않음!
+            if (!kaitenFx.partGroggyTimer || kaitenFx.partGroggyTimer <= 0) {
+              if (kaitenFx.activePart === 'none' || (kaitenFx.parts[kaitenFx.activePart] && kaitenFx.parts[kaitenFx.activePart].isBroken)) {
+                advanceToNextPart();
+              } else {
+                kaitenFx.partCycleTimer += dt;
+                if (kaitenFx.partCycleTimer >= (kaitenFx.partCycleDuration || 25)) {
+                  advanceToNextPart();
                 }
-              }
-
-              if (nextPart) {
-                kaitenFx.activePart = nextPart;
-                if (nextPart !== 'green') kaitenFx.shieldActive = false;
-                kaitenFx.partSkillDelayTimer = 2.0;
-                kaitenFx.partSkillTriggered = false;
-                kaitenFx.partSkillCount = 0;
-
-                const partObj = kaitenFx.parts[nextPart];
-                addDamageText(fxCenterX, groundY - 260, `🔄 [파츠 전환] ${partObj.name}`, partObj.color);
               }
             }
           }
 
           // 5) 파츠별 고유 액티브 스킬 발동 (전환 2초 후 시전, 핑크/레드는 사용 16초 후 2회차 시전)
-          if (!kaitenFx.partSkillTriggered && !kaitenFx.isSlashing && kaitenFx.stunTimer <= 0) {
+          if (!kaitenFx.partSkillTriggered && !kaitenFx.isSlashing && (!kaitenFx.stunTimer || kaitenFx.stunTimer <= 0) && (!kaitenFx.partGroggyTimer || kaitenFx.partGroggyTimer <= 0)) {
             kaitenFx.partSkillDelayTimer -= dt;
             if (kaitenFx.partSkillDelayTimer <= 0) {
               const activeP = kaitenFx.parts[kaitenFx.activePart];
@@ -6027,20 +6083,22 @@
           //    - 45초 동안 지속 충전 (0 -> 100%)
           //    - 모든 파츠 파괴 시 ATG 충전 속도 2.2배 가속!
           //    - 100% 도달 시 즉사급 광역 일도양단 궁극기 [하이퍼 고등어 슬래쉬] 발동!
-          if (!kaitenFx.isSlashing && kaitenFx.stunTimer <= 0) {
-            const allPartsBroken = ['pink', 'red', 'green'].every(p => kaitenFx.parts[p] && kaitenFx.parts[p].isBroken);
-            const atgSpeedMult = allPartsBroken ? 2.2 : 1.0;
-            kaitenFx.atgTimer += dt * atgSpeedMult;
-            kaitenFx.atg = Math.min(100, (kaitenFx.atgTimer / kaitenFx.atgMaxDuration) * 100);
+          if (!kaitenFx.isSlashing) {
+            if ((!kaitenFx.stunTimer || kaitenFx.stunTimer <= 0) && (!kaitenFx.partGroggyTimer || kaitenFx.partGroggyTimer <= 0)) {
+              const allPartsBroken = ['pink', 'red', 'green'].every(p => kaitenFx.parts[p] && kaitenFx.parts[p].isBroken);
+              const atgSpeedMult = allPartsBroken ? 2.2 : 1.0;
+              kaitenFx.atgTimer += dt * atgSpeedMult;
+              kaitenFx.atg = Math.min(100, (kaitenFx.atgTimer / kaitenFx.atgMaxDuration) * 100);
 
-            if (kaitenFx.atg >= 100) {
-              // ATG 100% 완전 충전 -> 궁극기 시전 시작!
-              kaitenFx.isSlashing = true;
-              kaitenFx.slashPhase = 'charge'; // 'charge'(1.5초 기모으기) -> 'slash'(0.4초 참격) -> 'recover'(0.8초 후딜)
-              kaitenFx.slashTimer = 1.5;
-              kaitenFx.isFiringNormal = false;
-              kaitenFx.isFiringSkill = false;
-              addDamageText(fxCenterX, groundY - 270, '⚡ [ATG MAX] 필살기: 하이퍼 고등어 슬래쉬 충전 개시!', '#facc15');
+              if (kaitenFx.atg >= 100) {
+                // ATG 100% 완전 충전 -> 궁극기 시전 시작!
+                kaitenFx.isSlashing = true;
+                kaitenFx.slashPhase = 'charge'; // 'charge'(1.5초 기모으기) -> 'slash'(0.4초 참격) -> 'recover'(0.8초 후딜)
+                kaitenFx.slashTimer = 1.5;
+                kaitenFx.isFiringNormal = false;
+                kaitenFx.isFiringSkill = false;
+                addDamageText(fxCenterX, groundY - 270, '⚡ [ATG MAX] 필살기: 하이퍼 고등어 슬래쉬 충전 개시!', '#facc15');
+              }
             }
           } else {
             // [하이퍼 고등어 슬래쉬 3단계 연출 시퀀스]
@@ -6515,6 +6573,9 @@
                 };
 
             let finalDmg = Math.round(combatResult.damage * dmgMult);
+            if (kaitenFx.partGroggyTimer > 0) {
+              finalDmg = Math.round(finalDmg * (kaitenFx.groggyDmgMultiplier || 1.5));
+            }
             if (b.type === 'mg_melody_bullet' && b.stage === 3) {
               const fxMaxHp = kaitenFx.maxHp || 10000000;
               finalDmg += Math.round(fxMaxHp * 0.02);
@@ -6540,10 +6601,7 @@
               const curPart = kaitenFx.parts[kaitenFx.activePart];
               curPart.hp = Math.max(0, curPart.hp - finalDmg);
               if (curPart.hp <= 0) {
-                curPart.hp = 0;
-                curPart.isBroken = true;
-                addDamageText(kaitenFx.x + kaitenFx.width / 2, groundY - 220, `💥 [${curPart.name}] 파괴 완료!`, curPart.color);
-                checkAndNotifyAllPartsBroken(kaitenFx.x + kaitenFx.width / 2, groundY - 250);
+                triggerPartBrokenGroggy(curPart, kaitenFx.x + kaitenFx.width / 2, groundY);
               }
             }
 
@@ -6555,8 +6613,10 @@
 
             // [FOX 45식: 철벽의 방어 기절 & 공세 전환 디버프]
             if (b.type === 'fox_shield_slam') {
-              kaitenFx.stunTimer = Math.max(kaitenFx.stunTimer || 0, b.stunDuration || 2.5);
-              addDamageText(kaitenFx.x + kaitenFx.width / 2, groundY - 240, `⚡ 기절 [${(b.stunDuration || 2.5).toFixed(1)}s]`, '#facc15');
+              const baseStun = b.stunDuration || 2.5;
+              const reducedStun = baseStun * (1 - (kaitenFx.ccReductionRate || 0.75));
+              kaitenFx.stunTimer = Math.max(kaitenFx.stunTimer || 0, reducedStun);
+              addDamageText(kaitenFx.x + kaitenFx.width / 2, groundY - 240, `⚡ [무한히 회전하는 초밥] 기절 75% 감소 [${reducedStun.toFixed(2)}s]`, '#facc15');
               // 단일 타겟 적중 시 소형 충격파 폭발 연출
               explosions.push({
                 x: b.x,

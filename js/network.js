@@ -505,9 +505,13 @@ function handleEnemyDamageNetPacket(data) {
       const curPart = kaitenFx.parts[data.part];
       curPart.hp = Math.max(0, curPart.hp - data.damage);
       if (curPart.hp <= 0) {
-        curPart.hp = 0;
-        curPart.isBroken = true;
-        addDamageText(kaitenFx.x + kaitenFx.width / 2, groundY - 220, `💥 [${curPart.name}] 파괴 완료!`, curPart.color);
+        if (typeof triggerPartBrokenGroggy === 'function') {
+          triggerPartBrokenGroggy(curPart, kaitenFx.x + kaitenFx.width / 2, groundY);
+        } else {
+          curPart.hp = 0;
+          curPart.isBroken = true;
+          addDamageText(kaitenFx.x + kaitenFx.width / 2, groundY - 220, `💥 [${curPart.name}] 파괴 완료!`, curPart.color);
+        }
       }
     }
     const fxCenterX = kaitenFx.x + kaitenFx.width / 2;
@@ -517,8 +521,9 @@ function handleEnemyDamageNetPacket(data) {
       addDamageText(fxCenterX, groundY - 180, `[2P] -${data.damage.toLocaleString()}`, '#f43f5e');
     }
     if (data.stunDuration) {
-      kaitenFx.stunTimer = Math.max(kaitenFx.stunTimer || 0, data.stunDuration);
-      addDamageText(fxCenterX, groundY - 240, `⚡ 기절 [${data.stunDuration.toFixed(1)}s]`, '#facc15');
+      const reducedStun = data.stunDuration * (1 - (kaitenFx.ccReductionRate || 0.75));
+      kaitenFx.stunTimer = Math.max(kaitenFx.stunTimer || 0, reducedStun);
+      addDamageText(fxCenterX, groundY - 240, `⚡ [무한히 회전하는 초밥] 기절 75% 감소 [${reducedStun.toFixed(2)}s]`, '#facc15');
     }
     if (data.critResistDebuff) {
       kaitenFx.critDmgResistDebuff = data.critResistDebuff;

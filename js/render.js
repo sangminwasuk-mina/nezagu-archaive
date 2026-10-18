@@ -2817,7 +2817,14 @@
         let kneeBrace = 0;
         let torsoBraceTilt = 0;
 
-        if (isShieldVisual) {
+        const isPartGroggy = !!(boss.partGroggyTimer && boss.partGroggyTimer > 0);
+
+        if (isPartGroggy) {
+          // [파츠 파괴 시 무릎 꿇기 그로기 자세]: 깊게 무릎을 꿇고 주저앉으며 상체를 앞으로 숙임
+          crouchY = 28;
+          kneeBrace = -0.55; // 깊은 무릎 굽힘 자세
+          torsoBraceTilt = 0.20; // 상체 앞으로 떨굼
+        } else if (isShieldVisual) {
           // [초록 쉴드 전개 시]: 다리를 전방으로 굽혀 무게중심을 낮추고 묵직하게 가드
           crouchY = 14;
           kneeBrace = -0.32; // 전방(앞쪽)으로 쑥 굽혀지는 정방향 무릎 각도!
@@ -3671,8 +3678,18 @@
           ctx.restore();
         }
 
-        // KAITEN FX Mk.0 머리 위 디버프/스턴 상태 표시
-        if (boss.stunTimer > 0) {
+        // KAITEN FX Mk.0 머리 위 디버프/스턴/그로기 상태 표시
+        if (boss.partGroggyTimer > 0) {
+          ctx.save();
+          ctx.font = 'bold 16px monospace';
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 3;
+          const groggyStr = `🧎 GROGGY (1.5x DMG) [${boss.partGroggyTimer.toFixed(1)}s]`;
+          ctx.strokeText(groggyStr, -110, -290);
+          ctx.fillStyle = '#facc15';
+          ctx.fillText(groggyStr, -110, -290);
+          ctx.restore();
+        } else if (boss.stunTimer > 0) {
           ctx.save();
           ctx.font = 'bold 16px monospace';
           ctx.strokeStyle = '#000000';
@@ -3714,6 +3731,7 @@
     function drawKaitenFxActivePartOverheadHpBar(boss, groundY) {
       if (!boss || !boss.isSpawned || boss.isDead || !boss.activePart || boss.activePart === 'none') return;
       if (boss.introState && boss.introState !== 'ready') return;
+      if (boss.partGroggyTimer && boss.partGroggyTimer > 0) return; // 그로기 무릎 꿇기 중에는 간섭 방지
 
       const partKey = boss.activePart;
       const part = boss.parts ? boss.parts[partKey] : null;
