@@ -69,14 +69,11 @@
       // (C) 상단 주익 광자 날개(Photon Blade) 네온 발광 에지
       ctx.strokeStyle = '#00ffff';
       ctx.lineWidth = 2.2;
-      ctx.shadowColor = '#38bdf8';
-      ctx.shadowBlur = 10;
       ctx.beginPath();
       ctx.moveTo(-20, -24);
       ctx.lineTo(-48, -42);
       ctx.lineTo(-42, -34);
       ctx.stroke();
-      ctx.shadowBlur = 0;
 
       // (D) 상단 주익 슬러스터 분사염 (Cyan Exhaust Flame)
       const flameLen = 14 + Math.sin(t * 12) * 5;
@@ -1569,12 +1566,9 @@
         ctx.fillRect(5, -15, 11, 4.2);
         // 레티클 레드 도트 (Illuminated Red Dot)
         ctx.fillStyle = '#ef4444';
-        ctx.shadowColor = '#ef4444';
-        ctx.shadowBlur = 4;
         ctx.beginPath();
         ctx.arc(10.5, -13, 1.0, 0, Math.PI * 2);
         ctx.fill();
-        ctx.shadowBlur = 0;
 
         // 8. 하부 버티컬 포어그립 (Vertical Foregrip)
         ctx.fillStyle = darkMetal;
@@ -2708,11 +2702,12 @@
 
           // 눈 번쩍임 (eye_flash 단계 또는 평소 아이들)
           const isFlashing = boss.introState === 'eye_flash';
-          ctx.fillStyle = isFlashing ? '#ffffff' : '#38bdf8';
           if (isFlashing) {
-            ctx.shadowColor = '#38bdf8';
-            ctx.shadowBlur = 25;
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.4)';
+            ctx.fillRect(-13, -4, 13, 9);
+            ctx.fillRect(0, -4, 13, 9);
           }
+          ctx.fillStyle = isFlashing ? '#ffffff' : '#38bdf8';
           ctx.fillRect(-11, -2, 9, 5);
           ctx.fillRect(2, -2, 9, 5);
 
@@ -2728,7 +2723,6 @@
             ctx.moveTo(2, 0.5); ctx.lineTo(20, 0.5);
             ctx.moveTo(7, -8); ctx.lineTo(7, 9);
             ctx.stroke();
-            ctx.shadowBlur = 0;
           }
           ctx.restore();
         }
@@ -3681,31 +3675,31 @@
         if (boss.stunTimer > 0) {
           ctx.save();
           ctx.font = 'bold 16px monospace';
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 3;
+          ctx.strokeText(`⚡ STUN (${boss.stunTimer.toFixed(1)}s)`, -50, -290);
           ctx.fillStyle = '#facc15';
-          ctx.shadowColor = '#eab308';
-          ctx.shadowBlur = 10;
           ctx.fillText(`⚡ STUN (${boss.stunTimer.toFixed(1)}s)`, -50, -290);
-          ctx.shadowBlur = 0;
           ctx.restore();
         }
         if (boss.critDmgResistDebuffTimer > 0) {
           ctx.save();
           ctx.font = 'bold 13px monospace';
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 2.5;
+          ctx.strokeText(`🎯 치명 저항 -${boss.critDmgResistDebuff || 22}% (${boss.critDmgResistDebuffTimer.toFixed(1)}s)`, -75, -310);
           ctx.fillStyle = '#fb923c';
-          ctx.shadowColor = '#ea580c';
-          ctx.shadowBlur = 8;
           ctx.fillText(`🎯 치명 저항 -${boss.critDmgResistDebuff || 22}% (${boss.critDmgResistDebuffTimer.toFixed(1)}s)`, -75, -310);
-          ctx.shadowBlur = 0;
           ctx.restore();
         }
         if (boss.atkDebuffTimer > 0) {
           ctx.save();
           ctx.font = 'bold 13px monospace';
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 2.5;
+          ctx.strokeText(`🔻 ATK -${Math.round((boss.atkDebuffRatio || 0.30) * 100)}% (${boss.atkDebuffTimer.toFixed(1)}s)`, -55, -330);
           ctx.fillStyle = '#38bdf8';
-          ctx.shadowColor = '#0284c7';
-          ctx.shadowBlur = 8;
           ctx.fillText(`🔻 ATK -${Math.round((boss.atkDebuffRatio || 0.30) * 100)}% (${boss.atkDebuffTimer.toFixed(1)}s)`, -55, -330);
-          ctx.shadowBlur = 0;
           ctx.restore();
         }
 
@@ -3775,12 +3769,12 @@
       // 1. 파츠 타겟 뱃지 라벨
       ctx.font = '900 11px monospace';
       ctx.textAlign = 'center';
-      ctx.fillStyle = partColor;
-      ctx.shadowColor = partColor;
-      ctx.shadowBlur = 8;
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2.5;
       const leftSec = Math.max(0, (boss.partCycleDuration || 20) - (boss.partCycleTimer || 0));
+      ctx.strokeText(`🎯 ${partName} [${leftSec.toFixed(0)}s]`, startX + barW / 2, startY - 7);
+      ctx.fillStyle = partColor;
       ctx.fillText(`🎯 ${partName} [${leftSec.toFixed(0)}s]`, startX + barW / 2, startY - 7);
-      ctx.shadowBlur = 0;
 
       // 2. 체력바 외곽 베이스 트랙
       ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
@@ -3870,8 +3864,8 @@
         // 1. 머리 위 HUD 라벨 (좌우 반전 없이 바른 방향으로 표시)
         const isColorDrone = d.isColorDrone;
         ctx.font = 'bold 11px monospace';
-        ctx.fillStyle = isColorDrone ? '#94a3b8' : '#22d3ee';
-        ctx.shadowColor = isColorDrone ? '#334155' : '#06b6d4';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2.5;
         let droneTitle;
         if (isColorDrone) {
           const colorDrones = (window.whiteFangDrones || []).filter(item => item.isColorDrone);
@@ -3881,8 +3875,9 @@
         } else {
           droneTitle = `🛸 화력지원 드론 [${d.shotsFired}/20 | ${d.timer.toFixed(1)}s]`;
         }
+        ctx.strokeText(droneTitle, -65, -28);
+        ctx.fillStyle = isColorDrone ? '#94a3b8' : '#22d3ee';
         ctx.fillText(droneTitle, -65, -28);
-        ctx.shadowBlur = 0;
 
         ctx.scale(dir, 1);
         ctx.lineWidth = 1.3;
@@ -4496,16 +4491,12 @@
             const slen = 95 + (s % 7) * 45;
             const swidth = 1.8 + (s % 3) * 1.2;
 
-            ctx.save();
             ctx.strokeStyle = sColor;
-            ctx.shadowColor = sColor;
-            ctx.shadowBlur = 14;
             ctx.lineWidth = swidth;
             ctx.beginPath();
             ctx.moveTo(sx, sy);
             ctx.lineTo(sx, sy - slen); // 위쪽으로 뻗는 네온 레이저 라인
             ctx.stroke();
-            ctx.restore();
           }
 
           // 4. 사이버 그리드 수평선 (깊이감 연출)
@@ -4578,8 +4569,6 @@
           // 거대 황금 번개 벼락 콰르르릉!
           const flashAlpha = Math.sin(t * 26) > 0 ? 1.0 : 0.55;
           ctx.strokeStyle = `rgba(250, 204, 21, ${flashAlpha})`;
-          ctx.shadowColor = '#ffffff';
-          ctx.shadowBlur = 38;
           ctx.lineWidth = 8;
 
           // 메인 벼락 1 (좌측)
@@ -4609,7 +4598,6 @@
           ctx.lineTo(centerX + 45, 190);
           ctx.lineTo(centerX, 270);
           ctx.stroke();
-          ctx.shadowBlur = 0;
         }
 
         // -----------------------------------------------------------------
@@ -4820,14 +4808,14 @@
 
         // 눈 바이저 & 안광 플래시
         const isEyeActive = ['eye_flash_pose', 'lightning_strike', 'boss_title'].includes(state);
-        ctx.fillStyle = isEyeActive ? '#ffffff' : '#facc15';
         if (isEyeActive) {
-          ctx.shadowColor = '#00ffff';
-          ctx.shadowBlur = 28;
+          ctx.fillStyle = 'rgba(0, 255, 255, 0.45)';
+          ctx.fillRect(-13, -4, 13, 9);
+          ctx.fillRect(0, -4, 13, 9);
         }
+        ctx.fillStyle = isEyeActive ? '#ffffff' : '#facc15';
         ctx.fillRect(-11, -2, 9, 5);
         ctx.fillRect(2, -2, 9, 5);
-        ctx.shadowBlur = 0;
 
         // 안광 십자광 크로스 이펙트 ('eye_flash_pose', 'lightning_strike', 'boss_title')
         if (isEyeActive) {
@@ -5027,15 +5015,17 @@
 
           ctx.textAlign = 'center';
           ctx.font = '900 32px sans-serif';
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 6;
+          ctx.strokeText('⚡ TOTAL ASSAULT : KAITEN FX Mk.0 ⚡', canvas.width / 2, 39);
           ctx.fillStyle = '#ef4444';
-          ctx.shadowColor = '#dc2626';
-          ctx.shadowBlur = 24;
           ctx.fillText('⚡ TOTAL ASSAULT : KAITEN FX Mk.0 ⚡', canvas.width / 2, 39);
 
           ctx.font = 'bold 14px monospace';
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 3;
+          ctx.strokeText('무한초밥전대 카이텐저 최종 결전 병기', canvas.width / 2, canvas.height - 21);
           ctx.fillStyle = '#fde047';
-          ctx.shadowColor = '#000000';
-          ctx.shadowBlur = 6;
           ctx.fillText('무한초밥전대 카이텐저 최종 결전 병기', canvas.width / 2, canvas.height - 21);
           ctx.restore();
         }
@@ -5152,8 +5142,6 @@
         // 1. 발밑 핏빛 마법진/혈기 충격파 링
         ctx.strokeStyle = '#dc2626';
         ctx.lineWidth = 3.5;
-        ctx.shadowColor = '#ef4444';
-        ctx.shadowBlur = 18;
         ctx.beginPath();
         ctx.ellipse(pScreenX + player.width / 2, groundY, (player.width + 24) / 2 + pulse, 9 + pulse * 0.35, 0, 0, Math.PI * 2);
         ctx.stroke();
@@ -5201,8 +5189,6 @@
         // 1. 발밑 흑회색 침식 링
         ctx.strokeStyle = '#334155';
         ctx.lineWidth = 3;
-        ctx.shadowColor = '#0f172a';
-        ctx.shadowBlur = 15;
         ctx.beginPath();
         ctx.ellipse(pScreenX + player.width / 2, groundY, (player.width + 20) / 2 + pulse, 8 + pulse * 0.3, 0, 0, Math.PI * 2);
         ctx.stroke();
@@ -5251,19 +5237,20 @@
       if (player.isColorActive) {
         ctx.save();
         ctx.font = 'bold 11px monospace';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2.5;
         if (player.calmBreathActive) {
+          const cbText = `⏳ [침착한 호흡: 사망 유예] (${player.calmBreathTimer.toFixed(1)}s)`;
+          ctx.strokeText(cbText, pScreenX - 45, pScreenY - 34);
           ctx.fillStyle = '#ef4444';
-          ctx.shadowColor = '#ef4444';
-          ctx.shadowBlur = 8;
-          ctx.fillText(`⏳ [침착한 호흡: 사망 유예] (${player.calmBreathTimer.toFixed(1)}s)`, pScreenX - 45, pScreenY - 34);
+          ctx.fillText(cbText, pScreenX - 45, pScreenY - 34);
         } else {
-          ctx.fillStyle = '#94a3b8';
-          ctx.shadowColor = '#334155';
-          ctx.shadowBlur = 6;
           const berserkLabel = (player.hp / player.maxHp) <= 0.30 ? ' [🔥위기 본능]' : '';
-          ctx.fillText(`🖤 [색채 : BLACK FANG]${berserkLabel}`, pScreenX - 35, pScreenY - 34);
+          const cbText = `🖤 [색채 : BLACK FANG]${berserkLabel}`;
+          ctx.strokeText(cbText, pScreenX - 35, pScreenY - 34);
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText(cbText, pScreenX - 35, pScreenY - 34);
         }
-        ctx.shadowBlur = 0;
         ctx.restore();
       }
 
@@ -5299,11 +5286,11 @@
           ctx.fillText(`⚡ 파이널 대기... [${player.abiFinalDelayTimer.toFixed(1)}s]`, pScreenX - 24, pScreenY - 34);
         } else if (player.abiFinalCanTrigger) {
           ctx.font = 'bold 12px monospace';
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 2.5;
+          ctx.strokeText(`⚔️ [파이널 발동 가능! 공격키 입력]`, pScreenX - 55, pScreenY - 36);
           ctx.fillStyle = '#facc15';
-          ctx.shadowColor = '#facc15';
-          ctx.shadowBlur = 10;
           ctx.fillText(`⚔️ [파이널 발동 가능! 공격키 입력]`, pScreenX - 55, pScreenY - 36);
-          ctx.shadowBlur = 0;
         } else if (player.abiFinalPhase === 'charging') {
           const cPct = Math.min(1, (3.0 - player.abiFinalChargeTimer) / 3.0);
           const barW = player.width + 36;
@@ -5319,11 +5306,11 @@
           ctx.fillText(`⚔️ 파이널 에너지 충전 [${(3.0 - player.abiFinalChargeTimer).toFixed(1)}/3.0s]`, pScreenX - 45, pScreenY - 39);
         } else if (player.abiFinalPhase !== 'none') {
           ctx.font = 'bold 12px monospace';
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 2.5;
+          ctx.strokeText(`🗡️ [빛의 검 : 아비 에슈흐 파이널]`, pScreenX - 50, pScreenY - 36);
           ctx.fillStyle = '#00ffff';
-          ctx.shadowColor = '#00ffff';
-          ctx.shadowBlur = 12;
           ctx.fillText(`🗡️ [빛의 검 : 아비 에슈흐 파이널]`, pScreenX - 50, pScreenY - 36);
-          ctx.shadowBlur = 0;
         }
         ctx.restore();
       }
@@ -5342,12 +5329,13 @@
         ctx.strokeRect(pScreenX - 18, pScreenY - 34, barW, 6);
 
         ctx.font = 'bold 11px monospace';
-        ctx.fillStyle = '#fee2e2';
-        ctx.shadowColor = '#dc2626';
-        ctx.shadowBlur = 8;
         const critText = player.immortalIsAlwaysCrit ? ' [CRIT +20%]' : '';
-        ctx.fillText(`🩸 불사(不死) [${player.immortalTimer.toFixed(1)}s | ${player.immortalStack}/5스택]${critText}`, pScreenX - 42, pScreenY - 38);
-        ctx.shadowBlur = 0;
+        const imText = `🩸 불사(不死) [${player.immortalTimer.toFixed(1)}s | ${player.immortalStack}/5스택]${critText}`;
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2.5;
+        ctx.strokeText(imText, pScreenX - 42, pScreenY - 38);
+        ctx.fillStyle = '#fee2e2';
+        ctx.fillText(imText, pScreenX - 42, pScreenY - 38);
         ctx.restore();
       }
 
@@ -5355,11 +5343,11 @@
       if (player.stunTimer > 0) {
         ctx.save();
         ctx.font = 'bold 12px monospace';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2.5;
+        ctx.strokeText(`⚡ STUN [${player.stunTimer.toFixed(1)}s]`, pScreenX - 16, pScreenY - 36);
         ctx.fillStyle = '#facc15';
-        ctx.shadowColor = '#facc15';
-        ctx.shadowBlur = 8;
         ctx.fillText(`⚡ STUN [${player.stunTimer.toFixed(1)}s]`, pScreenX - 16, pScreenY - 36);
-        ctx.shadowBlur = 0;
         ctx.restore();
       }
 
@@ -5367,11 +5355,11 @@
       if (player.abiStunTimer > 0) {
         ctx.save();
         ctx.font = 'bold 12px monospace';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2.5;
+        ctx.strokeText(`⚡ 과부하 기절 [${player.abiStunTimer.toFixed(1)}s]`, pScreenX - 30, pScreenY - 36);
         ctx.fillStyle = '#ef4444';
-        ctx.shadowColor = '#ef4444';
-        ctx.shadowBlur = 8;
         ctx.fillText(`⚡ 과부하 기절 [${player.abiStunTimer.toFixed(1)}s]`, pScreenX - 30, pScreenY - 36);
-        ctx.shadowBlur = 0;
 
         // 방전 정전기 스파크
         ctx.strokeStyle = Math.random() < 0.5 ? '#f59e0b' : '#ef4444';
@@ -5408,15 +5396,17 @@
         ctx.arc(pCenterX, pCenterY, shieldRadius, 0, Math.PI * 2);
         ctx.fill();
 
-        // 2. 메인 홀로그램 원형 배리어 외곽 링 (발광 글로우)
-        ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 2.8;
-        ctx.shadowColor = '#00ffff';
-        ctx.shadowBlur = 14;
+        // 2. 메인 홀로그램 원형 배리어 외곽 링 (초경량 2중 네온 스트로크)
+        ctx.strokeStyle = 'rgba(0, 255, 255, 0.35)';
+        ctx.lineWidth = 5.0;
         ctx.beginPath();
         ctx.arc(pCenterX, pCenterY, shieldRadius, 0, Math.PI * 2);
         ctx.stroke();
-        ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.arc(pCenterX, pCenterY, shieldRadius, 0, Math.PI * 2);
+        ctx.stroke();
 
         // 3. 자전하는 전술 에너지 궤도 고리 (미래지향적 전술 방패 연출)
         const orbitAngle = Date.now() * 0.0018;
@@ -5458,14 +5448,17 @@
         const pCenterY = pScreenY + player.height / 2;
         const shieldRadius = Math.max(player.width, player.height) * 0.60 + Math.sin(Date.now() * 0.007) * 2;
 
-        ctx.strokeStyle = '#c084fc';
-        ctx.lineWidth = 2.2;
-        ctx.shadowColor = '#a855f7';
-        ctx.shadowBlur = 10;
+        // 초경량 2중 네온 링
+        ctx.strokeStyle = 'rgba(168, 85, 247, 0.35)';
+        ctx.lineWidth = 4.5;
         ctx.beginPath();
         ctx.arc(pCenterX, pCenterY, shieldRadius, 0, Math.PI * 2);
         ctx.stroke();
-        ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#c084fc';
+        ctx.lineWidth = 2.0;
+        ctx.beginPath();
+        ctx.arc(pCenterX, pCenterY, shieldRadius, 0, Math.PI * 2);
+        ctx.stroke();
 
         ctx.font = 'bold 10px monospace';
         ctx.fillStyle = '#c084fc';
@@ -5556,14 +5549,14 @@
         // 3. 머리 위 선도부장 상태 뱃지
         const remainingTime = Math.max(0, 7.0 - (player.specialTimer || 0)).toFixed(1);
         ctx.font = 'bold 12px monospace';
-        ctx.fillStyle = ringColor;
-        ctx.shadowColor = ringColor;
-        ctx.shadowBlur = 8;
         const phaseText = isBerserk 
           ? `👑 [선도부장: 초광폭 각성 3단계] (${remainingTime}s)`
           : `👑 [선도부장: ${phase}단계 폭풍 난사] (${remainingTime}s)`;
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2.5;
+        ctx.strokeText(phaseText, pScreenX - 45, pScreenY - 32);
+        ctx.fillStyle = ringColor;
         ctx.fillText(phaseText, pScreenX - 45, pScreenY - 32);
-        ctx.shadowBlur = 0;
         ctx.restore();
       }
 
@@ -5721,8 +5714,6 @@
         // 2) 부유하는 보라빛 네온 음표 기호 (♪ ♫ ♬ ♩)
         const notes = ['♪', '♫', '♬', '♩'];
         ctx.font = 'bold 15px sans-serif';
-        ctx.shadowColor = '#c084fc';
-        ctx.shadowBlur = 10;
         for (let n = 0; n < 6; n++) {
           const noteChar = notes[n % notes.length];
           const noteTime = t + n * 1.3;
@@ -5733,7 +5724,6 @@
           ctx.globalAlpha = noteAlpha;
           ctx.fillText(noteChar, noteX, noteY);
         }
-        ctx.shadowBlur = 0;
         ctx.globalAlpha = 1.0;
 
         // 3) 머리 위 유지 시간 및 다음 발사 단계 배지
@@ -5926,8 +5916,6 @@
           const notes = ['♪', '♫', '♬', '♩'];
           const rStaffColors = ['#f5d0fe', '#e879f9', '#d946ef', '#c084fc', '#a855f7'];
           ctx.font = 'bold 13px sans-serif';
-          ctx.shadowColor = '#c084fc';
-          ctx.shadowBlur = 8;
           for (let n = 0; n < 4; n++) {
             const noteChar = notes[n % notes.length];
             const noteTime = t + n * 1.5;
@@ -5936,8 +5924,10 @@
             ctx.fillStyle = rStaffColors[n % rStaffColors.length];
             ctx.fillText(noteChar, noteX, noteY);
           }
-          ctx.shadowBlur = 0;
           ctx.font = 'bold 11px monospace';
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 2.5;
+          ctx.strokeText(`🎼 개연 [${(remotePlayer.mgStanceTimer || 0).toFixed(0)}s]`, rScreenX - 24, rScreenY - 34);
           ctx.fillStyle = '#c084fc';
           ctx.fillText(`🎼 개연 [${(remotePlayer.mgStanceTimer || 0).toFixed(0)}s]`, rScreenX - 24, rScreenY - 34);
           ctx.restore();
@@ -5964,14 +5954,14 @@
           ctx.fill();
 
           ctx.font = 'bold 12px monospace';
-          ctx.fillStyle = rRingColor;
-          ctx.shadowColor = rRingColor;
-          ctx.shadowBlur = 8;
           const rPhaseText = rBerserk 
             ? `👑 [선도부장: 각성 3단계]`
             : `👑 [선도부장: ${rPhase}단계]`;
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 2.5;
+          ctx.strokeText(rPhaseText, rScreenX - 35, rScreenY - 34);
+          ctx.fillStyle = rRingColor;
           ctx.fillText(rPhaseText, rScreenX - 35, rScreenY - 34);
-          ctx.shadowBlur = 0;
           ctx.restore();
         }
 
@@ -5989,9 +5979,10 @@
           ctx.fill();
 
           ctx.font = 'bold 12px monospace';
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 2.5;
+          ctx.strokeText('🩸 [불사(不死) : 무적]', rScreenX - 30, rScreenY - 34);
           ctx.fillStyle = '#ef4444';
-          ctx.shadowColor = '#dc2626';
-          ctx.shadowBlur = 8;
           ctx.fillText('🩸 [불사(不死) : 무적]', rScreenX - 30, rScreenY - 34);
           ctx.restore();
         }
@@ -6000,15 +5991,22 @@
         if (remotePlayer.isTacticalDefActive) {
           ctx.save();
           const rShieldRadius = remotePlayer.width * 0.85 + 4;
+          // 초경량 2중 네온 링
+          ctx.strokeStyle = 'rgba(0, 255, 255, 0.35)';
+          ctx.lineWidth = 5.0;
+          ctx.beginPath();
+          ctx.arc(rScreenCenterX, rScreenCenterY, rShieldRadius, 0, Math.PI * 2);
+          ctx.stroke();
           ctx.strokeStyle = '#38bdf8';
-          ctx.lineWidth = 2.5;
-          ctx.shadowColor = '#00ffff';
-          ctx.shadowBlur = 12;
+          ctx.lineWidth = 2.0;
           ctx.beginPath();
           ctx.arc(rScreenCenterX, rScreenCenterY, rShieldRadius, 0, Math.PI * 2);
           ctx.stroke();
 
           ctx.font = 'bold 11px monospace';
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 2.5;
+          ctx.strokeText('🛡️ [전술 방패 전개]', rScreenX - 25, rScreenY - 34);
           ctx.fillStyle = '#38bdf8';
           ctx.fillText('🛡️ [전술 방패 전개]', rScreenX - 25, rScreenY - 34);
           ctx.restore();
@@ -6156,11 +6154,12 @@
             if (k.atkDebuffTimer > 0) {
               ctx.save();
               ctx.font = 'bold 10px monospace';
+              const debuffText = `🔻 ATK -30% (${k.atkDebuffTimer.toFixed(1)}s)`;
+              ctx.strokeStyle = '#000000';
+              ctx.lineWidth = 2.5;
+              ctx.strokeText(debuffText, kScreenX - 12, kScreenY - 25);
               ctx.fillStyle = '#38bdf8';
-              ctx.shadowColor = '#0284c7';
-              ctx.shadowBlur = 6;
-              ctx.fillText(`🔻 ATK -30% (${k.atkDebuffTimer.toFixed(1)}s)`, kScreenX - 12, kScreenY - 25);
-              ctx.shadowBlur = 0;
+              ctx.fillText(debuffText, kScreenX - 12, kScreenY - 25);
               ctx.restore();
             }
 
@@ -6168,11 +6167,12 @@
             if (k.stunTimer > 0) {
               ctx.save();
               ctx.font = 'bold 11px monospace';
+              const stunText = `⚡ STUN (${k.stunTimer.toFixed(1)}s)`;
+              ctx.strokeStyle = '#000000';
+              ctx.lineWidth = 2.5;
+              ctx.strokeText(stunText, kScreenX - 8, kScreenY - 37);
               ctx.fillStyle = '#facc15';
-              ctx.shadowColor = '#eab308';
-              ctx.shadowBlur = 8;
-              ctx.fillText(`⚡ STUN (${k.stunTimer.toFixed(1)}s)`, kScreenX - 8, kScreenY - 37);
-              ctx.shadowBlur = 0;
+              ctx.fillText(stunText, kScreenX - 8, kScreenY - 37);
               ctx.restore();
             }
 
@@ -6180,11 +6180,12 @@
             if (k.critDmgResistDebuffTimer > 0) {
               ctx.save();
               ctx.font = 'bold 10px monospace';
+              const resText = `🎯 치저 -${k.critDmgResistDebuff || 22}% (${k.critDmgResistDebuffTimer.toFixed(1)}s)`;
+              ctx.strokeStyle = '#000000';
+              ctx.lineWidth = 2.5;
+              ctx.strokeText(resText, kScreenX - 14, kScreenY - 49);
               ctx.fillStyle = '#fb923c';
-              ctx.shadowColor = '#ea580c';
-              ctx.shadowBlur = 6;
-              ctx.fillText(`🎯 치저 -${k.critDmgResistDebuff || 22}% (${k.critDmgResistDebuffTimer.toFixed(1)}s)`, kScreenX - 14, kScreenY - 49);
-              ctx.shadowBlur = 0;
+              ctx.fillText(resText, kScreenX - 14, kScreenY - 49);
               ctx.restore();
             }
 
@@ -6262,14 +6263,18 @@
         // 중앙 보스 타이틀 오버레이 배너 ('eye_flash' 및 'explosion' 단계에서 점등)
         if (kaitenFx.introState === 'eye_flash' || kaitenFx.introState === 'explosion') {
           ctx.textAlign = 'center';
-          ctx.fillStyle = '#ef4444';
           ctx.font = '900 24px sans-serif';
-          ctx.shadowColor = '#dc2626';
-          ctx.shadowBlur = 16;
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 5;
+          ctx.strokeText('⚡ KAITEN FX Mk.0 (카이텐 FX 마크 0) ⚡', canvas.width / 2, 30);
+          ctx.fillStyle = '#ef4444';
           ctx.fillText('⚡ KAITEN FX Mk.0 (카이텐 FX 마크 0) ⚡', canvas.width / 2, 30);
+
           ctx.font = 'bold 12px monospace';
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 2.5;
+          ctx.strokeText('무한히 타오르는 회전초밥의 맹세 -- 최종 합체 거대 로봇 강림!', canvas.width / 2, canvas.height - 18);
           ctx.fillStyle = '#fde047';
-          ctx.shadowBlur = 8;
           ctx.fillText('무한히 타오르는 회전초밥의 맹세 -- 최종 합체 거대 로봇 강림!', canvas.width / 2, canvas.height - 18);
         }
         ctx.restore();
@@ -6505,8 +6510,6 @@
           ctx.fillStyle = '#0284c7';
           ctx.strokeStyle = '#00ffff';
           ctx.lineWidth = 2.8;
-          ctx.shadowColor = '#00ffff';
-          ctx.shadowBlur = 18;
           ctx.beginPath();
           ctx.moveTo(-25, 0);
           ctx.lineTo(20, -22);
@@ -6517,7 +6520,6 @@
           ctx.closePath();
           ctx.fill();
           ctx.stroke();
-          ctx.shadowBlur = 0;
 
           // (B) 크리스탈 패싯 능선 (Prism Facets)
           ctx.fillStyle = '#38bdf8';
@@ -6562,16 +6564,20 @@
           ctx.fillStyle = 'rgba(15, 23, 42, 0.40)';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-          // 공간을 대각선으로 양단하는 거대 백색 일도양단 궤적 (Spatial Slash Scar)
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 6;
-          ctx.shadowColor = '#00ffff';
-          ctx.shadowBlur = 24;
+          // 공간을 대각선으로 양단하는 거대 백색 일도양단 궤적 (초경량 2중 네온 스트로크)
+          ctx.strokeStyle = 'rgba(0, 255, 255, 0.45)';
+          ctx.lineWidth = 14;
           ctx.beginPath();
           ctx.moveTo(entScreenX - ent.facing * 400, entScreenY - 300);
           ctx.lineTo(entScreenX + ent.facing * 400, entScreenY + 300);
           ctx.stroke();
-          ctx.shadowBlur = 0;
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 6;
+          ctx.beginPath();
+          ctx.moveTo(entScreenX - ent.facing * 400, entScreenY - 300);
+          ctx.lineTo(entScreenX + ent.facing * 400, entScreenY + 300);
+          ctx.stroke();
 
           // 보조 절단선
           ctx.strokeStyle = '#38bdf8';
@@ -6647,28 +6653,24 @@
           if (b.isPeerBullet) {
             // [2인 멀티플레이]: 동료 스트라이커가 쏜 탄환의 시인성 극대화 (화려한 네온 오라 링 렌더링)
             const peerGlow = b.peerColor || '#f43f5e';
-            ctx.save();
-            ctx.shadowColor = peerGlow;
-            ctx.shadowBlur = 14;
             ctx.strokeStyle = peerGlow;
             ctx.lineWidth = 3.0;
             ctx.beginPath();
             ctx.arc(0, 0, (b.size || 5) * 1.35, 0, Math.PI * 2);
             ctx.stroke();
-            ctx.restore();
           }
 
           if (b.type === 'rg_energy_ball') {
             // [RG 밸런스 붕괴] 거대 관통 에너지탄
             const rad = b.size;
-            // 외곽 글로우
-            const grad = ctx.createRadialGradient(0, 0, rad * 0.2, 0, 0, rad);
-            grad.addColorStop(0, '#ffffff');
-            grad.addColorStop(0.4, b.color);
-            grad.addColorStop(1, 'rgba(56, 189, 248, 0)');
-            ctx.fillStyle = grad;
+            // 외곽 글로우 (2단 솔리드 필)
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
             ctx.beginPath();
             ctx.arc(0, 0, rad, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = b.color;
+            ctx.beginPath();
+            ctx.arc(0, 0, rad * 0.7, 0, Math.PI * 2);
             ctx.fill();
 
             // 내부 코어
@@ -6685,15 +6687,11 @@
             ctx.stroke();
           } else if (b.type === 'mg_ishbosheth_bullet' || (b.type === 'sr_bullet' && b.isPlayerBullet)) {
             // [MG 1스킬: 종막의 이스보셋] 초고속 관통 보라빛 네온 레이저 탄환
-            // 1. 외곽 보라빛 네온 블러 글로우
-            const neonGrad = ctx.createLinearGradient(0, -9, 0, 9);
-            neonGrad.addColorStop(0, 'rgba(168, 85, 247, 0)');
-            neonGrad.addColorStop(0.3, 'rgba(192, 132, 252, 0.75)');
-            neonGrad.addColorStop(0.5, '#fae8ff');
-            neonGrad.addColorStop(0.7, 'rgba(192, 132, 252, 0.75)');
-            neonGrad.addColorStop(1, 'rgba(168, 85, 247, 0)');
-            ctx.fillStyle = neonGrad;
+            // 1. 외곽 보라빛 네온 2중 글로우
+            ctx.fillStyle = 'rgba(168, 85, 247, 0.35)';
             ctx.fillRect(-32, -9, 64, 18);
+            ctx.fillStyle = 'rgba(192, 132, 252, 0.65)';
+            ctx.fillRect(-30, -5, 60, 10);
 
             // 2. 중심 고휘도 백색 관통 코어
             ctx.fillStyle = '#ffffff';
@@ -6715,15 +6713,11 @@
           } else if (b.type === 'sr_bullet') {
             // [카이텐저 옐로우: 저격탄] 고유 황금/노란빛 초고속 레이저 탄환
             const yellowColor = b.color || '#eab308';
-            // 1. 외곽 황금빛 네온 글로우
-            const yGrad = ctx.createLinearGradient(0, -7, 0, 7);
-            yGrad.addColorStop(0, 'rgba(234, 179, 8, 0)');
-            yGrad.addColorStop(0.3, 'rgba(250, 204, 21, 0.75)');
-            yGrad.addColorStop(0.5, '#fef9c3');
-            yGrad.addColorStop(0.7, 'rgba(250, 204, 21, 0.75)');
-            yGrad.addColorStop(1, 'rgba(234, 179, 8, 0)');
-            ctx.fillStyle = yGrad;
+            // 1. 외곽 황금빛 네온 2중 글로우
+            ctx.fillStyle = 'rgba(234, 179, 8, 0.35)';
             ctx.fillRect(-28, -7, 56, 14);
+            ctx.fillStyle = 'rgba(250, 204, 21, 0.65)';
+            ctx.fillRect(-26, -4, 52, 8);
 
             // 2. 중심 고에너지 백색 코어
             ctx.fillStyle = '#ffffff';
@@ -6807,15 +6801,14 @@
             ctx.ellipse(0, 0, rad * 1.6, rad * 0.8, 0, 0, Math.PI * 2);
             ctx.stroke();
 
-            // 2. 외부 보라빛 네온 플라즈마 후광 그라데이션
-            const grad = ctx.createRadialGradient(0, 0, rad * 0.15, 0, 0, rad * 1.4);
-            grad.addColorStop(0, '#ffffff');
-            grad.addColorStop(0.35, primaryColor);
-            grad.addColorStop(0.75, 'rgba(168, 85, 247, 0.4)');
-            grad.addColorStop(1, 'rgba(147, 51, 234, 0)');
-            ctx.fillStyle = grad;
+            // 2. 외부 보라빛 네온 플라즈마 후광 (초경량 2단 필)
+            ctx.fillStyle = 'rgba(168, 85, 247, 0.35)';
             ctx.beginPath();
             ctx.arc(0, 0, rad * 1.4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = primaryColor;
+            ctx.beginPath();
+            ctx.arc(0, 0, rad * 0.9, 0, Math.PI * 2);
             ctx.fill();
 
             // 3. 중심 백색 고에너지 코어
@@ -6854,15 +6847,14 @@
             ctx.ellipse(rad * 0.4, 0, rad * 1.5, rad * 0.8, 0, 0, Math.PI * 2);
             ctx.stroke();
 
-            // 2. 외부 고에너지 보라빛 플라즈마 후광 그라데이션
-            const grad = ctx.createRadialGradient(0, 0, rad * 0.2, 0, 0, rad * 1.6);
-            grad.addColorStop(0, '#ffffff');
-            grad.addColorStop(0.3, mainColor);
-            grad.addColorStop(0.7, 'rgba(168, 85, 247, 0.45)');
-            grad.addColorStop(1, 'rgba(147, 51, 234, 0)');
-            ctx.fillStyle = grad;
+            // 2. 외부 고에너지 보라빛 플라즈마 후광 (초경량 2단 필)
+            ctx.fillStyle = 'rgba(168, 85, 247, 0.35)';
             ctx.beginPath();
             ctx.arc(0, 0, rad * 1.6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = mainColor;
+            ctx.beginPath();
+            ctx.arc(0, 0, rad * 1.0, 0, Math.PI * 2);
             ctx.fill();
 
             // 3. 중심 백색 초고에너지 관통 코어 (타원형 침투 탄두)
@@ -6898,16 +6890,11 @@
             const bLen = b.stage === 3 ? 180 : (b.stage === 2 ? 140 : 100);
             const bThick = b.stage === 3 ? 15 : (b.stage === 2 ? 11 : 7);
 
-            // 1. 외곽 청록빛 플라즈마 후광
-            const laserGrad = ctx.createLinearGradient(0, -bThick, 0, bThick);
-            laserGrad.addColorStop(0, 'rgba(56, 189, 248, 0)');
-            laserGrad.addColorStop(0.3, 'rgba(56, 189, 248, 0.75)');
-            laserGrad.addColorStop(0.5, '#ffffff');
-            laserGrad.addColorStop(0.7, 'rgba(56, 189, 248, 0.75)');
-            laserGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
-
-            ctx.fillStyle = laserGrad;
+            // 1. 외곽 청록빛 플라즈마 후광 (초경량 2단 필)
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
             ctx.fillRect(-bLen * 0.5, -bThick, bLen, bThick * 2);
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.7)';
+            ctx.fillRect(-bLen * 0.5, -bThick * 0.6, bLen, bThick * 1.2);
 
             // 2. 중심 초고에너지 화이트 코어 빔
             ctx.fillStyle = '#ffffff';
@@ -6980,15 +6967,14 @@
             ctx.ellipse(rad * 0.3, 0, rad * 1.6, rad * 0.85, 0, 0, Math.PI * 2);
             ctx.stroke();
 
-            // 2. 크리스탈 다이아몬드 관통 탄두
-            const grad = ctx.createRadialGradient(0, 0, 1, 0, 0, rad * 1.5);
-            grad.addColorStop(0, '#ffffff');
-            grad.addColorStop(0.4, '#00ffff');
-            grad.addColorStop(0.8, '#38bdf8');
-            grad.addColorStop(1, 'rgba(56, 189, 248, 0)');
-            ctx.fillStyle = grad;
+            // 2. 크리스탈 다이아몬드 관통 탄두 (초경량 2단 필)
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
             ctx.beginPath();
             ctx.arc(0, 0, rad * 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#00ffff';
+            ctx.beginPath();
+            ctx.arc(0, 0, rad * 0.9, 0, Math.PI * 2);
             ctx.fill();
 
             // 3. 다이아몬드 코어
@@ -7028,15 +7014,14 @@
             ctx.ellipse(0, 0, rad * 1.4, rad * 0.8, 0, 0, Math.PI * 2);
             ctx.stroke();
 
-            // 2. 핏빛 고에너지 코어
-            const grad = ctx.createRadialGradient(0, 0, 1, 0, 0, rad);
-            grad.addColorStop(0, '#ffffff');
-            grad.addColorStop(0.35, '#f87171');
-            grad.addColorStop(0.7, '#dc2626');
-            grad.addColorStop(1, 'rgba(185, 28, 28, 0)');
-            ctx.fillStyle = grad;
+            // 2. 핏빛 고에너지 코어 (초경량 2단 필)
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
             ctx.beginPath();
             ctx.arc(0, 0, rad, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#dc2626';
+            ctx.beginPath();
+            ctx.arc(0, 0, rad * 0.7, 0, Math.PI * 2);
             ctx.fill();
 
             // 3. 중심 크림슨 레드 코어
@@ -7049,16 +7034,13 @@
             const bThick = b.size;
             const isRedEnemy = (b.isEnemyBullet || b.color === '#ef4444');
             const mainCol = isRedEnemy ? '#ef4444' : (b.peerColor || b.color || '#22d3ee');
-            const glowCol = isRedEnemy ? 'rgba(239, 68, 68, 0.6)' : 'rgba(34, 211, 238, 0.6)';
+            const glowCol = isRedEnemy ? 'rgba(239, 68, 68, 0.35)' : 'rgba(34, 211, 238, 0.35)';
 
-            // 외곽 글로우 빔
-            const tracerGrad = ctx.createLinearGradient(-bLen, 0, bLen, 0);
-            tracerGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-            tracerGrad.addColorStop(0.4, glowCol);
-            tracerGrad.addColorStop(0.8, '#ffffff');
-            tracerGrad.addColorStop(1, mainCol);
-            ctx.fillStyle = tracerGrad;
+            // 외곽 글로우 빔 (초경량 2단 필)
+            ctx.fillStyle = glowCol;
             ctx.fillRect(-bLen * 0.6, -bThick * 0.5, bLen, bThick);
+            ctx.fillStyle = mainCol;
+            ctx.fillRect(-bLen * 0.4, -bThick * 0.35, bLen * 0.8, bThick * 0.7);
 
             // 화이트 코어 탄심
             ctx.fillStyle = '#ffffff';
@@ -7106,44 +7088,42 @@
             // [색채: 화력 강화 드론] 250% 지원 사격 암회색 관통 탄환
             const bLen = 16;
             const bThick = b.size || 5;
-            const tracerGrad = ctx.createLinearGradient(-bLen, 0, bLen, 0);
-            tracerGrad.addColorStop(0, 'rgba(15, 23, 42, 0)');
-            tracerGrad.addColorStop(0.4, 'rgba(71, 85, 105, 0.7)');
-            tracerGrad.addColorStop(0.8, '#cbd5e1');
-            tracerGrad.addColorStop(1, '#94a3b8');
-            ctx.fillStyle = tracerGrad;
+            ctx.fillStyle = 'rgba(71, 85, 105, 0.45)';
             ctx.fillRect(-bLen * 0.6, -bThick * 0.5, bLen, bThick);
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillRect(-bLen * 0.35, -bThick * 0.35, bLen * 0.7, bThick * 0.7);
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(-bLen * 0.2, -bThick * 0.25, bLen * 0.5, bThick * 0.5);
           } else if (b.type === 'riding_grenade' || b.type === 'color_grenade') {
             // [AR 2스킬] 라이딩 그레네이드 vs 수류탄 투척·개(改) (어두운 회색)
             const isColorG = (b.type === 'color_grenade');
-            const grad = ctx.createRadialGradient(0, 0, 2, 0, 0, b.size);
-            if (isColorG) {
-              grad.addColorStop(0, '#ffffff');
-              grad.addColorStop(0.4, '#94a3b8');
-              grad.addColorStop(0.8, '#334155');
-              grad.addColorStop(1, 'rgba(15, 23, 42, 0.4)');
-            } else {
-              grad.addColorStop(0, '#ffffff');
-              grad.addColorStop(0.4, '#22d3ee');
-              grad.addColorStop(0.8, '#06b6d4');
-              grad.addColorStop(1, 'rgba(6, 182, 212, 0.2)');
-            }
-            ctx.fillStyle = grad;
-            ctx.shadowColor = isColorG ? '#475569' : '#06b6d4';
-            ctx.shadowBlur = 12;
+            const outerCol = isColorG ? 'rgba(51, 65, 85, 0.45)' : 'rgba(6, 182, 212, 0.35)';
+            const coreCol = isColorG ? '#64748b' : '#22d3ee';
+
+            // 외곽 글로우 링
+            ctx.fillStyle = outerCol;
+            ctx.beginPath();
+            ctx.arc(0, 0, b.size * 1.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 본체
+            ctx.fillStyle = coreCol;
             ctx.beginPath();
             ctx.arc(0, 0, b.size, 0, Math.PI * 2);
             ctx.fill();
 
-            // 외곽 발광 테두리 링
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 1.5;
+            // 내부 중심 하이라이트
+            ctx.fillStyle = '#ffffff';
             ctx.beginPath();
-            ctx.arc(0, 0, b.size * 0.75, 0, Math.PI * 2);
+            ctx.arc(0, 0, b.size * 0.45, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 외곽 테두리 링
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.arc(0, 0, b.size * 0.8, 0, Math.PI * 2);
             ctx.stroke();
-            ctx.shadowBlur = 0;
           } else if (b.type === 'fx_mackerel_slash_wave') {
             // [무한회전 파이널 고등어 슬래쉬]: 전방 화면을 찢으며 날아가는 카이텐 FX 크기(높이 360px, 폭 120px) 거대 초승달 푸른빛 참격파!
             const w = b.width || 120;
@@ -7193,21 +7173,16 @@
             // [FOX 45식] 고속 기관단총 탄환 (주황빛/호박색 탄도 궤적 트레이서)
             const bLen = 14;
             const bThick = b.size || 4.5;
-            const tracerGrad = ctx.createLinearGradient(-bLen, 0, bLen, 0);
-            tracerGrad.addColorStop(0, 'rgba(245, 158, 11, 0)');
-            tracerGrad.addColorStop(0.3, 'rgba(251, 146, 60, 0.6)');
-            tracerGrad.addColorStop(0.7, '#fbbf24');
-            tracerGrad.addColorStop(1, '#ffffff');
-            ctx.fillStyle = tracerGrad;
+            ctx.fillStyle = 'rgba(251, 146, 60, 0.45)';
             ctx.fillRect(-bLen * 0.6, -bThick * 0.5, bLen, bThick);
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillRect(-bLen * 0.4, -bThick * 0.35, bLen * 0.7, bThick * 0.7);
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(-bLen * 0.2, -bThick * 0.25, bLen * 0.4, bThick * 0.5);
           } else if (b.type === 'fox_shield_slam') {
             // [FOX 45식: 철벽의 방어] 전방 거대 에너지 충격파 방패강타 (Shockwave Slam)
             const rad = b.size || 18;
             ctx.save();
-            ctx.shadowColor = b.color || '#f59e0b';
-            ctx.shadowBlur = 16;
 
             // 1. 방패 호형 에너지 크레센트
             ctx.strokeStyle = b.color || '#f59e0b';
@@ -7216,15 +7191,18 @@
             ctx.arc(0, 0, rad * 1.5, -Math.PI * 0.45, Math.PI * 0.45);
             ctx.stroke();
 
-            // 2. 내부 플라즈마 그라데이션
-            const slamGrad = ctx.createRadialGradient(0, 0, rad * 0.2, 0, 0, rad * 1.5);
-            slamGrad.addColorStop(0, '#ffffff');
-            slamGrad.addColorStop(0.4, b.color || '#f59e0b');
-            slamGrad.addColorStop(1, 'rgba(245, 158, 11, 0)');
-            ctx.fillStyle = slamGrad;
+            // 2. 내부 플라즈마 (초경량 2단 필)
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.35)';
             ctx.beginPath();
             ctx.arc(0, 0, rad * 1.5, -Math.PI * 0.45, Math.PI * 0.45);
             ctx.lineTo(-rad * 0.5, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(0, 0, rad * 0.7, -Math.PI * 0.3, Math.PI * 0.3);
+            ctx.lineTo(-rad * 0.2, 0);
             ctx.closePath();
             ctx.fill();
 
@@ -7241,8 +7219,6 @@
             // [FOX 45식: 공세 전환] 초고속 날카로운 철갑 관통 침상 탄환
             const rad = b.size || 14;
             ctx.save();
-            ctx.shadowColor = '#fb923c';
-            ctx.shadowBlur = 12;
 
             // 1. 날카로운 유선형 관통 침
             ctx.fillStyle = '#ffffff';
@@ -7258,10 +7234,7 @@
             ctx.stroke();
 
             // 2. 오렌지 잔상 추진 플라즈마
-            const thrustGrad = ctx.createLinearGradient(0, 0, -rad * 2.5, 0);
-            thrustGrad.addColorStop(0, '#fb923c');
-            thrustGrad.addColorStop(1, 'rgba(234, 88, 12, 0)');
-            ctx.fillStyle = thrustGrad;
+            ctx.fillStyle = 'rgba(251, 146, 60, 0.45)';
             ctx.fillRect(-rad * 2.2, -rad * 0.25, rad * 2.0, rad * 0.5);
             ctx.restore();
           } else {
@@ -7312,12 +7285,11 @@
         ctx.fillStyle = midGlow;
         ctx.fillRect(beamStartX, originY - 12, beamWidth, 24);
 
-        // 3) 중심부 순백색 플라즈마 초고열 코어 (두께 10px)
+        // 3) 중심부 순백색 플라즈마 초고열 코어 (초경량 2단 필)
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.5)';
+        ctx.fillRect(beamStartX, originY - 8, beamWidth, 16);
         ctx.fillStyle = '#ffffff';
-        ctx.shadowColor = '#38bdf8';
-        ctx.shadowBlur = 15;
-        ctx.fillRect(beamStartX, originY - 5, beamWidth, 10);
-        ctx.shadowBlur = 0;
+        ctx.fillRect(beamStartX, originY - 4, beamWidth, 8);
 
         // 4) 빔을 따라 흐르는 플라즈마 펄스 파동 링들
         const pulseTime = Date.now() * 0.02;
@@ -7484,9 +7456,7 @@
         ctx.closePath();
         ctx.fill();
 
-        // (B) 핀 베이스 원형 본체 (글로우 링 + 다크 코어)
-        ctx.shadowColor = k.color;
-        ctx.shadowBlur = 8;
+        // (B) 핀 베이스 원형 본체 (다크 코어 + 컬러 링)
         ctx.beginPath();
         ctx.arc(pinX, pinY, r, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
@@ -7494,7 +7464,6 @@
         ctx.lineWidth = 2.2 * pinScale;
         ctx.strokeStyle = k.color;
         ctx.stroke();
-        ctx.shadowBlur = 0;
 
         // (C) 핀 내부 보스 이니셜 심볼
         const initial = (k.id ? k.id[0].toUpperCase() : 'K');
@@ -7508,7 +7477,7 @@
         const distM = Math.round(worldDist / 10);
         const distText = `${distM}m`;
         ctx.font = 'bold 9px monospace';
-        const textW = ctx.measureText(distText).width;
+        const textW = distText.length * 6.2;
         const badgeY = pinY + r + 8;
 
         ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
@@ -7558,8 +7527,6 @@
           ctx.fill();
 
           // 핀 본체
-          ctx.shadowColor = '#ef4444';
-          ctx.shadowBlur = 12;
           ctx.beginPath();
           ctx.arc(pinX, pinY, r, 0, Math.PI * 2);
           ctx.fillStyle = 'rgba(15, 23, 42, 0.96)';
@@ -7567,7 +7534,6 @@
           ctx.lineWidth = 3 * pinScale;
           ctx.strokeStyle = '#facc15';
           ctx.stroke();
-          ctx.shadowBlur = 0;
 
           // 보스 아이콘
           ctx.font = `${Math.round(14 * pinScale)}px sans-serif`;
@@ -7579,7 +7545,7 @@
           const distM = Math.round(worldDist / 10);
           const distText = `FX [${distM}m]`;
           ctx.font = 'bold 9.5px monospace';
-          const textW = ctx.measureText(distText).width;
+          const textW = distText.length * 6.5;
           const badgeY = pinY + r + 9;
 
           ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';

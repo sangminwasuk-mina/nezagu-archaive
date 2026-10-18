@@ -1,6 +1,31 @@
 // ==========================================
 // ui.js - 화면 전환, 로비/정비실/모달 인터랙션, HUD 갱신
 // ==========================================
+    // [성능 최적화] DOM 캐싱 및 더티 체킹 헬퍼 (불필요한 리플로우/리페인트 방지)
+    const _domCache = {};
+    function getCachedEl(id) {
+      if (!_domCache[id]) _domCache[id] = document.getElementById(id);
+      return _domCache[id];
+    }
+    function setTextIfChanged(el, text) {
+      if (el && el.innerText !== text) el.innerText = text;
+    }
+    function setHtmlIfChanged(el, html) {
+      if (el && el.innerHTML !== html) el.innerHTML = html;
+    }
+    function setWidthIfChanged(el, widthStr) {
+      if (el && el.style.width !== widthStr) el.style.width = widthStr;
+    }
+    function setBgIfChanged(el, bgStr) {
+      if (el && el.style.background !== bgStr) el.style.background = bgStr;
+    }
+    function setColorIfChanged(el, colorStr) {
+      if (el && el.style.color !== colorStr) el.style.color = colorStr;
+    }
+    function setClassIfChanged(el, className) {
+      if (el && el.className !== className) el.className = className;
+    }
+
     function updateSupporterModeCardsUI() {
       return;
     }
@@ -833,254 +858,261 @@
         weaponName += ` [방어: ${armLabel}]`;
       }
 
-      document.getElementById('currentWeaponName').innerText = weaponName;
-      document.getElementById('currentWeaponName').style.color = weaponColor;
+      const curWepNameEl = getCachedEl('currentWeaponName');
+      setTextIfChanged(curWepNameEl, weaponName);
+      setColorIfChanged(curWepNameEl, weaponColor);
 
-      const statusBadge = document.getElementById('reloadStatusBadge');
-      if (player.isAbiEshuhActive) {
-        statusBadge.innerText = '[비행 호버링 중]';
-        statusBadge.style.color = '#38bdf8';
-      } else if (player.isColorActive) {
-        statusBadge.innerText = '[무한 탄창]';
-        statusBadge.style.color = '#94a3b8';
-      } else if (cur.isReloading) {
-        statusBadge.innerText = `[재장전 중... ${cur.reloadTimer.toFixed(1)}s]`;
-        statusBadge.style.color = '#ef4444';
-      } else {
-        statusBadge.innerText = '[장전 완료]';
-        statusBadge.style.color = '#22c55e';
+      const statusBadge = getCachedEl('reloadStatusBadge');
+      if (statusBadge) {
+        if (player.isAbiEshuhActive) {
+          setTextIfChanged(statusBadge, '[비행 호버링 중]');
+          setColorIfChanged(statusBadge, '#38bdf8');
+        } else if (player.isColorActive) {
+          setTextIfChanged(statusBadge, '[무한 탄창]');
+          setColorIfChanged(statusBadge, '#94a3b8');
+        } else if (cur.isReloading) {
+          setTextIfChanged(statusBadge, `[재장전 중... ${cur.reloadTimer.toFixed(1)}s]`);
+          setColorIfChanged(statusBadge, '#ef4444');
+        } else {
+          setTextIfChanged(statusBadge, '[장전 완료]');
+          setColorIfChanged(statusBadge, '#22c55e');
+        }
       }
 
+      const ammoCountEl = getCachedEl('ammoCountText');
+      const magCountEl = getCachedEl('magCountText');
       if (player.isAbiEshuhActive) {
-        document.getElementById('ammoCountText').innerText = '∞';
-        document.getElementById('magCountText').innerText = '에너지';
+        setTextIfChanged(ammoCountEl, '∞');
+        setTextIfChanged(magCountEl, '에너지');
       } else if (player.isColorActive) {
-        document.getElementById('ammoCountText').innerText = '∞';
-        document.getElementById('magCountText').innerText = '무한탄창';
+        setTextIfChanged(ammoCountEl, '∞');
+        setTextIfChanged(magCountEl, '무한탄창');
       } else {
-        document.getElementById('ammoCountText').innerText = cur.ammo;
-        document.getElementById('magCountText').innerText = (cur.mags === Infinity || cur.mags >= 999) ? '∞ 탄창' : `${cur.mags}탄창`;
+        setTextIfChanged(ammoCountEl, String(cur.ammo));
+        setTextIfChanged(magCountEl, (cur.mags === Infinity || cur.mags >= 999) ? '∞ 탄창' : `${cur.mags}탄창`);
       }
 
       // 조준 모드 상태 갱신 (자동 / 수동)
-      const aimText = document.getElementById('aimModeStatusText');
+      const aimText = getCachedEl('aimModeStatusText');
       if (aimText) {
         if (player.aimMode === 'manual') {
-          aimText.innerHTML = `조준: <b style="color:#f59e0b;">수동 [Shift]</b>`;
+          setHtmlIfChanged(aimText, `조준: <b style="color:#f59e0b;">수동 [Shift]</b>`);
         } else {
-          aimText.innerHTML = `조준: <b style="color:#38bdf8;">자동 [Shift]</b>`;
+          setHtmlIfChanged(aimText, `조준: <b style="color:#38bdf8;">자동 [Shift]</b>`);
         }
       }
 
       // 대시 상태 갱신
-      const dashText = document.getElementById('dashStatusText');
-      if (player.dashTimer > 0) {
-        dashText.innerHTML = `대시: <b style="color:#f59e0b;">쿨 ${player.dashTimer.toFixed(1)}s</b>`;
-      } else {
-        dashText.innerHTML = `대시: <b style="color:#22c55e;">준비완료</b>`;
+      const dashText = getCachedEl('dashStatusText');
+      if (dashText) {
+        if (player.dashTimer > 0) {
+          setHtmlIfChanged(dashText, `대시: <b style="color:#f59e0b;">쿨 ${player.dashTimer.toFixed(1)}s</b>`);
+        } else {
+          setHtmlIfChanged(dashText, `대시: <b style="color:#22c55e;">준비완료</b>`);
+        }
       }
 
       // 메인스킬 1 상태 갱신
-      const skill1Text = document.getElementById('skill1StatusText');
+      const skill1Text = getCachedEl('skill1StatusText');
       if (skill1Text) {
         if (isMain && isAR) {
           if (player.isColorActive) {
             const hasColorDrone = window.whiteFangDrones && window.whiteFangDrones.some(d => d.isColorDrone);
             if (hasColorDrone) {
-              skill1Text.innerHTML = `화력강화[K]: <b style="color:#06b6d4;">가동 중 (30s)</b>`;
+              setHtmlIfChanged(skill1Text, `화력강화[K]: <b style="color:#06b6d4;">가동 중 (30s)</b>`);
             } else if (player.skillCooldown > 0) {
-              skill1Text.innerHTML = `화력강화[K]: <b style="color:#f59e0b;">쿨 ${player.skillCooldown.toFixed(1)}s</b>`;
+              setHtmlIfChanged(skill1Text, `화력강화[K]: <b style="color:#f59e0b;">쿨 ${player.skillCooldown.toFixed(1)}s</b>`);
             } else {
-              skill1Text.innerHTML = `화력강화[K]: <b style="color:#94a3b8;">준비 (HP 20%)</b>`;
+              setHtmlIfChanged(skill1Text, `화력강화[K]: <b style="color:#94a3b8;">준비 (HP 20%)</b>`);
             }
           } else if (player.skillCooldown > 0) {
-            skill1Text.innerHTML = `드론[K]: <b style="color:#f59e0b;">쿨 ${player.skillCooldown.toFixed(1)}s</b>`;
+            setHtmlIfChanged(skill1Text, `드론[K]: <b style="color:#f59e0b;">쿨 ${player.skillCooldown.toFixed(1)}s</b>`);
           } else {
-            skill1Text.innerHTML = `드론[K]: <b style="color:#06b6d4;">준비 (3C)</b>`;
+            setHtmlIfChanged(skill1Text, `드론[K]: <b style="color:#06b6d4;">준비 (3C)</b>`);
           }
         } else if (isMain && isSG) {
           if (player.sgSkillActive) {
-            skill1Text.innerHTML = `기괴[K]: <b style="color:#ef4444;">강화 [${player.sgSkillShotsLeft}/6]</b>`;
+            setHtmlIfChanged(skill1Text, `기괴[K]: <b style="color:#ef4444;">강화 [${player.sgSkillShotsLeft}/6]</b>`);
           } else if (player.skillCooldown > 0) {
-            skill1Text.innerHTML = `기괴[K]: <b style="color:#f59e0b;">쿨 ${player.skillCooldown.toFixed(1)}s</b>`;
+            setHtmlIfChanged(skill1Text, `기괴[K]: <b style="color:#f59e0b;">쿨 ${player.skillCooldown.toFixed(1)}s</b>`);
           } else {
-            skill1Text.innerHTML = `기괴[K]: <b style="color:#22c55e;">준비 (4C)</b>`;
+            setHtmlIfChanged(skill1Text, `기괴[K]: <b style="color:#22c55e;">준비 (4C)</b>`);
           }
         } else if (isMain && isRG) {
           if (player.isChargingSkill) {
-            skill1Text.innerHTML = `붕괴[K]: <b style="color:#facc15;">차징 Lv.${player.chargeLevel}</b>`;
+            setHtmlIfChanged(skill1Text, `붕괴[K]: <b style="color:#facc15;">차징 Lv.${player.chargeLevel}</b>`);
           } else if (player.skillCooldown > 0) {
-            skill1Text.innerHTML = `붕괴[K]: <b style="color:#f59e0b;">쿨 ${player.skillCooldown.toFixed(1)}s</b>`;
+            setHtmlIfChanged(skill1Text, `붕괴[K]: <b style="color:#f59e0b;">쿨 ${player.skillCooldown.toFixed(1)}s</b>`);
           } else {
-            skill1Text.innerHTML = `붕괴[K]: <b style="color:#38bdf8;">준비 (5C)</b>`;
+            setHtmlIfChanged(skill1Text, `붕괴[K]: <b style="color:#38bdf8;">준비 (5C)</b>`);
           }
         } else if (isMain && isSMG) {
           if (player.skillCooldown > 0) {
-            skill1Text.innerHTML = `철벽[K]: <b style="color:#f59e0b;">쿨 ${player.skillCooldown.toFixed(1)}s</b>`;
+            setHtmlIfChanged(skill1Text, `철벽[K]: <b style="color:#f59e0b;">쿨 ${player.skillCooldown.toFixed(1)}s</b>`);
           } else if (player.isTacticalDefActive) {
-            skill1Text.innerHTML = `철벽[K]: <b style="color:#f59e0b;">방패강타 (4C / 기절 4.6s)</b>`;
+            setHtmlIfChanged(skill1Text, `철벽[K]: <b style="color:#f59e0b;">방패강타 (4C / 기절 4.6s)</b>`);
           } else {
-            skill1Text.innerHTML = `철벽[K]: <b style="color:#f59e0b;">준비 (3C / 기절 2.5s)</b>`;
+            setHtmlIfChanged(skill1Text, `철벽[K]: <b style="color:#f59e0b;">준비 (3C / 기절 2.5s)</b>`);
           }
         } else if (isMain) {
           if (player.isFiringSkill) {
-            skill1Text.innerHTML = `개연[K]: <b style="color:#c084fc;">난사 중</b>`;
+            setHtmlIfChanged(skill1Text, `개연[K]: <b style="color:#c084fc;">난사 중</b>`);
           } else if (player.skillCooldown > 0) {
-            skill1Text.innerHTML = `개연[K]: <b style="color:#f59e0b;">쿨 ${player.skillCooldown.toFixed(1)}s</b>`;
+            setHtmlIfChanged(skill1Text, `개연[K]: <b style="color:#f59e0b;">쿨 ${player.skillCooldown.toFixed(1)}s</b>`);
           } else {
-            skill1Text.innerHTML = `개연[K]: <b style="color:#c084fc;">준비 (6C)</b>`;
+            setHtmlIfChanged(skill1Text, `개연[K]: <b style="color:#c084fc;">준비 (6C)</b>`);
           }
         } else {
-          skill1Text.innerHTML = `스킬1[K]: <b style="color:#64748b;">보조무기 미지원</b>`;
+          setHtmlIfChanged(skill1Text, `스킬1[K]: <b style="color:#64748b;">보조무기 미지원</b>`);
         }
       }
 
       // 메인스킬 2 상태 갱신
-      const skill2Text = document.getElementById('skill2StatusText');
+      const skill2Text = getCachedEl('skill2StatusText');
       if (skill2Text) {
         if (isMain && isAR) {
           if (player.isColorActive) {
             const isHpUnder50 = (player.hp / player.maxHp) <= 0.50;
             const reqCost = isHpUnder50 ? 2 : 3;
             if (player.arSkill2Cooldown > 0) {
-              skill2Text.innerHTML = `수류탄·개[L]: <b style="color:#f59e0b;">쿨 ${player.arSkill2Cooldown.toFixed(1)}s</b>`;
+              setHtmlIfChanged(skill2Text, `수류탄·개[L]: <b style="color:#f59e0b;">쿨 ${player.arSkill2Cooldown.toFixed(1)}s</b>`);
             } else {
-              skill2Text.innerHTML = `수류탄·개[L]: <b style="color:#94a3b8;">준비 (${reqCost}C)</b>`;
+              setHtmlIfChanged(skill2Text, `수류탄·개[L]: <b style="color:#94a3b8;">준비 (${reqCost}C)</b>`);
             }
           } else if (player.arSkill2Cooldown > 0) {
-            skill2Text.innerHTML = `그레네이드[L]: <b style="color:#f59e0b;">쿨 ${player.arSkill2Cooldown.toFixed(1)}s</b>`;
+            setHtmlIfChanged(skill2Text, `그레네이드[L]: <b style="color:#f59e0b;">쿨 ${player.arSkill2Cooldown.toFixed(1)}s</b>`);
           } else {
-            skill2Text.innerHTML = `그레네이드[L]: <b style="color:#06b6d4;">준비 (3C)</b>`;
+            setHtmlIfChanged(skill2Text, `그레네이드[L]: <b style="color:#06b6d4;">준비 (3C)</b>`);
           }
         } else if (isMain && isSG) {
           if (player.sgTorrentCharging) {
-            skill2Text.innerHTML = `격류[L]: <b style="color:#38bdf8;">차징 중 (${player.sgTorrentChargeTimer.toFixed(1)}s)</b>`;
+            setHtmlIfChanged(skill2Text, `격류[L]: <b style="color:#38bdf8;">차징 중 (${player.sgTorrentChargeTimer.toFixed(1)}s)</b>`);
           } else if (player.sgTorrentFiring) {
-            skill2Text.innerHTML = `격류[L]: <b style="color:#0284c7;">난사 [${8 - player.sgTorrentShotsLeft}/8]</b>`;
+            setHtmlIfChanged(skill2Text, `격류[L]: <b style="color:#0284c7;">난사 [${8 - player.sgTorrentShotsLeft}/8]</b>`);
           } else if (player.sgSkill2Cooldown > 0) {
-            skill2Text.innerHTML = `격류[L]: <b style="color:#f59e0b;">쿨 ${player.sgSkill2Cooldown.toFixed(1)}s</b>`;
+            setHtmlIfChanged(skill2Text, `격류[L]: <b style="color:#f59e0b;">쿨 ${player.sgSkill2Cooldown.toFixed(1)}s</b>`);
           } else {
-            skill2Text.innerHTML = `격류[L]: <b style="color:#22c55e;">준비 (4C)</b>`;
+            setHtmlIfChanged(skill2Text, `격류[L]: <b style="color:#22c55e;">준비 (4C)</b>`);
           }
         } else if (isMain && isRG) {
           if (player.rgAwakeCharging) {
             const isFire = player.rgAwakeChargeType === 'fire';
-            skill2Text.innerHTML = `각성[L]: <b style="color:#facc15;">${isFire ? '슈퍼노바 차징' : '충전 중'}</b>`;
+            setHtmlIfChanged(skill2Text, `각성[L]: <b style="color:#facc15;">${isFire ? '슈퍼노바 차징' : '충전 중'}</b>`);
           } else if (player.rgAwakeFiring) {
-            skill2Text.innerHTML = `각성[L]: <b style="color:#facc15;">레이저 발사 중!</b>`;
+            setHtmlIfChanged(skill2Text, `각성[L]: <b style="color:#facc15;">레이저 발사 중!</b>`);
           } else if (player.rgAwakeStage === 0) {
-            skill2Text.innerHTML = `각성[L]: <b style="color:#38bdf8;">1단 충전 (8C)</b>`;
+            setHtmlIfChanged(skill2Text, `각성[L]: <b style="color:#38bdf8;">1단 충전 (8C)</b>`);
           } else if (player.rgAwakeStage === 1) {
-            skill2Text.innerHTML = `각성[L]: <b style="color:#38bdf8;">2단 충전 (8C)</b>`;
+            setHtmlIfChanged(skill2Text, `각성[L]: <b style="color:#38bdf8;">2단 충전 (8C)</b>`);
           } else if (player.rgAwakeStage === 2) {
-            skill2Text.innerHTML = `각성[L]: <b style="color:#facc15;">슈퍼노바 발사 (10C)</b>`;
+            setHtmlIfChanged(skill2Text, `각성[L]: <b style="color:#facc15;">슈퍼노바 발사 (10C)</b>`);
           }
         } else if (isMain && isSMG) {
           if (player.foxSkill2Cooldown > 0) {
-            skill2Text.innerHTML = `공세[L]: <b style="color:#f59e0b;">쿨 ${player.foxSkill2Cooldown.toFixed(1)}s</b>`;
+            setHtmlIfChanged(skill2Text, `공세[L]: <b style="color:#f59e0b;">쿨 ${player.foxSkill2Cooldown.toFixed(1)}s</b>`);
           } else if (player.isTacticalDefActive) {
-            skill2Text.innerHTML = `공세[L]: <b style="color:#f59e0b;">공세전환 (4C / 치저 -44%)</b>`;
+            setHtmlIfChanged(skill2Text, `공세[L]: <b style="color:#f59e0b;">공세전환 (4C / 치저 -44%)</b>`);
           } else {
-            skill2Text.innerHTML = `공세[L]: <b style="color:#f59e0b;">준비 (3C / 치저 -22%)</b>`;
+            setHtmlIfChanged(skill2Text, `공세[L]: <b style="color:#f59e0b;">준비 (3C / 치저 -22%)</b>`);
           }
         } else if (isMain) {
           // MG (종막의 디스트로이어)
           if (player.mgStanceTransitioning) {
-            skill2Text.innerHTML = `개연[L]: <b style="color:#c084fc;">자세 전환 중...</b>`;
+            setHtmlIfChanged(skill2Text, `개연[L]: <b style="color:#c084fc;">자세 전환 중...</b>`);
           } else if (player.mgStanceActive) {
             const nextNoteName = player.mgStanceShotStage === 0 ? '1음' : (player.mgStanceShotStage === 1 ? '2음' : '종연');
             if (player.mgStanceShotDelay > 0) {
-              skill2Text.innerHTML = `개연[L]: <b style="color:#94a3b8;">딜레이 (${player.mgStanceShotDelay.toFixed(1)}s)</b>`;
+              setHtmlIfChanged(skill2Text, `개연[L]: <b style="color:#94a3b8;">딜레이 (${player.mgStanceShotDelay.toFixed(1)}s)</b>`);
             } else {
-              skill2Text.innerHTML = `개연[L]: <b style="color:#c084fc;">발사 가능 [${nextNoteName}] (${player.mgStanceTimer.toFixed(0)}s)</b>`;
+              setHtmlIfChanged(skill2Text, `개연[L]: <b style="color:#c084fc;">발사 가능 [${nextNoteName}] (${player.mgStanceTimer.toFixed(0)}s)</b>`);
             }
           } else if (player.mgSkill2Cooldown > 0) {
-            skill2Text.innerHTML = `개연[L]: <b style="color:#f59e0b;">쿨 ${player.mgSkill2Cooldown.toFixed(1)}s</b>`;
+            setHtmlIfChanged(skill2Text, `개연[L]: <b style="color:#f59e0b;">쿨 ${player.mgSkill2Cooldown.toFixed(1)}s</b>`);
           } else {
-            skill2Text.innerHTML = `개연[L]: <b style="color:#22c55e;">준비 (10C)</b>`;
+            setHtmlIfChanged(skill2Text, `개연[L]: <b style="color:#22c55e;">준비 (10C)</b>`);
           }
         } else {
-          skill2Text.innerHTML = `스킬2[L]: <b style="color:#64748b;">보조무기 미지원</b>`;
+          setHtmlIfChanged(skill2Text, `스킬2[L]: <b style="color:#64748b;">보조무기 미지원</b>`);
         }
       }
 
       // 특수스킬 [S키] 상태 갱신
-      const specialText = document.getElementById('specialStatusText');
+      const specialText = getCachedEl('specialStatusText');
       if (specialText) {
         if (isMain && player.mainWeapon && player.mainWeapon.id === 'mg_destructor') {
           if (player.isFiringSpecial) {
             const leftSec = Math.max(0, 7.0 - player.specialTimer);
             const phaseTag = player.specialPhase === 1 ? '1단' : (player.specialPhase === 2 ? '2단' : (player.specialIsBerserk ? '3단(초각성)' : '3단'));
-            specialText.innerHTML = `특수[S]: <b style="color:#c084fc;">선도부장 ${phaseTag} (${leftSec.toFixed(1)}s)</b>`;
+            setHtmlIfChanged(specialText, `특수[S]: <b style="color:#c084fc;">선도부장 ${phaseTag} (${leftSec.toFixed(1)}s)</b>`);
           } else if (player.specialSkillUsed) {
-            specialText.innerHTML = `특수[S]: <b style="color:#64748b;">사용완료 (1회)</b>`;
+            setHtmlIfChanged(specialText, `특수[S]: <b style="color:#64748b;">사용완료 (1회)</b>`);
           } else if (player.specialSkillUnlocked) {
-            specialText.innerHTML = `특수[S]: <b style="color:#a855f7;">선도부장 준비! (S키)</b>`;
+            setHtmlIfChanged(specialText, `특수[S]: <b style="color:#a855f7;">선도부장 준비! (S키)</b>`);
           } else {
             const hpRatio = (player.hp / player.maxHp) * 100;
-            specialText.innerHTML = `특수[S]: <b style="color:#94a3b8;">HP 50%↓ 해금 (${hpRatio.toFixed(0)}%)</b>`;
+            setHtmlIfChanged(specialText, `특수[S]: <b style="color:#94a3b8;">HP 50%↓ 해금 (${hpRatio.toFixed(0)}%)</b>`);
           }
         } else if (isMain && isRG) {
           if (player.isAbiEshuhActive) {
             if (player.abiStunTimer > 0) {
-              specialText.innerHTML = `특수[S]: <b style="color:#ef4444;">과부하 기절 (${player.abiStunTimer.toFixed(1)}s)</b>`;
+              setHtmlIfChanged(specialText, `특수[S]: <b style="color:#ef4444;">과부하 기절 (${player.abiStunTimer.toFixed(1)}s)</b>`);
             } else if (player.abiFinalPhase !== 'none') {
-              specialText.innerHTML = `특수[S]: <b style="color:#00ffff;">⚡ 파이널 피니셔!</b>`;
+              setHtmlIfChanged(specialText, `특수[S]: <b style="color:#00ffff;">⚡ 파이널 피니셔!</b>`);
             } else if (player.abiFinalReady) {
-              specialText.innerHTML = `특수[S]: <b style="color:#38bdf8;">파이널 준비 완료! (임의 키)</b>`;
+              setHtmlIfChanged(specialText, `특수[S]: <b style="color:#38bdf8;">파이널 준비 완료! (임의 키)</b>`);
             } else {
-              specialText.innerHTML = `특수[S]: <b style="color:#38bdf8;">아비 에슈흐 [${Math.floor(player.cost)}/200]</b>`;
+              setHtmlIfChanged(specialText, `특수[S]: <b style="color:#38bdf8;">아비 에슈흐 [${Math.floor(player.cost)}/200]</b>`);
             }
           } else if (player.specialSkillUsed) {
-            specialText.innerHTML = `특수[S]: <b style="color:#64748b;">사용완료 (1회)</b>`;
+            setHtmlIfChanged(specialText, `특수[S]: <b style="color:#64748b;">사용완료 (1회)</b>`);
           } else if (player.specialSkillUnlocked) {
-            specialText.innerHTML = `특수[S]: <b style="color:#38bdf8;">아비 에슈흐 준비! (S키)</b>`;
+            setHtmlIfChanged(specialText, `특수[S]: <b style="color:#38bdf8;">아비 에슈흐 준비! (S키)</b>`);
           } else {
             const spent = player.spentCostTotal || 0;
-            specialText.innerHTML = `특수[S]: <b style="color:#94a3b8;">코스트 소모 10/300 (${spent}/10)</b>`;
+            setHtmlIfChanged(specialText, `특수[S]: <b style="color:#94a3b8;">코스트 소모 10/300 (${spent}/10)</b>`);
           }
         } else if (isMain && isAR) {
           if (player.isColorActive) {
             if (player.calmBreathActive) {
-              specialText.innerHTML = `특수[S]: <b style="color:#ef4444;">⏳ 침착한 호흡 (${player.calmBreathTimer.toFixed(1)}s)</b>`;
+              setHtmlIfChanged(specialText, `특수[S]: <b style="color:#ef4444;">⏳ 침착한 호흡 (${player.calmBreathTimer.toFixed(1)}s)</b>`);
             } else {
               const isHpLow = (player.hp / player.maxHp) <= 0.30;
-              specialText.innerHTML = `특수[S]: <b style="color:#64748b;">🖤 색채(色彩) 활성${isHpLow ? ' [🔥위기 본능]' : ''}</b>`;
+              setHtmlIfChanged(specialText, `특수[S]: <b style="color:#64748b;">🖤 색채(色彩) 활성${isHpLow ? ' [🔥위기 본능]' : ''}</b>`);
             }
           } else if (player.specialSkillUsed) {
-            specialText.innerHTML = `특수[S]: <b style="color:#64748b;">색채 소진 (1회 완료)</b>`;
+            setHtmlIfChanged(specialText, `특수[S]: <b style="color:#64748b;">색채 소진 (1회 완료)</b>`);
           } else {
-            specialText.innerHTML = `특수[S]: <b style="color:#475569;">🖤 색채 (사망 시 자동 발동)</b>`;
+            setHtmlIfChanged(specialText, `특수[S]: <b style="color:#475569;">🖤 색채 (사망 시 자동 발동)</b>`);
           }
         } else if (isMain && isSG) {
           if (player.isImmortalActive) {
-            specialText.innerHTML = `특수[S]: <b style="color:#ef4444;">🩸 불사 (${player.immortalTimer.toFixed(1)}s) [${player.immortalStack}/5스택]</b>`;
+            setHtmlIfChanged(specialText, `특수[S]: <b style="color:#ef4444;">🩸 불사 (${player.immortalTimer.toFixed(1)}s) [${player.immortalStack}/5스택]</b>`);
           } else if (player.specialSkillUsed) {
-            specialText.innerHTML = `특수[S]: <b style="color:#64748b;">불사 사용완료 (1회)</b>`;
+            setHtmlIfChanged(specialText, `특수[S]: <b style="color:#64748b;">불사 사용완료 (1회)</b>`);
           } else {
-            specialText.innerHTML = `특수[S]: <b style="color:#ef4444;">불사(不死) 상시 준비! [S]</b>`;
+            setHtmlIfChanged(specialText, `특수[S]: <b style="color:#ef4444;">불사(不死) 상시 준비! [S]</b>`);
           }
         } else if (isMain && isSMG) {
           if (player.isTacticalDefActive) {
             const sVal = Math.ceil(player.tacticalShield || 0);
             const sMax = Math.ceil(player.tacticalShieldMax || 1);
             const sTimer = (player.tacticalShieldTimer || 0).toFixed(1);
-            specialText.innerHTML = `특수[S]: <b style="color:#f59e0b;">🛡️전술방패 [${sVal}/${sMax}] (${sTimer}s)</b>`;
+            setHtmlIfChanged(specialText, `특수[S]: <b style="color:#f59e0b;">🛡️전술방패 [${sVal}/${sMax}] (${sTimer}s)</b>`);
           } else if (player.foxShieldCooldown > 0) {
-            specialText.innerHTML = `특수[S]: <b style="color:#f59e0b;">방패 쿨 ${(player.foxShieldCooldown || 0).toFixed(1)}s</b>`;
+            setHtmlIfChanged(specialText, `특수[S]: <b style="color:#f59e0b;">방패 쿨 ${(player.foxShieldCooldown || 0).toFixed(1)}s</b>`);
           } else {
-            specialText.innerHTML = `특수[S]: <b style="color:#f59e0b;">🛡️전술방패 준비! (4C / S키)</b>`;
+            setHtmlIfChanged(specialText, `특수[S]: <b style="color:#f59e0b;">🛡️전술방패 준비! (4C / S키)</b>`);
           }
         } else {
-          specialText.innerHTML = `특수[S]: <b style="color:#64748b;">미지원</b>`;
+          setHtmlIfChanged(specialText, `특수[S]: <b style="color:#64748b;">미지원</b>`);
         }
       }
 
       // 코스트 바 갱신
-      const costTextEl = document.getElementById('costText');
-      const costBarEl = document.getElementById('costBar');
-      if (costTextEl) costTextEl.innerText = `${Math.floor(player.cost)} / ${player.maxCost}`;
-      if (costBarEl) costBarEl.style.width = `${(player.cost / player.maxCost) * 100}%`;
+      const costTextEl = getCachedEl('costText');
+      const costBarEl = getCachedEl('costBar');
+      if (costTextEl) setTextIfChanged(costTextEl, `${Math.floor(player.cost)} / ${player.maxCost}`);
+      if (costBarEl) setWidthIfChanged(costBarEl, `${(player.cost / player.maxCost) * 100}%`);
     }
 
     // [신규 UI] 무기별 스킬 기본 정보 및 코스트 설정 (유저 스케치 반영)
@@ -1114,38 +1146,38 @@
 
     // [신규 UI] 좌측 하단 전술 스킬 덱 & 15블록 사선 코스트 바 실시간 업데이트
     function updateTacticalDeck() {
-      const deckEl = document.getElementById('tactical-deck');
+      const deckEl = getCachedEl('tactical-deck');
       if (!deckEl || deckEl.classList.contains('hidden')) return;
 
       const curW = (player.activeWeaponSlot === 'main' ? player.mainWeapon : player.subWeapon) || player.mainWeapon;
       if (!curW) return;
 
       // 1. 상단 무기/탄약 칩 갱신
-      const nameEl = document.getElementById('deck-weapon-name');
-      const curAmmoEl = document.getElementById('deck-ammo-cur');
-      const magEl = document.getElementById('deck-ammo-mag');
-      const aimBadgeEl = document.getElementById('deck-aim-badge');
+      const nameEl = getCachedEl('deck-weapon-name');
+      const curAmmoEl = getCachedEl('deck-ammo-cur');
+      const magEl = getCachedEl('deck-ammo-mag');
+      const aimBadgeEl = getCachedEl('deck-aim-badge');
 
-      if (nameEl) nameEl.innerText = curW.name || '무기';
+      if (nameEl) setTextIfChanged(nameEl, curW.name || '무기');
       if (curAmmoEl) {
         if (curW.isReloading) {
-          curAmmoEl.innerText = '장전 중';
-          curAmmoEl.style.color = '#f59e0b';
+          setTextIfChanged(curAmmoEl, '장전 중');
+          setColorIfChanged(curAmmoEl, '#f59e0b');
         } else {
-          curAmmoEl.innerText = `${curW.ammo}`;
-          curAmmoEl.style.color = curW.ammo <= 5 ? '#ef4444' : '#38bdf8';
+          setTextIfChanged(curAmmoEl, `${curW.ammo}`);
+          setColorIfChanged(curAmmoEl, curW.ammo <= 5 ? '#ef4444' : '#38bdf8');
         }
       }
       if (magEl) {
-        magEl.innerText = (curW.mags === Infinity || curW.mags == null) ? '∞' : `${curW.mags}`;
+        setTextIfChanged(magEl, (curW.mags === Infinity || curW.mags == null) ? '∞' : `${curW.mags}`);
       }
       if (aimBadgeEl) {
-        aimBadgeEl.innerText = player.aimMode === 'manual' ? '[Shift] 수동' : '[Shift] 자동';
-        aimBadgeEl.style.color = player.aimMode === 'manual' ? '#f59e0b' : '#38bdf8';
+        setTextIfChanged(aimBadgeEl, player.aimMode === 'manual' ? '[Shift] 수동' : '[Shift] 자동');
+        setColorIfChanged(aimBadgeEl, player.aimMode === 'manual' ? '#f59e0b' : '#38bdf8');
       }
 
       // 2. 15개 코스트 사선 세그먼트 생성 및 점등
-      const segmentsTrack = document.getElementById('deck-cost-segments');
+      const segmentsTrack = getCachedEl('deck-cost-segments');
       if (segmentsTrack && segmentsTrack.children.length === 0) {
         for (let i = 0; i < 15; i++) {
           const seg = document.createElement('div');
@@ -1155,18 +1187,21 @@
       }
       if (segmentsTrack) {
         const curCost = Math.floor(player.cost || 0);
-        const children = segmentsTrack.children;
-        for (let i = 0; i < children.length; i++) {
-          if (i < curCost) {
-            children[i].classList.add('filled');
-          } else {
-            children[i].classList.remove('filled');
+        if (window._lastCostSegment !== curCost) {
+          window._lastCostSegment = curCost;
+          const children = segmentsTrack.children;
+          for (let i = 0; i < children.length; i++) {
+            if (i < curCost) {
+              if (!children[i].classList.contains('filled')) children[i].classList.add('filled');
+            } else {
+              if (children[i].classList.contains('filled')) children[i].classList.remove('filled');
+            }
           }
         }
       }
-      const curCostText = document.getElementById('deck-current-cost');
+      const curCostText = getCachedEl('deck-current-cost');
       if (curCostText) {
-        curCostText.innerText = Math.floor(player.cost || 0);
+        setTextIfChanged(curCostText, String(Math.floor(player.cost || 0)));
       }
 
       // 3. 4개 스킬 카드 슬롯 동적 갱신
@@ -1256,36 +1291,41 @@
     }
 
     function updateDeckSkillCard(slotNum, name, cost, state) {
-      const cardEl = document.getElementById(`deck-skill-${slotNum}`);
-      const nameEl = document.getElementById(`deck-name-${slotNum}`);
-      const badgeEl = document.getElementById(`deck-cost-badge-${slotNum}`);
-      const cdOverlay = document.getElementById(`deck-cd-${slotNum}`);
+      const cardEl = getCachedEl(`deck-skill-${slotNum}`);
+      const nameEl = getCachedEl(`deck-name-${slotNum}`);
+      const badgeEl = getCachedEl(`deck-cost-badge-${slotNum}`);
+      const cdOverlay = getCachedEl(`deck-cd-${slotNum}`);
 
       if (!cardEl) return;
-      if (nameEl) nameEl.innerText = name;
+      if (nameEl) setTextIfChanged(nameEl, name);
       if (badgeEl) {
-        badgeEl.innerText = cost;
-        if (state.isSpecial) badgeEl.className = 'deck-cost-badge special-cost';
-        else if (cost === 0) badgeEl.className = 'deck-cost-badge zero-cost';
-        else badgeEl.className = 'deck-cost-badge';
+        setTextIfChanged(badgeEl, String(cost));
+        const targetBadgeClass = state.isSpecial ? 'deck-cost-badge special-cost' : (cost === 0 ? 'deck-cost-badge zero-cost' : 'deck-cost-badge');
+        setClassIfChanged(badgeEl, targetBadgeClass);
       }
 
       if (state.cooldown && state.cooldown > 0) {
-        cardEl.classList.add('disabled');
-        cardEl.classList.remove('ready');
-        if (cdOverlay) {
-          cdOverlay.classList.remove('hidden');
-          const cdText = cdOverlay.querySelector('.deck-cd-text');
-          if (cdText) cdText.innerText = `${state.cooldown.toFixed(1)}s`;
-        }
-      } else {
-        if (cdOverlay) cdOverlay.classList.add('hidden');
-        if (state.canUse) {
-          cardEl.classList.remove('disabled');
-          cardEl.classList.add('ready');
-        } else {
+        if (!cardEl.classList.contains('disabled')) {
           cardEl.classList.add('disabled');
           cardEl.classList.remove('ready');
+        }
+        if (cdOverlay) {
+          if (cdOverlay.classList.contains('hidden')) cdOverlay.classList.remove('hidden');
+          const cdText = cdOverlay.querySelector('.deck-cd-text');
+          if (cdText) setTextIfChanged(cdText, `${state.cooldown.toFixed(1)}s`);
+        }
+      } else {
+        if (cdOverlay && !cdOverlay.classList.contains('hidden')) cdOverlay.classList.add('hidden');
+        if (state.canUse) {
+          if (!cardEl.classList.contains('ready')) {
+            cardEl.classList.remove('disabled');
+            cardEl.classList.add('ready');
+          }
+        } else {
+          if (!cardEl.classList.contains('disabled')) {
+            cardEl.classList.add('disabled');
+            cardEl.classList.remove('ready');
+          }
         }
       }
     }
@@ -1297,39 +1337,34 @@
 
       const hpPct = Math.max(0, (player.hp / player.maxHp) * 100);
       if (playerHpBar) {
-        playerHpBar.style.width = `${hpPct}%`;
-        if (hpPct <= 20) {
-          playerHpBar.style.background = 'linear-gradient(90deg, #dc2626, #ef4444)';
-        } else if (hpPct <= 50) {
-          playerHpBar.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
-        } else {
-          playerHpBar.style.background = 'linear-gradient(90deg, #0284c7, #38bdf8)';
-        }
+        setWidthIfChanged(playerHpBar, `${hpPct}%`);
+        const hpBg = (hpPct <= 20) ? 'linear-gradient(90deg, #dc2626, #ef4444)' : ((hpPct <= 50) ? 'linear-gradient(90deg, #f59e0b, #fbbf24)' : 'linear-gradient(90deg, #0284c7, #38bdf8)');
+        setBgIfChanged(playerHpBar, hpBg);
       }
-      playerHpText.innerText = `${player.hp.toLocaleString()} / ${player.maxHp.toLocaleString()}`;
+      setTextIfChanged(playerHpText, `${player.hp.toLocaleString()} / ${player.maxHp.toLocaleString()}`);
 
       // 로컬 플레이어 타이틀 및 배지 색상 업데이트
-      const myTitleEl = document.getElementById('myPlayerTitle');
-      const myBadgeEl = document.getElementById('playerHpBadge');
+      const myTitleEl = getCachedEl('myPlayerTitle');
+      const myBadgeEl = getCachedEl('playerHpBadge');
       if (myTitleEl) {
         if (myRole === 'guest_striker') {
-          myTitleEl.innerText = '🛡️ 2P 스트라이커 (나)';
-          myTitleEl.style.color = '#ef4444';
-          if (myBadgeEl) myBadgeEl.style.background = '#ef4444';
+          setTextIfChanged(myTitleEl, '🛡️ 2P 스트라이커 (나)');
+          setColorIfChanged(myTitleEl, '#ef4444');
+          if (myBadgeEl) setBgIfChanged(myBadgeEl, '#ef4444');
         } else {
-          myTitleEl.innerText = currentMode === 'duo' ? '🛡️ 1P 스트라이커 (나)' : '🛡️ 스트라이커';
-          myTitleEl.style.color = '#0284c7';
-          if (myBadgeEl) myBadgeEl.style.background = '#0284c7';
+          setTextIfChanged(myTitleEl, currentMode === 'duo' ? '🛡️ 1P 스트라이커 (나)' : '🛡️ 스트라이커');
+          setColorIfChanged(myTitleEl, '#0284c7');
+          if (myBadgeEl) setBgIfChanged(myBadgeEl, '#0284c7');
         }
       }
       if (myBadgeEl) {
-        myBadgeEl.innerText = player.hp <= 0 ? '전투 불능' : `HP: ${player.hp.toLocaleString()}`;
+        setTextIfChanged(myBadgeEl, player.hp <= 0 ? '전투 불능' : `HP: ${player.hp.toLocaleString()}`);
       }
 
       // ========================================================
       // [블루아카이브 총력전 스타일] 통합 보스 체력바 HUD 갱신
       // ========================================================
-      const bossHud = document.getElementById('ba-boss-hud');
+      const bossHud = getCachedEl('ba-boss-hud');
       if (bossHud) {
         const isP2 = typeof kaitenFx !== 'undefined' && (kaitenFx.isSpawned || isPhase2Active);
 
@@ -1340,23 +1375,27 @@
         }
 
         const maxHp = isP2 ? (kaitenFx.maxHp || 7500000) : 5000000;
-        const totalKaitenHp = kaitenzers.reduce((sum, k) => sum + (k.isDead ? 0 : Math.max(0, k.hp)), 0);
-        const currentHp = isP2 ? Math.max(0, kaitenFx.hp) : Math.max(0, totalKaitenHp);
+        let totalKaitenHp = 0;
+        for (let ki = 0; ki < kaitenzers.length; ki++) {
+          const k = kaitenzers[ki];
+          if (!k.isDead && k.hp > 0) totalKaitenHp += k.hp;
+        }
+        const currentHp = isP2 ? Math.max(0, kaitenFx.hp) : totalKaitenHp;
         const totalLines = isP2 ? 50 : 34; // 1페이즈 x34줄, 2페이즈 x50줄
 
         // 경장갑(Light Armor) 공식 4색 순환 팔레트
         const LIGHT_PALETTE = ['#dc2626', '#f97316', '#ef4444', '#f43f5e'];
 
         // 1. 좌측 초상화 및 보스 이름/장갑 뱃지 갱신
-        const bossIconEl = document.getElementById('ba-boss-icon');
-        const bossNameEl = document.getElementById('ba-boss-name');
+        const bossIconEl = getCachedEl('ba-boss-icon');
+        const bossNameEl = getCachedEl('ba-boss-name');
 
         if (isP2) {
-          if (bossIconEl) bossIconEl.innerText = '🤖';
-          if (bossNameEl) bossNameEl.innerText = 'KAITEN FX Mk.0';
+          if (bossIconEl) setTextIfChanged(bossIconEl, '🤖');
+          if (bossNameEl) setTextIfChanged(bossNameEl, 'KAITEN FX Mk.0');
         } else {
-          if (bossIconEl) bossIconEl.innerText = '🍣';
-          if (bossNameEl) bossNameEl.innerText = 'KAITENZERS (카이텐저 연합)';
+          if (bossIconEl) setTextIfChanged(bossIconEl, '🍣');
+          if (bossNameEl) setTextIfChanged(bossNameEl, 'KAITENZERS (카이텐저 연합)');
         }
 
         // 2. 다중 레이어 체력바 연산 (x34 / x50)
@@ -1380,31 +1419,30 @@
           window._smoothDamagePct += (linePct - window._smoothDamagePct) * 0.14;
         }
 
-        const hpNumEl = document.getElementById('ba-hp-num');
-        const hpLinesEl = document.getElementById('ba-hp-lines');
-        const hpFillEl = document.getElementById('ba-hp-fill');
-        const hpUnderlayEl = document.getElementById('ba-hp-underlay');
-        const hpDamageEl = document.getElementById('ba-hp-damage');
+        const hpNumEl = getCachedEl('ba-hp-num');
+        const hpLinesEl = getCachedEl('ba-hp-lines');
+        const hpFillEl = getCachedEl('ba-hp-fill');
+        const hpUnderlayEl = getCachedEl('ba-hp-underlay');
+        const hpDamageEl = getCachedEl('ba-hp-damage');
 
         if (hpNumEl) {
-          if (isPhase1Retreating) {
-            hpNumEl.innerText = `🚨 비상 퇴각 중! ${currentHp.toLocaleString()} / ${maxHp.toLocaleString()}`;
-          } else {
-            hpNumEl.innerText = `${currentHp.toLocaleString()} / ${maxHp.toLocaleString()}`;
-          }
+          const numStr = isPhase1Retreating 
+            ? `🚨 비상 퇴각 중! ${currentHp.toLocaleString()} / ${maxHp.toLocaleString()}`
+            : `${currentHp.toLocaleString()} / ${maxHp.toLocaleString()}`;
+          setTextIfChanged(hpNumEl, numStr);
         }
         if (hpLinesEl) {
-          hpLinesEl.innerText = `x ${currentLine}`;
+          setTextIfChanged(hpLinesEl, `x ${currentLine}`);
         }
         if (hpFillEl) {
-          hpFillEl.style.width = `${linePct.toFixed(1)}%`;
-          hpFillEl.style.background = currentColor;
+          setWidthIfChanged(hpFillEl, `${linePct.toFixed(1)}%`);
+          setBgIfChanged(hpFillEl, currentColor);
         }
         if (hpUnderlayEl) {
-          hpUnderlayEl.style.background = nextColor;
+          setBgIfChanged(hpUnderlayEl, nextColor);
         }
         if (hpDamageEl) {
-          hpDamageEl.style.width = `${window._smoothDamagePct.toFixed(1)}%`;
+          setWidthIfChanged(hpDamageEl, `${window._smoothDamagePct.toFixed(1)}%`);
         }
 
         // 3. 우측 하단 3칸 사선 ATG 게이지 블록 (2페이즈에만 실시간 연속 충전)
@@ -1413,24 +1451,24 @@
         const fill2 = Math.min(100, Math.max(0, ((atgVal - 33.33) / 33.33) * 100));
         const fill3 = Math.min(100, Math.max(0, ((atgVal - 66.66) / 33.34) * 100));
 
-        const el1 = document.getElementById('ba-atg-fill-1');
-        const el2 = document.getElementById('ba-atg-fill-2');
-        const el3 = document.getElementById('ba-atg-fill-3');
-        const seg1 = document.getElementById('ba-atg-seg-1');
-        const seg2 = document.getElementById('ba-atg-seg-2');
-        const seg3 = document.getElementById('ba-atg-seg-3');
+        const el1 = getCachedEl('ba-atg-fill-1');
+        const el2 = getCachedEl('ba-atg-fill-2');
+        const el3 = getCachedEl('ba-atg-fill-3');
+        const seg1 = getCachedEl('ba-atg-seg-1');
+        const seg2 = getCachedEl('ba-atg-seg-2');
+        const seg3 = getCachedEl('ba-atg-seg-3');
 
-        if (el1) el1.style.width = `${fill1.toFixed(1)}%`;
-        if (el2) el2.style.width = `${fill2.toFixed(1)}%`;
-        if (el3) el3.style.width = `${fill3.toFixed(1)}%`;
+        if (el1) setWidthIfChanged(el1, `${fill1.toFixed(1)}%`);
+        if (el2) setWidthIfChanged(el2, `${fill2.toFixed(1)}%`);
+        if (el3) setWidthIfChanged(el3, `${fill3.toFixed(1)}%`);
 
-        if (seg1) seg1.className = 'ba-atg-seg' + (fill1 >= 99 ? ' active' : '');
-        if (seg2) seg2.className = 'ba-atg-seg' + (fill2 >= 99 ? ' active' : '');
-        if (seg3) seg3.className = 'ba-atg-seg' + (fill3 >= 99 ? ' warning' : (fill3 > 0 ? ' active' : ''));
+        if (seg1) setClassIfChanged(seg1, 'ba-atg-seg' + (fill1 >= 99 ? ' active' : ''));
+        if (seg2) setClassIfChanged(seg2, 'ba-atg-seg' + (fill2 >= 99 ? ' active' : ''));
+        if (seg3) setClassIfChanged(seg3, 'ba-atg-seg' + (fill3 >= 99 ? ' warning' : (fill3 > 0 ? ' active' : '')));
       }
 
       // [1페이즈 -> 2페이즈 전면 화면 암전 전환 오버레이 동기화]
-      const transOverlay = document.getElementById('phase-transition-overlay');
+      const transOverlay = getCachedEl('phase-transition-overlay');
       if (transOverlay) {
         let alpha = 0;
         if (window.phase2Cutscene && window.phase2Cutscene.active && typeof window.phase2Cutscene.fadeAlpha !== 'undefined') {
@@ -1439,11 +1477,12 @@
           alpha = window.phaseTransitionAlpha;
         }
         if (alpha > 0.01) {
-          transOverlay.classList.remove('hidden');
-          transOverlay.style.opacity = alpha.toFixed(2);
+          if (transOverlay.classList.contains('hidden')) transOverlay.classList.remove('hidden');
+          const alphaStr = alpha.toFixed(2);
+          if (transOverlay.style.opacity !== alphaStr) transOverlay.style.opacity = alphaStr;
         } else {
-          transOverlay.classList.add('hidden');
-          transOverlay.style.opacity = '0';
+          if (!transOverlay.classList.contains('hidden')) transOverlay.classList.add('hidden');
+          if (transOverlay.style.opacity !== '0') transOverlay.style.opacity = '0';
         }
       }
 
