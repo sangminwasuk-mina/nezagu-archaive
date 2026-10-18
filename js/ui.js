@@ -1331,6 +1331,25 @@
     }
 
     function updateUI() {
+      // [1페이즈 -> 2페이즈 전면 화면 암전 전환 오버레이 동기화] - 컷신 조기 리턴보다 먼저 실행!
+      const transOverlay = getCachedEl('phase-transition-overlay');
+      if (transOverlay) {
+        let alpha = 0;
+        if (window.phase2Cutscene && window.phase2Cutscene.active && typeof window.phase2Cutscene.fadeAlpha !== 'undefined') {
+          alpha = window.phase2Cutscene.fadeAlpha;
+        } else if (typeof window.phaseTransitionAlpha !== 'undefined') {
+          alpha = window.phaseTransitionAlpha;
+        }
+        if (alpha > 0.01) {
+          if (transOverlay.classList.contains('hidden')) transOverlay.classList.remove('hidden');
+          const alphaStr = alpha.toFixed(2);
+          if (transOverlay.style.opacity !== alphaStr) transOverlay.style.opacity = alphaStr;
+        } else {
+          if (!transOverlay.classList.contains('hidden')) transOverlay.classList.add('hidden');
+          if (transOverlay.style.opacity !== '0') transOverlay.style.opacity = '0';
+        }
+      }
+
       // [연출 컷씬 재생 중 모든 인게임 UI 완전 숨김 처리]
       const isCutsceneActive = (window.phase1Cutscene && window.phase1Cutscene.active) || 
                                (window.phase2Cutscene && window.phase2Cutscene.active);
@@ -1489,25 +1508,6 @@
         if (seg1) setClassIfChanged(seg1, 'ba-atg-seg' + (fill1 >= 99 ? ' active' : ''));
         if (seg2) setClassIfChanged(seg2, 'ba-atg-seg' + (fill2 >= 99 ? ' active' : ''));
         if (seg3) setClassIfChanged(seg3, 'ba-atg-seg' + (fill3 >= 99 ? ' warning' : (fill3 > 0 ? ' active' : '')));
-      }
-
-      // [1페이즈 -> 2페이즈 전면 화면 암전 전환 오버레이 동기화]
-      const transOverlay = getCachedEl('phase-transition-overlay');
-      if (transOverlay) {
-        let alpha = 0;
-        if (window.phase2Cutscene && window.phase2Cutscene.active && typeof window.phase2Cutscene.fadeAlpha !== 'undefined') {
-          alpha = window.phase2Cutscene.fadeAlpha;
-        } else if (typeof window.phaseTransitionAlpha !== 'undefined') {
-          alpha = window.phaseTransitionAlpha;
-        }
-        if (alpha > 0.01) {
-          if (transOverlay.classList.contains('hidden')) transOverlay.classList.remove('hidden');
-          const alphaStr = alpha.toFixed(2);
-          if (transOverlay.style.opacity !== alphaStr) transOverlay.style.opacity = alphaStr;
-        } else {
-          if (!transOverlay.classList.contains('hidden')) transOverlay.classList.add('hidden');
-          if (transOverlay.style.opacity !== '0') transOverlay.style.opacity = '0';
-        }
       }
 
       // 동료 스트라이커 종합 상태 패널 실시간 동기화 (2인 모드 시)

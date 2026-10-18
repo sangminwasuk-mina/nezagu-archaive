@@ -7452,6 +7452,20 @@
 
       // 11. [신규 UI] 화면 외곽 엣지 타겟 핀 레이더 (오프스크린 보스/동료 위치 추적)
       drawOffscreenTargetPins();
+
+      // 12. [1페이즈 -> 2페이즈 전면 화면 암전 페이드 인/아웃 캔버스 최상단 직결 렌더링]
+      let p2FadeAlpha = 0;
+      if (window.phase2Cutscene && window.phase2Cutscene.active && typeof window.phase2Cutscene.fadeAlpha === 'number') {
+        p2FadeAlpha = window.phase2Cutscene.fadeAlpha;
+      } else if (typeof window.phaseTransitionAlpha === 'number') {
+        p2FadeAlpha = window.phaseTransitionAlpha;
+      }
+      if (p2FadeAlpha > 0.001) {
+        ctx.save();
+        ctx.fillStyle = `rgba(0, 0, 0, ${Math.min(1.0, Math.max(0, p2FadeAlpha))})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+      }
     }
 
     function drawOffscreenTargetPins() {
