@@ -699,6 +699,8 @@
         kaitenFx.partCycleTimer = 0;
         kaitenFx.partSkillDelayTimer = 2.0;
         kaitenFx.partSkillTriggered = false;
+        kaitenFx.partSkillCount = 0;
+        kaitenFx.allPartsBrokenNotified = false;
         kaitenFx.shieldActive = false;
         kaitenFx.shieldHitCount = 0;
         kaitenFx.isFiringSkill = false;
@@ -706,12 +708,24 @@
         kaitenFx.isFiringNormal = false;
         kaitenFx.introState = 'none';
         kaitenFx.introTimer = 0;
+        kaitenFx.partMaxHp = Math.round(kaitenFx.maxHp * 0.24); // 24%
         ['pink', 'red', 'green'].forEach(p => {
           if (kaitenFx.parts[p]) {
+            kaitenFx.parts[p].maxHp = kaitenFx.partMaxHp;
             kaitenFx.parts[p].hp = kaitenFx.partMaxHp;
             kaitenFx.parts[p].isBroken = false;
           }
         });
+      }
+    }
+
+    // [2페이즈 KAITEN FX 전 파츠 파괴 알림 헬퍼]
+    function checkAndNotifyAllPartsBroken(centerX, y) {
+      if (typeof kaitenFx === 'undefined' || !kaitenFx.parts) return;
+      const allBroken = ['pink', 'red', 'green'].every(p => kaitenFx.parts[p] && kaitenFx.parts[p].isBroken);
+      if (allBroken && !kaitenFx.allPartsBrokenNotified) {
+        kaitenFx.allPartsBrokenNotified = true;
+        addDamageText(centerX, y, '⚡ [전 파츠 파괴 완료!] ATG 충전 속도 2.2배 가속!!', '#facc15');
       }
     }
 
@@ -2257,6 +2271,7 @@
                 curPart.hp = 0;
                 curPart.isBroken = true;
                 addDamageText(kaitenFx.x + kaitenFx.width / 2, groundY - 220, `💥 [${curPart.name}] 파괴 완료!`, curPart.color);
+                checkAndNotifyAllPartsBroken(kaitenFx.x + kaitenFx.width / 2, groundY - 250);
               }
             }
             if (isCrit) {
@@ -3433,6 +3448,7 @@
               curPart.hp = 0;
               curPart.isBroken = true;
               addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 220, `💥 [${curPart.name}] 파괴 완료!`, curPart.color);
+              checkAndNotifyAllPartsBroken(fxCenterX, (canvas.height - GROUND_OFFSET) - 250);
             }
           }
           addDamageText(fxCenterX, fxCenterY - 30, `💥 -${finalExplosionDmg.toLocaleString()}`, '#00ffff');
@@ -3577,6 +3593,7 @@
               curPart.hp = 0;
               curPart.isBroken = true;
               addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 220, `💥 [${curPart.name}] 파괴 완료!`, curPart.color);
+              checkAndNotifyAllPartsBroken(fxCenterX, (canvas.height - GROUND_OFFSET) - 250);
             }
           }
           addDamageText(fxCenterX + (Math.random() - 0.5) * 40, (canvas.height - GROUND_OFFSET) - 170, `💥 -${finalExplosionDmg.toLocaleString()}`, '#06b6d4');
@@ -3732,6 +3749,7 @@
               curPart.hp = 0;
               curPart.isBroken = true;
               addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 220, `💥 [${curPart.name}] 파괴 완료!`, curPart.color);
+              checkAndNotifyAllPartsBroken(fxCenterX, (canvas.height - GROUND_OFFSET) - 250);
             }
           }
           addDamageText(fxCenterX + (Math.random() - 0.5) * 40, (canvas.height - GROUND_OFFSET) - 170, `💥 -${finalExplosionDmg.toLocaleString()}`, '#06b6d4');
@@ -3860,6 +3878,7 @@
               curPart.hp = 0;
               curPart.isBroken = true;
               addDamageText(fxCenterX, (canvas.height - GROUND_OFFSET) - 220, `💥 [${curPart.name}] 파괴 완료!`, curPart.color);
+              checkAndNotifyAllPartsBroken(fxCenterX, (canvas.height - GROUND_OFFSET) - 250);
             }
           }
           addDamageText(fxCenterX + (Math.random() - 0.5) * 40, (canvas.height - GROUND_OFFSET) - 170, `💥 -${finalExplosionDmg.toLocaleString()}`, '#94a3b8');
@@ -5847,6 +5866,7 @@
               kaitenFx.partCycleTimer = 0;
               kaitenFx.partSkillDelayTimer = 2.0;
               kaitenFx.partSkillTriggered = false;
+              kaitenFx.partSkillCount = 0;
               if (kaitenFx.activePart !== 'green') kaitenFx.shieldActive = false;
             }
 
@@ -5869,6 +5889,7 @@
                 if (nextPart !== 'green') kaitenFx.shieldActive = false;
                 kaitenFx.partSkillDelayTimer = 2.0;
                 kaitenFx.partSkillTriggered = false;
+                kaitenFx.partSkillCount = 0;
 
                 const partObj = kaitenFx.parts[nextPart];
                 addDamageText(fxCenterX, groundY - 260, `🔄 [파츠 전환] ${partObj.name}`, partObj.color);
@@ -5876,15 +5897,15 @@
             }
           }
 
-          // 5) 파츠별 고유 액티브 스킬 발동 (전환 2초 후 1회 시전)
-          if (!kaitenFx.partSkillTriggered && !kaitenFx.isSlashing) {
+          // 5) 파츠별 고유 액티브 스킬 발동 (전환 2초 후 시전, 핑크/레드는 사용 16초 후 2회차 시전)
+          if (!kaitenFx.partSkillTriggered && !kaitenFx.isSlashing && kaitenFx.stunTimer <= 0) {
             kaitenFx.partSkillDelayTimer -= dt;
             if (kaitenFx.partSkillDelayTimer <= 0) {
-              kaitenFx.partSkillTriggered = true;
               const activeP = kaitenFx.parts[kaitenFx.activePart];
 
-              if (activeP.isBroken) {
-                addDamageText(fxCenterX, groundY - 240, `⚠️ [스킬 취소] ${activeP.name} 파괴 상태로 스킬 불발!`, '#94a3b8');
+              if (!activeP || activeP.isBroken) {
+                addDamageText(fxCenterX, groundY - 240, `⚠️ [스킬 취소] ${activeP ? activeP.name : '파츠'} 파괴 상태로 스킬 불발!`, '#94a3b8');
+                kaitenFx.partSkillTriggered = true;
               } else {
                 if (kaitenFx.activePart === 'pink') {
                   // [스킬 1 - 핑크]: 무한회전ㆍ슈퍼 새우 머신건 (평타 3배의 45발 폭풍 난사)
@@ -5892,6 +5913,13 @@
                   kaitenFx.skillBurstCount = 45;
                   kaitenFx.skillBurstTimer = 0;
                   addDamageText(fxCenterX, groundY - 250, '🦐 [무한회전ㆍ슈퍼 새우 머신건] 45발 폭풍 난사!', '#ec4899');
+                  kaitenFx.partSkillCount = (kaitenFx.partSkillCount || 0) + 1;
+                  if (kaitenFx.partSkillCount < 2) {
+                    kaitenFx.partSkillDelayTimer = 16.0; // 사용 16초 후 2회차 시전
+                    kaitenFx.partSkillTriggered = false;
+                  } else {
+                    kaitenFx.partSkillTriggered = true;
+                  }
                 } else if (kaitenFx.activePart === 'red') {
                   // [스킬 2 - 레드]: 무한회전ㆍ하이퍼 정어리 미사일 (가슴 해치 오픈 + 8발 호밍 미사일)
                   kaitenFx.isFiringSkill = true;
@@ -5899,12 +5927,20 @@
                   kaitenFx.missileVolleyTimer = 0;
                   kaitenFx.chestHatchTimer = 2.6;  // 가슴 해치 오픈 애니메이션
                   addDamageText(fxCenterX, groundY - 250, '🐟 [무한회전ㆍ하이퍼 정어리 미사일] 해치 오픈! 8연발 락온 사출!', '#ef4444');
+                  kaitenFx.partSkillCount = (kaitenFx.partSkillCount || 0) + 1;
+                  if (kaitenFx.partSkillCount < 2) {
+                    kaitenFx.partSkillDelayTimer = 16.0; // 사용 16초 후 2회차 시전
+                    kaitenFx.partSkillTriggered = false;
+                  } else {
+                    kaitenFx.partSkillTriggered = true;
+                  }
                 } else if (kaitenFx.activePart === 'green') {
                   // [스킬 3 - 그린]: 무한회전ㆍ울트라 뚜껑 실드 (3초간 플라즈마 보호막 전개, 스킬 25회 피격 대미지 감소)
                   kaitenFx.shieldActive = true;
                   kaitenFx.shieldHitCount = 0;
                   kaitenFx.shieldVisualTimer = 3.0; // 3초간 파란색 플라즈마 보호막 전개
                   addDamageText(fxCenterX, groundY - 250, '🛡️ [무한회전ㆍ울트라 뚜껑 실드] 플라즈마 배리어 3초 전개 (25회 방어)!', '#22c55e');
+                  kaitenFx.partSkillTriggered = true; // 초록 배리어는 1회 시전
                 }
               }
             }
@@ -5989,9 +6025,12 @@
 
           // 7) [원작 최종 필살기]: ATG 게이지 시스템 (Active Time Gauge)
           //    - 45초 동안 지속 충전 (0 -> 100%)
+          //    - 모든 파츠 파괴 시 ATG 충전 속도 2.2배 가속!
           //    - 100% 도달 시 즉사급 광역 일도양단 궁극기 [하이퍼 고등어 슬래쉬] 발동!
-          if (!kaitenFx.isSlashing) {
-            kaitenFx.atgTimer += dt;
+          if (!kaitenFx.isSlashing && kaitenFx.stunTimer <= 0) {
+            const allPartsBroken = ['pink', 'red', 'green'].every(p => kaitenFx.parts[p] && kaitenFx.parts[p].isBroken);
+            const atgSpeedMult = allPartsBroken ? 2.2 : 1.0;
+            kaitenFx.atgTimer += dt * atgSpeedMult;
             kaitenFx.atg = Math.min(100, (kaitenFx.atgTimer / kaitenFx.atgMaxDuration) * 100);
 
             if (kaitenFx.atg >= 100) {
@@ -6504,6 +6543,7 @@
                 curPart.hp = 0;
                 curPart.isBroken = true;
                 addDamageText(kaitenFx.x + kaitenFx.width / 2, groundY - 220, `💥 [${curPart.name}] 파괴 완료!`, curPart.color);
+                checkAndNotifyAllPartsBroken(kaitenFx.x + kaitenFx.width / 2, groundY - 250);
               }
             }
 

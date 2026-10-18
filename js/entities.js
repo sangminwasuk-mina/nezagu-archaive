@@ -589,28 +589,33 @@
       partCycleDuration: 20, // 20초 주기
       partSkillDelayTimer: 2.0, // 파츠 전환 후 2초 뒤 스킬 1회 시전
       partSkillTriggered: false,
+      partSkillCount: 0,
+      allPartsBrokenNotified: false,
 
-      // 3개 핵심 파츠별 내구도 (최대체력의 33% = 2,475,000)
-      partMaxHp: 2475000,
+      // 3개 핵심 파츠별 내구도 (최대체력의 24% = 1,800,000)
+      partMaxHp: 1800000,
       parts: {
         pink: {
           name: '오른팔 (핑크: 새우)',
           color: '#ec4899',
-          hp: 2475000,
+          hp: 1800000,
+          maxHp: 1800000,
           isBroken: false,
           skillName: '무한회전ㆍ슈퍼 새우 머신건'
         },
         red: {
           name: '가슴 (레드: 참치)',
           color: '#ef4444',
-          hp: 2475000,
+          hp: 1800000,
+          maxHp: 1800000,
           isBroken: false,
           skillName: '무한회전ㆍ하이퍼 정어리 미사일'
         },
         green: {
           name: '왼팔 (그린: 오이롤/실드)',
           color: '#22c55e',
-          hp: 2475000,
+          hp: 1800000,
+          maxHp: 1800000,
           isBroken: false,
           skillName: '무한회전ㆍ울트라 뚜껑 실드'
         }

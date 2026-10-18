@@ -3752,7 +3752,7 @@
       const pX = screenX + boss.width / 2 + partOffsetX;
       const pY = screenY + boss.height + partOffsetY;
 
-      const maxHp = boss.partMaxHp || 1500000;
+      const maxHp = boss.partMaxHp || (boss.maxHp ? Math.round(boss.maxHp * 0.24) : 1800000);
       const curHp = Math.max(0, part.hp || 0);
       const hpPct = Math.max(0, Math.min(100, (curHp / maxHp) * 100));
 
