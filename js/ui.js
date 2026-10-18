@@ -1389,7 +1389,6 @@
       // ========================================================
       // [블루아카이브 총력전 스타일] 통합 보스 체력바 HUD 갱신
       // ========================================================
-      const bossHud = getCachedEl('ba-boss-hud');
       if (bossHud) {
         const isP2 = typeof kaitenFx !== 'undefined' && (kaitenFx.isSpawned || isPhase2Active);
 
