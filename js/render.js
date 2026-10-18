@@ -2848,6 +2848,7 @@
         }
 
         const bodyBobY = baseBobY + crouchY;
+        const waistPivotY = -150; // 상체/하체 결합 골반 허리 회전 중심점 (상체 분리 방지 피벗)
 
         // 0. 현실적이고 부드러운 다중 레이어 지면 그림자
         ctx.save();
@@ -2872,8 +2873,9 @@
           const isPinkActive = boss.activePart === 'pink' && !isPinkBroken;
 
           ctx.save();
-          ctx.translate(0, bodyBobY);
+          ctx.translate(0, bodyBobY + waistPivotY);
           ctx.rotate(torsoBraceTilt);
+          ctx.translate(0, -waistPivotY);
 
           let armShoulderX = 35;
           let armShoulderY = -190;
@@ -3113,8 +3115,9 @@
           const isGreenActive = boss.activePart === 'green' && !isGreenBroken;
 
           ctx.save();
-          ctx.translate(0, bodyBobY);
+          ctx.translate(0, bodyBobY + waistPivotY);
           ctx.rotate(torsoBraceTilt);
+          ctx.translate(0, -waistPivotY);
 
           let shieldArmX = -52;
           let shieldArmY = -170;
@@ -3360,8 +3363,9 @@
         // [레이어 2: 몸통 코어 & 머리 헤드 (상체 밥핑 & 웅크림 연동)]
         // ---------------------------------------------------------------------
         ctx.save();
-        ctx.translate(0, bodyBobY);
+        ctx.translate(0, bodyBobY + waistPivotY);
         ctx.rotate(torsoBraceTilt);
+        ctx.translate(0, -waistPivotY);
 
         const isRedBroken = boss.parts.red.isBroken;
         const isRedActive = boss.activePart === 'red' && !isRedBroken;

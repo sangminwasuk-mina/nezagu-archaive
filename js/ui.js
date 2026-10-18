@@ -1751,9 +1751,9 @@
     if (btnVictoryConfirm) {
       btnVictoryConfirm.addEventListener('click', () => {
         if (victoryModal) victoryModal.classList.add('hidden');
-        // 정비실/로비로 복귀
+        // 메인 화면으로 복귀
         if (typeof setScreenState === 'function') {
-          setScreenState('maintenance');
+          setScreenState('main');
         } else {
           location.reload();
         }
