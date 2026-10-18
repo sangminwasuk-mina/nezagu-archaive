@@ -1661,3 +1661,101 @@
 
     // UI 초기화 완료
     updateWeaponHUD();
+
+    // ==========================================
+    // [신규 UI] 블루아카이브 총력전 스타일 승리 결산 모달 (VICTORY) 제어
+    // ==========================================
+    const victoryModal = document.getElementById('victory-modal');
+    const btnVictoryConfirm = document.getElementById('btn-victory-confirm');
+
+    function showVictoryModal() {
+      if (!victoryModal) return;
+
+      const stats = window.battleStats || {
+        damageDealt: 0,
+        damageTaken: 0,
+        deaths: 0,
+        peerDamageDealt: 0,
+        peerDamageTaken: 0,
+        peerDeaths: 0,
+        startTime: performance.now(),
+        clearTimeSeconds: 0
+      };
+
+      // 클리어 시간 계산
+      const clearTimeSec = Math.floor(stats.clearTimeSeconds || ((performance.now() - (stats.startTime || performance.now())) / 1000));
+      const mins = Math.floor(clearTimeSec / 60);
+      const secs = clearTimeSec % 60;
+      const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      const timeEl = document.getElementById('victory-clear-time');
+      if (timeEl) timeEl.innerText = timeStr;
+
+      // EX CLEAR 판정: 아무도 사망하지 않았으면 EX CLEAR, 한 명이라도 사망 시 CLEAR
+      const totalDeaths = (stats.deaths || 0) + (stats.peerDeaths || 0);
+      const gradeBadge = document.getElementById('victory-grade-badge');
+      if (gradeBadge) {
+        if (totalDeaths === 0) {
+          gradeBadge.className = 'victory-grade-badge ex-clear';
+          gradeBadge.innerText = '★ EX CLEAR ★';
+        } else {
+          gradeBadge.className = 'victory-grade-badge normal-clear';
+          gradeBadge.innerText = 'CLEAR';
+        }
+      }
+
+      // 1P 통계 바인딩
+      const p1RoleEl = document.getElementById('victory-p1-role');
+      const p1StatusEl = document.getElementById('victory-p1-status');
+      const p1DmgDealtEl = document.getElementById('victory-p1-dmg-dealt');
+      const p1DmgTakenEl = document.getElementById('victory-p1-dmg-taken');
+      const p1DeathsEl = document.getElementById('victory-p1-deaths');
+
+      if (p1RoleEl) p1RoleEl.innerText = (myRole === 'guest_striker') ? '2P 스트라이커 (나)' : '1P 스트라이커 (나)';
+      if (p1StatusEl) {
+        const isDead = (stats.deaths || 0) > 0;
+        p1StatusEl.innerText = isDead ? '전사' : '생존';
+        p1StatusEl.className = `player-status-tag ${isDead ? 'dead' : ''}`;
+      }
+      if (p1DmgDealtEl) p1DmgDealtEl.innerText = Math.round(stats.damageDealt || 0).toLocaleString();
+      if (p1DmgTakenEl) p1DmgTakenEl.innerText = Math.round(stats.damageTaken || 0).toLocaleString();
+      if (p1DeathsEl) p1DeathsEl.innerText = `${stats.deaths || 0}회`;
+
+      // 2P 통계 바인딩 (멀티플레이 시)
+      const p2Card = document.getElementById('victory-p2-card');
+      if (currentMode === 'duo' && p2Card) {
+        p2Card.classList.remove('hidden');
+        const p2RoleEl = document.getElementById('victory-p2-role');
+        const p2StatusEl = document.getElementById('victory-p2-status');
+        const p2DmgDealtEl = document.getElementById('victory-p2-dmg-dealt');
+        const p2DmgTakenEl = document.getElementById('victory-p2-dmg-taken');
+        const p2DeathsEl = document.getElementById('victory-p2-deaths');
+
+        if (p2RoleEl) p2RoleEl.innerText = (myRole === 'guest_striker') ? '1P 스트라이커 (동료)' : '2P 스트라이커 (동료)';
+        if (p2StatusEl) {
+          const isPeerDead = (stats.peerDeaths || 0) > 0;
+          p2StatusEl.innerText = isPeerDead ? '전사' : '생존';
+          p2StatusEl.className = `player-status-tag ${isPeerDead ? 'dead' : ''}`;
+        }
+        if (p2DmgDealtEl) p2DmgDealtEl.innerText = Math.round(stats.peerDamageDealt || 0).toLocaleString();
+        if (p2DmgTakenEl) p2DmgTakenEl.innerText = Math.round(stats.peerDamageTaken || 0).toLocaleString();
+        if (p2DeathsEl) p2DeathsEl.innerText = `${stats.peerDeaths || 0}회`;
+      } else if (p2Card) {
+        p2Card.classList.add('hidden');
+      }
+
+      victoryModal.classList.remove('hidden');
+    }
+    window.showVictoryModal = showVictoryModal;
+    window.updateVictoryModalStats = showVictoryModal;
+
+    if (btnVictoryConfirm) {
+      btnVictoryConfirm.addEventListener('click', () => {
+        if (victoryModal) victoryModal.classList.add('hidden');
+        // 정비실/로비로 복귀
+        if (typeof setScreenState === 'function') {
+          setScreenState('maintenance');
+        } else {
+          location.reload();
+        }
+      });
+    }

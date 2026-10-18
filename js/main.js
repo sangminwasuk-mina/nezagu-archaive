@@ -41,8 +41,8 @@
 
       if (currentGameState !== 'battle') return;
 
-      // [컷신 진행 중에는 플레이어 모든 조작(이동, 점프, 공격, 스킬) 전면 차단]
-      if ((window.phase1Cutscene && window.phase1Cutscene.active) || (window.phase2Cutscene && window.phase2Cutscene.active)) {
+      // [승리 시퀀스 또는 컷신 진행 중에는 플레이어 모든 조작(이동, 점프, 공격, 스킬) 전면 차단]
+      if (player.isControlLocked || (window.phase1Cutscene && window.phase1Cutscene.active) || (window.phase2Cutscene && window.phase2Cutscene.active)) {
         keys.left = false;
         keys.right = false;
         keys.up = false;
@@ -183,6 +183,7 @@
     // 마우스 좌클릭 일반 공격 및 아비 에슈흐 레이저 차징/발사
     window.addEventListener('mousedown', (e) => {
       if (e.button === 0 && currentGameState === 'battle') {
+        if (player.isControlLocked) return;
         keys.attack = true;
         if (player.isAbiEshuhActive) {
           if (player.abiFinalCanTrigger) {
@@ -528,6 +529,24 @@
 
     // 카이텐저 페이즈 및 증원 초기화 함수
     function initBattleEncounter() {
+      // 0. 전투 전적 및 승리 시퀀스 초기화
+      player.isControlLocked = false;
+      window.isVictorySequenceActive = false;
+      window.victoryTimer = 0;
+      window.victoryModalShown = false;
+      window.battleStats = {
+        damageDealt: 0,
+        damageTaken: 0,
+        deaths: 0,
+        peerDamageDealt: 0,
+        peerDamageTaken: 0,
+        peerDeaths: 0,
+        startTime: performance.now(),
+        clearTimeSeconds: 0
+      };
+      const vModal = document.getElementById('victory-modal');
+      if (vModal) vModal.classList.add('hidden');
+
       // 1. 플레이어 상태 초기화
       player.x = 350;
       player.y = canvas.height - GROUND_OFFSET - player.height;
@@ -1046,9 +1065,18 @@
       }
     }
 
+    // [전투 통계: 플레이어 가한 피해량 실시간 누적 함수]
+    function recordDamageDealt(dmg) {
+      if (window.battleStats && typeof dmg === 'number' && dmg > 0) {
+        window.battleStats.damageDealt += dmg;
+      }
+    }
+    window.recordDamageDealt = recordDamageDealt;
+
     // [카이텐저 1페이즈]: 5인이 5,000,000 단일 체력바를 균등 공유하는 피해 처리 함수
     function applyKaitenzerSharedDamage(dmg) {
       if (typeof kaitenzers === 'undefined') return 0;
+      recordDamageDealt(dmg);
       const currentTotal = kaitenzers.reduce((sum, r) => sum + (r.isDead ? 0 : Math.max(0, r.hp)), 0);
       const newTotal = Math.max(0, currentTotal - dmg);
       const hpPerRanger = Math.ceil(newTotal / 5);
@@ -2279,6 +2307,7 @@
             const groggyMult = (kaitenFx.partGroggyTimer > 0) ? (kaitenFx.groggyDmgMultiplier || 1.5) : 1.0;
             const tickDmg = Math.round(finalTickDmg * dmgMult * groggyMult);
             kaitenFx.hp = Math.max(0, kaitenFx.hp - tickDmg);
+            recordDamageDealt(tickDmg);
 
             // [2인 멀티 동기화] 2P 각성 슈퍼노바 보스 레이저 타격 전송
             if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
@@ -3456,6 +3485,7 @@
           const groggyMult = (kaitenFx.partGroggyTimer > 0) ? (kaitenFx.groggyDmgMultiplier || 1.5) : 1.0;
           const finalExplosionDmg = Math.round(dmg * dmgMult * groggyMult);
           kaitenFx.hp = Math.max(0, kaitenFx.hp - finalExplosionDmg);
+          recordDamageDealt(finalExplosionDmg);
           if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
             sendNetPacket({
               type: 'ENEMY_DAMAGE',
@@ -3599,6 +3629,7 @@
           const groggyMult = (kaitenFx.partGroggyTimer > 0) ? (kaitenFx.groggyDmgMultiplier || 1.5) : 1.0;
           const finalExplosionDmg = Math.round(dmg * dmgMult * eff.mult * groggyMult);
           kaitenFx.hp = Math.max(0, kaitenFx.hp - finalExplosionDmg);
+          recordDamageDealt(finalExplosionDmg);
           if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
             sendNetPacket({
               type: 'ENEMY_DAMAGE',
@@ -3751,6 +3782,7 @@
           const groggyMult = (kaitenFx.partGroggyTimer > 0) ? (kaitenFx.groggyDmgMultiplier || 1.5) : 1.0;
           const finalExplosionDmg = Math.round(dmg * dmgMult * eff.mult * groggyMult);
           kaitenFx.hp = Math.max(0, kaitenFx.hp - finalExplosionDmg);
+          recordDamageDealt(finalExplosionDmg);
           if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
             sendNetPacket({
               type: 'ENEMY_DAMAGE',
@@ -3878,6 +3910,7 @@
           const groggyMult = (kaitenFx.partGroggyTimer > 0) ? (kaitenFx.groggyDmgMultiplier || 1.5) : 1.0;
           const finalExplosionDmg = Math.round(dmg * dmgMult * eff.mult * groggyMult);
           kaitenFx.hp = Math.max(0, kaitenFx.hp - finalExplosionDmg);
+          recordDamageDealt(finalExplosionDmg);
           const baseStun = 0.5;
           const reducedStun = baseStun * (1 - (kaitenFx.ccReductionRate || 0.75));
           kaitenFx.stunTimer = Math.max(kaitenFx.stunTimer || 0, reducedStun);
@@ -3920,6 +3953,10 @@
       if (player.isImmortalActive) {
         addDamageText(player.x + 20, player.y - 20, 'IMMORTAL (무적)', '#ef4444');
         return;
+      }
+
+      if (window.battleStats && typeof amount === 'number' && amount > 0) {
+        window.battleStats.damageTaken += amount;
       }
 
       // [소속 패시브: 밀레니엄 받는 피해 2% 감소 등]
@@ -3993,6 +4030,10 @@
           } else {
             // 침착한 호흡 이미 소진 시 체력 0으로 사망
             player.hp = 0;
+            if (!player.isDead) {
+              player.isDead = true;
+              if (window.battleStats) window.battleStats.deaths++;
+            }
             addDamageText(player.x + 20, player.y - 10, isExplosion ? `💥 -${amount}` : `-${amount}`, textColor);
             updateWeaponHUD();
             return;
@@ -4012,6 +4053,10 @@
           return;
         }
         player.hp = 0;
+        if (!player.isDead) {
+          player.isDead = true;
+          if (window.battleStats) window.battleStats.deaths++;
+        }
         addDamageText(player.x + 20, player.y - 10, isExplosion ? `💥 -${amount}` : `-${amount}`, textColor);
         updateWeaponHUD();
         return;
@@ -4298,6 +4343,7 @@
                 : { mult: 1.0, label: 'NORMAL', color: '#ffffff' };
               const dmg = Math.round(finisherBaseDmg * dmgMult * eff.mult);
               b.hp = Math.max(0, b.hp - dmg);
+              recordDamageDealt(dmg);
               if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
                 sendNetPacket({
                   type: 'ENEMY_DAMAGE',
@@ -5733,14 +5779,14 @@
           // [스르륵 _ㅣㄱ 무릎 꿇기 / 기립 모션 보간 (kneelProgress: 0.0 -> 1.0)]
           const targetKneel = (kaitenFx.hp <= 0 || kaitenFx.isDead || (kaitenFx.partGroggyTimer && kaitenFx.partGroggyTimer > 0)) ? 1.0 : 0.0;
           kaitenFx.kneelProgress = kaitenFx.kneelProgress || 0;
-          const kneelSpeed = 1.8; // 약 0.55초에 걸쳐 스르륵 부드럽게 무릎을 굽히거나 일어섬
+          const kneelSpeed = (kaitenFx.hp <= 0 || kaitenFx.isDead) ? 1.0 : 1.8; // 격파 시 약 1초에 걸쳐 서서히 묵직하게 스르륵 주저앉음
           if (kaitenFx.kneelProgress < targetKneel) {
             kaitenFx.kneelProgress = Math.min(targetKneel, kaitenFx.kneelProgress + dt * kneelSpeed);
           } else if (kaitenFx.kneelProgress > targetKneel) {
             kaitenFx.kneelProgress = Math.max(targetKneel, kaitenFx.kneelProgress - dt * kneelSpeed);
           }
 
-          // 체력이 0이거나 사망 상태면 전투 AI 중단하고 쓰러진 _ㅣㄱ 자세로 영구 정지!
+          // 체력이 0이거나 사망 상태면 전투 AI 중단하고 쓰러진 _ㅣㄱ 자세로 2초 감상 후 승리 결산창 출력!
           if (kaitenFx.hp <= 0 || kaitenFx.isDead) {
             kaitenFx.hp = 0;
             kaitenFx.isDead = true;
@@ -5748,6 +5794,42 @@
             kaitenFx.isFiringSkill = false;
             kaitenFx.isFiringNormal = false;
             kaitenFx.shieldActive = false;
+
+            // [승리 시퀀스]: 플레이어 조작키만 즉시 봉인! 게임은 계속 흘러가서 2초간 로봇 쓰러짐 모션 감상
+            if (!window.isVictorySequenceActive) {
+              window.isVictorySequenceActive = true;
+              window.victoryTimer = 0;
+              window.victoryModalShown = false;
+              player.isControlLocked = true;
+              keys.left = false;
+              keys.right = false;
+              keys.up = false;
+              keys.down = false;
+              keys.jump = false;
+              keys.attack = false;
+              keys.skill = false;
+              player.vx = 0;
+              if (window.battleStats) {
+                window.battleStats.clearTimeSeconds = (performance.now() - (window.battleStats.startTime || performance.now())) / 1000;
+              }
+            }
+
+            // 2초 타이머 누적 후 화면 암전 & 승리 결산 모달 노출
+            window.victoryTimer = (window.victoryTimer || 0) + dt;
+            if (window.victoryTimer >= 2.0 && !window.victoryModalShown) {
+              window.victoryModalShown = true;
+              if (typeof showVictoryModal === 'function') {
+                showVictoryModal();
+              }
+              if (currentMode === 'duo' && typeof sendNetPacket === 'function') {
+                sendNetPacket({
+                  type: 'VICTORY_SYNC',
+                  damageDealt: window.battleStats ? window.battleStats.damageDealt : 0,
+                  damageTaken: window.battleStats ? window.battleStats.damageTaken : 0,
+                  deaths: window.battleStats ? window.battleStats.deaths : 0
+                });
+              }
+            }
             return; // 컷신/폭발 없이 그 자세 그대로 멈춤!
           }
 
@@ -6603,6 +6685,7 @@
               finalDmg += Math.round(fxMaxHp * 0.02);
             }
             kaitenFx.hp = Math.max(0, kaitenFx.hp - finalDmg);
+            recordDamageDealt(finalDmg);
 
             // [2인 멀티플레이 동기화]: 2P 게스트 타격 시 1P 호스트에게 권위적 대미지 확정 전송
             if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {

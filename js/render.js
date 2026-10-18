@@ -2819,7 +2819,7 @@
         // 상태별 동적 자세 (Crouch, 무릎 굽힘, 상체 틸트)
         let crouchY = smoothKneel * 42; // 무릎 꿇으며 지면으로 42px 묵직하게 하강
         let kneeBrace = smoothKneel * -0.65; // 기본 무릎 굽힘
-        let torsoBraceTilt = smoothKneel * 0.32; // 상체를 앞으로 18도 숙임
+        let torsoBraceTilt = -smoothKneel * 0.36; // 상체를 앞으로 깊게 숙임 (-X 방향 전방 기울임)
 
         if (isShieldVisual) {
           // [초록 쉴드 전개 시]: 다리를 전방으로 굽혀 무게중심을 낮추고 묵직하게 가드
@@ -3463,7 +3463,7 @@
         // ---------------------------------------------------------------------
         ctx.save();
         ctx.translate(-16, -240);
-        ctx.rotate(smoothKneel * 0.28); // 고개를 앞으로 16도 숙임
+        ctx.rotate(-smoothKneel * 0.28); // 고개를 전방(-X)으로 16도 깊게 숙임
 
         // 목 조인트
         ctx.fillStyle = '#0f172a';

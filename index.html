@@ -645,12 +645,12 @@
       </div>
     </div>
 
-    <!-- [1페이즈 -> 2페이즈 화면 암전 전환 오버레이: 순수 암전 화면] -->
-    <div id="phase-transition-overlay" class="hidden"></div>
-
     <!-- 카이텐저 5인 상태 패널 (신규 보스 바로 대체되어 숨김) -->
     <div id="kaiten-status" class="panel hidden"></div>
   </div>
+
+  <!-- [1페이즈 -> 2페이즈 화면 암전 전환 오버레이: 컷신 HUD 숨김 영향 받지 않도록 top-hud 외부에 독립 배치] -->
+  <div id="phase-transition-overlay" class="hidden"></div>
 
   <!-- [신규 UI] 우측 상단 HUD: 실시간 FPS 측정기 + 도움말(+) 버튼 -->
   <div id="top-right-hud">
@@ -758,19 +758,86 @@
     </div>
   </div>
 
+  <!-- [신규 UI] 승리 결산 모달 (블루아카이브 총력전 스타일: VICTORY + EX CLEAR / CLEAR + 전적 통계) -->
+  <div id="victory-modal" class="hidden">
+    <div class="victory-backdrop"></div>
+    <div class="victory-content-box">
+      <!-- 상단 노란 영문 VICTORY 타이틀 & 클리어 등급 배지 -->
+      <div class="victory-header-area">
+        <h1 class="victory-title-en">VICTORY</h1>
+        <div id="victory-grade-badge" class="victory-grade-badge ex-clear">EX CLEAR</div>
+        <div class="victory-time-label">클리어 시간: <span id="victory-clear-time">00:00</span></div>
+      </div>
+
+      <!-- 전적 통계 카드 그리드 (가한 피해량, 받은 피해량, 전사 횟수) -->
+      <div class="victory-stats-grid" id="victory-stats-grid">
+        <!-- 1P 통계 카드 -->
+        <div class="victory-stat-card p1-card">
+          <div class="victory-player-header">
+            <span class="player-role-badge p1-badge" id="victory-p1-role">1P 스트라이커</span>
+            <span class="player-status-tag" id="victory-p1-status">생존</span>
+          </div>
+          <div class="stat-metrics">
+            <div class="stat-row">
+              <span class="stat-label">⚔️ 가한 피해량</span>
+              <span class="stat-value damage-dealt" id="victory-p1-dmg-dealt">0</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">🛡️ 받은 피해량</span>
+              <span class="stat-value damage-taken" id="victory-p1-dmg-taken">0</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">💀 전사 횟수</span>
+              <span class="stat-value death-count" id="victory-p1-deaths">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2P 통계 카드 (멀티플레이 시 노출) -->
+        <div class="victory-stat-card p2-card hidden" id="victory-p2-card">
+          <div class="victory-player-header">
+            <span class="player-role-badge p2-badge" id="victory-p2-role">2P 스트라이커</span>
+            <span class="player-status-tag" id="victory-p2-status">생존</span>
+          </div>
+          <div class="stat-metrics">
+            <div class="stat-row">
+              <span class="stat-label">⚔️ 가한 피해량</span>
+              <span class="stat-value damage-dealt" id="victory-p2-dmg-dealt">0</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">🛡️ 받은 피해량</span>
+              <span class="stat-value damage-taken" id="victory-p2-dmg-taken">0</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">💀 전사 횟수</span>
+              <span class="stat-value death-count" id="victory-p2-deaths">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 하단 작전실 복귀 버튼 -->
+      <div class="victory-footer-area">
+        <button id="btn-victory-confirm" class="victory-btn-confirm">
+          <span>작전 본부로 복귀</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <canvas id="gameCanvas"></canvas>
   <canvas id="minimap" class="hidden"></canvas>
 
   <!-- WebRTC 순수 P2P 라이브러리 (로컬 내장 PeerJS) -->
-  <script src="js/peerjs.min.js?v=2.9.34"></script>
+  <script src="js/peerjs.min.js?v=2.9.35"></script>
   <script>window.Peer || document.write('<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"><\/script>');</script>
 
-  <!-- 게임 엔진 스크립트 모듈 순차 로드 (캐시 방지 v=2.9.34) -->
-  <script src="js/constants.js?v=2.9.34"></script>
-  <script src="js/entities.js?v=2.9.34"></script>
-  <script src="js/network.js?v=2.9.34"></script>
-  <script src="js/ui.js?v=2.9.34"></script>
-  <script src="js/render.js?v=2.9.34"></script>
-  <script src="js/main.js?v=2.9.34"></script>
+  <!-- 게임 엔진 스크립트 모듈 순차 로드 (캐시 방지 v=2.9.35) -->
+  <script src="js/constants.js?v=2.9.35"></script>
+  <script src="js/entities.js?v=2.9.35"></script>
+  <script src="js/network.js?v=2.9.35"></script>
+  <script src="js/ui.js?v=2.9.35"></script>
+  <script src="js/render.js?v=2.9.35"></script>
+  <script src="js/main.js?v=2.9.35"></script>
 </body>
 </html>

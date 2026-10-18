@@ -459,6 +459,28 @@ function handleNetworkMessage(data) {
   else if (data.type === 'ENEMY_BULLET') {
     handleEnemyBulletNetPacket(data);
   }
+
+  // [12] 승리 결산 통계 동기화 (1P <-> 2P 상호 교환)
+  else if (data.type === 'VICTORY_SYNC') {
+    if (!window.battleStats) {
+      window.battleStats = {
+        damageDealt: 0,
+        damageTaken: 0,
+        deaths: 0,
+        peerDamageDealt: 0,
+        peerDamageTaken: 0,
+        peerDeaths: 0,
+        startTime: performance.now(),
+        clearTimeSeconds: 0
+      };
+    }
+    window.battleStats.peerDamageDealt = data.damageDealt || 0;
+    window.battleStats.peerDamageTaken = data.damageTaken || 0;
+    window.battleStats.peerDeaths = data.deaths || 0;
+    if (typeof updateVictoryModalStats === 'function') {
+      updateVictoryModalStats();
+    }
+  }
 }
 
 // 2P 게스트가 적 타격 시 1P 호스트가 권위적으로 대미지를 적용하는 함수
