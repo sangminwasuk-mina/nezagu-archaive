@@ -643,6 +643,7 @@
       // 보행(워킹) 애니메이션 상태
       isMoving: false,
       walkCycleTimer: 0,
+      kneelProgress: 0, // _ㅣㄱ 무릎 꿇기 부드러운 전환 보간값 (0.0: 서있음, 1.0: 완전히 꿇음)
 
       // 평타 타이머 (0.5초 동안 15발 난사)
       normalAttackTimer: 0,

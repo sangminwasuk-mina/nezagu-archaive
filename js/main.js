@@ -712,6 +712,7 @@
         kaitenFx.stunTimer = 0;
         kaitenFx.partGroggyTimer = 0;
         kaitenFx.isPartGroggy = false;
+        kaitenFx.kneelProgress = 0;
         kaitenFx.groggyDmgMultiplier = 1.5;
         kaitenFx.ccReductionRate = 0.75;
         kaitenFx.partMaxHp = Math.round(kaitenFx.maxHp * 0.24); // 24%
@@ -5728,7 +5729,28 @@
         }
 
         // C. [실전 전투 AI & 물리 이동 & 미니건 평타 패턴]
-        if (kaitenFx.isSpawned && !kaitenFx.isDead && kaitenFx.introState === 'ready') {
+        if (kaitenFx.isSpawned && kaitenFx.introState === 'ready') {
+          // [스르륵 _ㅣㄱ 무릎 꿇기 / 기립 모션 보간 (kneelProgress: 0.0 -> 1.0)]
+          const targetKneel = (kaitenFx.hp <= 0 || kaitenFx.isDead || (kaitenFx.partGroggyTimer && kaitenFx.partGroggyTimer > 0)) ? 1.0 : 0.0;
+          kaitenFx.kneelProgress = kaitenFx.kneelProgress || 0;
+          const kneelSpeed = 1.8; // 약 0.55초에 걸쳐 스르륵 부드럽게 무릎을 굽히거나 일어섬
+          if (kaitenFx.kneelProgress < targetKneel) {
+            kaitenFx.kneelProgress = Math.min(targetKneel, kaitenFx.kneelProgress + dt * kneelSpeed);
+          } else if (kaitenFx.kneelProgress > targetKneel) {
+            kaitenFx.kneelProgress = Math.max(targetKneel, kaitenFx.kneelProgress - dt * kneelSpeed);
+          }
+
+          // 체력이 0이거나 사망 상태면 전투 AI 중단하고 쓰러진 _ㅣㄱ 자세로 영구 정지!
+          if (kaitenFx.hp <= 0 || kaitenFx.isDead) {
+            kaitenFx.hp = 0;
+            kaitenFx.isDead = true;
+            kaitenFx.isMoving = false;
+            kaitenFx.isFiringSkill = false;
+            kaitenFx.isFiringNormal = false;
+            kaitenFx.shieldActive = false;
+            return; // 컷신/폭발 없이 그 자세 그대로 멈춤!
+          }
+
           // [파츠 파괴 5초 무릎 꿇기 그로기 타이머]
           const isPartGroggy = (kaitenFx.partGroggyTimer > 0);
           if (isPartGroggy) {

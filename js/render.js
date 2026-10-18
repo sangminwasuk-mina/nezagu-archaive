@@ -2781,7 +2781,7 @@
     // - 머리: 플레이어를 내려다보는 75도 날렵한 측면 페이스
     // =========================================================================
     function drawKaitenFx(boss, groundY, customCtx = null) {
-      if (!boss.isSpawned || boss.isDead) return;
+      if (!boss.isSpawned) return;
 
       const screenX = customCtx ? (boss.x || 0) : (boss.x - camera.x);
       const screenY = groundY - boss.height - (boss.jumpY || 0);
@@ -2812,43 +2812,39 @@
         const slashTimer = boss.slashTimer || 0;
         const isFiringGatling = boss.isFiringNormal || (boss.isFiringSkill && boss.activePart === 'pink');
 
+        // [스르륵 _ㅣㄱ 무릎 꿇기 보간 곡선 (0.0: 서있음, 1.0: 완전히 꿇음)]
+        const kp = Math.max(0, Math.min(1, boss.kneelProgress || 0));
+        const smoothKneel = kp * kp * (3 - 2 * kp); // Smoothstep 부드러운 가감속
+
         // 상태별 동적 자세 (Crouch, 무릎 굽힘, 상체 틸트)
-        let crouchY = 0;
-        let kneeBrace = 0;
-        let torsoBraceTilt = 0;
+        let crouchY = smoothKneel * 42; // 무릎 꿇으며 지면으로 42px 묵직하게 하강
+        let kneeBrace = smoothKneel * -0.65; // 기본 무릎 굽힘
+        let torsoBraceTilt = smoothKneel * 0.32; // 상체를 앞으로 18도 숙임
 
-        const isPartGroggy = !!(boss.partGroggyTimer && boss.partGroggyTimer > 0);
-
-        if (isPartGroggy) {
-          // [파츠 파괴 시 무릎 꿇기 그로기 자세]: 깊게 무릎을 꿇고 주저앉으며 상체를 앞으로 숙임
-          crouchY = 28;
-          kneeBrace = -0.55; // 깊은 무릎 굽힘 자세
-          torsoBraceTilt = 0.20; // 상체 앞으로 떨굼
-        } else if (isShieldVisual) {
+        if (isShieldVisual) {
           // [초록 쉴드 전개 시]: 다리를 전방으로 굽혀 무게중심을 낮추고 묵직하게 가드
-          crouchY = 14;
-          kneeBrace = -0.32; // 전방(앞쪽)으로 쑥 굽혀지는 정방향 무릎 각도!
-          torsoBraceTilt = 0.05;
+          crouchY += 14;
+          kneeBrace += -0.32; // 전방(앞쪽)으로 쑥 굽혀지는 정방향 무릎 각도!
+          torsoBraceTilt += 0.05;
         } else if (isSlashing) {
           // [파이널 고등어 슬래시]: 3단계 역동적 베기 자세
           if (slashPhase === 'charge') {
-            crouchY = 6;
-            kneeBrace = -0.14;
-            torsoBraceTilt = -0.08; // 기모으기 상체 뒤로 젖힘
+            crouchY += 6;
+            kneeBrace += -0.14;
+            torsoBraceTilt += -0.08; // 기모으기 상체 뒤로 젖힘
           } else if (slashPhase === 'slash') {
-            crouchY = 12;
-            kneeBrace = -0.26;
-            torsoBraceTilt = 0.14; // 전방을 향해 호쾌하게 내리베기
+            crouchY += 12;
+            kneeBrace += -0.26;
+            torsoBraceTilt += 0.14; // 전방을 향해 호쾌하게 내리베기
           } else if (slashPhase === 'recover') {
-            crouchY = 8;
-            kneeBrace = -0.18;
-            torsoBraceTilt = 0.06;
+            crouchY += 8;
+            kneeBrace += -0.18;
+            torsoBraceTilt += 0.06;
           }
         } else if (isHatchOpen) {
           // [레드 미사일 발사 시]: 가슴을 열고 반동을 지탱하는 웅크림
-          crouchY = 6;
-          kneeBrace = -0.14;
-          torsoBraceTilt = 0;
+          crouchY += 6;
+          kneeBrace += -0.14;
         }
 
         const bodyBobY = baseBobY + crouchY;
@@ -3267,9 +3263,10 @@
         // [레이어 1: 뒤편 파츠 (Far / Background)]
         // ---------------------------------------------------------------------
 
-        // 1-1. [뒷다리: 옐로우 계란말이 (골반 ➔ 무릎 관절 ➔ 발목 관절 계층 연결)]
+        // 1-1. [뒷다리: 옐로우 계란말이 (_ㅣ 무릎 꿇기 자세)]
+        const farLegBackOffset = smoothKneel * 16; // 무릎 꿇으며 뒷다리가 자연스럽게 뒤쪽 바닥으로 밀림
         ctx.save();
-        ctx.translate(32 - walkSwing * 0.8, -86 - walkLiftB + crouchY);
+        ctx.translate(32 - walkSwing * 0.8 + farLegBackOffset, -86 - walkLiftB + crouchY);
         ctx.scale(0.9, 0.9);
 
         // 골반 힙 볼 조인트
@@ -3293,8 +3290,8 @@
         ctx.lineWidth = 2.2;
         ctx.strokeRect(-20, -50, 42, 42);
 
-        // 무릎 메카 관절 (Knee Disc Joint)
-        const kneeBendB = (isMoving ? Math.max(0, Math.sin(walkCycle)) * 0.18 : 0) + kneeBrace;
+        // 무릎 메카 관절 (Knee Disc Joint) - _ㅣ 무릎 꿇기 각도 적용
+        const kneeBendB = (isMoving ? Math.max(0, Math.sin(walkCycle)) * 0.18 : 0) + kneeBrace + (smoothKneel * -0.55);
         ctx.save();
         ctx.translate(0, -8);
         ctx.rotate(kneeBendB);
@@ -3327,7 +3324,7 @@
 
         ctx.save();
         ctx.translate(0, 44);
-        ctx.rotate(-kneeBendB); // 발목 각도 보정으로 나막신 바닥 수평 유지
+        ctx.rotate(-kneeBendB + (smoothKneel * 0.35)); // 발목 각도 보정으로 나막신 바닥 수평 접지 유지
         ctx.translate(0, -44);
 
         // 메카 발목 슈즈 (옆모습)
@@ -3466,6 +3463,7 @@
         // ---------------------------------------------------------------------
         ctx.save();
         ctx.translate(-16, -240);
+        ctx.rotate(smoothKneel * 0.28); // 고개를 앞으로 16도 숙임
 
         // 목 조인트
         ctx.fillStyle = '#0f172a';
@@ -3497,23 +3495,39 @@
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // 듀얼 아이 센서 (shadowBlur 없는 초경량 네온 센서)
-        const eyeFlash = boss.introState === 'eye_flash' || Math.sin(now * 0.005) > 0.8;
-        if (eyeFlash) {
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-          ctx.fillRect(-20, -4, 16, 9.5);
+        // 듀얼 아이 센서 (체력 0 사망 시 완전 암전 꺼짐, 그로기 시 미약한 점멸)
+        const isDead = (boss.hp <= 0 || boss.isDead);
+        const isGroggy = (boss.partGroggyTimer && boss.partGroggyTimer > 0);
+
+        if (isDead) {
+          // [체력 0 / 기능 정지]: 눈(안광) 완전히 꺼짐 (칠흑색 슬릿 센서)
+          ctx.fillStyle = '#080c14';
+          ctx.fillRect(-18, -2, 12, 5.5);
+        } else if (isGroggy) {
+          // [파츠 파괴 그로기]: 동력 일시 저하로 미약하게 깜빡임
+          const groggyBlink = (Math.sin(now * 0.02) > 0.4) ? 0.35 : 0.06;
+          ctx.fillStyle = `rgba(56, 189, 248, ${groggyBlink})`;
+          ctx.fillRect(-18, -2, 12, 5.5);
+        } else {
+          // 정상 가동 점등
+          const eyeFlash = boss.introState === 'eye_flash' || Math.sin(now * 0.005) > 0.8;
+          if (eyeFlash) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+            ctx.fillRect(-20, -4, 16, 9.5);
+          }
+          ctx.fillStyle = eyeFlash ? '#ffffff' : (boss.atg >= 100 ? '#00e5ff' : '#38bdf8');
+          ctx.fillRect(-18, -2, 12, 5.5);
         }
-        ctx.fillStyle = eyeFlash ? '#ffffff' : (boss.atg >= 100 ? '#00e5ff' : '#38bdf8');
-        ctx.fillRect(-18, -2, 12, 5.5);
         ctx.restore(); // 머리 복원
 
         ctx.restore(); // 상체 밥핑 & 틸트 복원
 
         // ---------------------------------------------------------------------
-        // [레이어 4: 앞다리 (Near Leg)]
+        // [레이어 4: 앞다리 (Near Leg) - ㄱ 무릎 굽힘 지탱 자세]
         // ---------------------------------------------------------------------
+        const nearLegFwdOffset = smoothKneel * -12; // 앞다리를 살짝 전방으로 내딛음
         ctx.save();
-        ctx.translate(-24 + walkSwing, -86 - walkLiftF + crouchY);
+        ctx.translate(-24 + walkSwing + nearLegFwdOffset, -86 - walkLiftF + crouchY);
         ctx.scale(1.05, 1.05);
 
         // 골반 힙 볼 조인트
@@ -3542,8 +3556,8 @@
         ctx.arc(-24, -10, 24, -Math.PI * 0.45, Math.PI * 0.45);
         ctx.stroke();
 
-        // 무릎 메카 관절
-        const kneeBendF = (isMoving ? Math.max(0, -Math.sin(walkCycle)) * 0.22 : 0) + kneeBrace;
+        // 무릎 메카 관절 - 직각 ㄱ 형태로 굽혀 전방 지탱
+        const kneeBendF = (isMoving ? Math.max(0, -Math.sin(walkCycle)) * 0.22 : 0) + kneeBrace + (smoothKneel * -0.40);
         ctx.save();
         ctx.translate(0, -8);
         ctx.rotate(kneeBendF);
@@ -3678,46 +3692,48 @@
           ctx.restore();
         }
 
-        // KAITEN FX Mk.0 머리 위 디버프/스턴/그로기 상태 표시
-        if (boss.partGroggyTimer > 0) {
-          ctx.save();
-          ctx.font = 'bold 16px monospace';
-          ctx.strokeStyle = '#000000';
-          ctx.lineWidth = 3;
-          const groggyStr = `🧎 GROGGY (1.5x DMG) [${boss.partGroggyTimer.toFixed(1)}s]`;
-          ctx.strokeText(groggyStr, -110, -290);
-          ctx.fillStyle = '#facc15';
-          ctx.fillText(groggyStr, -110, -290);
-          ctx.restore();
-        } else if (boss.stunTimer > 0) {
-          ctx.save();
-          ctx.font = 'bold 16px monospace';
-          ctx.strokeStyle = '#000000';
-          ctx.lineWidth = 3;
-          ctx.strokeText(`⚡ STUN (${boss.stunTimer.toFixed(1)}s)`, -50, -290);
-          ctx.fillStyle = '#facc15';
-          ctx.fillText(`⚡ STUN (${boss.stunTimer.toFixed(1)}s)`, -50, -290);
-          ctx.restore();
-        }
-        if (boss.critDmgResistDebuffTimer > 0) {
-          ctx.save();
-          ctx.font = 'bold 13px monospace';
-          ctx.strokeStyle = '#000000';
-          ctx.lineWidth = 2.5;
-          ctx.strokeText(`🎯 치명 저항 -${boss.critDmgResistDebuff || 22}% (${boss.critDmgResistDebuffTimer.toFixed(1)}s)`, -75, -310);
-          ctx.fillStyle = '#fb923c';
-          ctx.fillText(`🎯 치명 저항 -${boss.critDmgResistDebuff || 22}% (${boss.critDmgResistDebuffTimer.toFixed(1)}s)`, -75, -310);
-          ctx.restore();
-        }
-        if (boss.atkDebuffTimer > 0) {
-          ctx.save();
-          ctx.font = 'bold 13px monospace';
-          ctx.strokeStyle = '#000000';
-          ctx.lineWidth = 2.5;
-          ctx.strokeText(`🔻 ATK -${Math.round((boss.atkDebuffRatio || 0.30) * 100)}% (${boss.atkDebuffTimer.toFixed(1)}s)`, -55, -330);
-          ctx.fillStyle = '#38bdf8';
-          ctx.fillText(`🔻 ATK -${Math.round((boss.atkDebuffRatio || 0.30) * 100)}% (${boss.atkDebuffTimer.toFixed(1)}s)`, -55, -330);
-          ctx.restore();
+        // KAITEN FX Mk.0 머리 위 디버프/스턴/그로기 상태 표시 (생존 시에만 출력)
+        if (!boss.isDead && boss.hp > 0) {
+          if (boss.partGroggyTimer > 0) {
+            ctx.save();
+            ctx.font = 'bold 16px monospace';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 3;
+            const groggyStr = `🧎 GROGGY (1.5x DMG) [${boss.partGroggyTimer.toFixed(1)}s]`;
+            ctx.strokeText(groggyStr, -110, -290);
+            ctx.fillStyle = '#facc15';
+            ctx.fillText(groggyStr, -110, -290);
+            ctx.restore();
+          } else if (boss.stunTimer > 0) {
+            ctx.save();
+            ctx.font = 'bold 16px monospace';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 3;
+            ctx.strokeText(`⚡ STUN (${boss.stunTimer.toFixed(1)}s)`, -50, -290);
+            ctx.fillStyle = '#facc15';
+            ctx.fillText(`⚡ STUN (${boss.stunTimer.toFixed(1)}s)`, -50, -290);
+            ctx.restore();
+          }
+          if (boss.critDmgResistDebuffTimer > 0) {
+            ctx.save();
+            ctx.font = 'bold 13px monospace';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2.5;
+            ctx.strokeText(`🎯 치명 저항 -${boss.critDmgResistDebuff || 22}% (${boss.critDmgResistDebuffTimer.toFixed(1)}s)`, -75, -310);
+            ctx.fillStyle = '#fb923c';
+            ctx.fillText(`🎯 치명 저항 -${boss.critDmgResistDebuff || 22}% (${boss.critDmgResistDebuffTimer.toFixed(1)}s)`, -75, -310);
+            ctx.restore();
+          }
+          if (boss.atkDebuffTimer > 0) {
+            ctx.save();
+            ctx.font = 'bold 13px monospace';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2.5;
+            ctx.strokeText(`🔻 ATK -${Math.round((boss.atkDebuffRatio || 0.30) * 100)}% (${boss.atkDebuffTimer.toFixed(1)}s)`, -55, -330);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillText(`🔻 ATK -${Math.round((boss.atkDebuffRatio || 0.30) * 100)}% (${boss.atkDebuffTimer.toFixed(1)}s)`, -55, -330);
+            ctx.restore();
+          }
         }
 
         ctx.restore();
@@ -6252,13 +6268,15 @@
         drawPhase2Cutscene(groundY);
       }
 
-      // 7.2. [2페이즈 KAITEN FX Mk.0] 거대 메카 보스 렌더링 (신규 컷신 미진행 시 실전 렌더링)
-      if ((!window.phase2Cutscene || !window.phase2Cutscene.active) && typeof kaitenFx !== 'undefined' && kaitenFx.isSpawned && !kaitenFx.isDead) {
+      // 7.2. [2페이즈 KAITEN FX Mk.0] 거대 메카 보스 렌더링 (사망 시에도 _ㅣㄱ 무릎 꿇기 유지)
+      if ((!window.phase2Cutscene || !window.phase2Cutscene.active) && typeof kaitenFx !== 'undefined' && kaitenFx.isSpawned) {
         if (typeof drawKaitenFx === 'function') {
-          // 실전 전투 중에는 75도 깊은 측면 프로필 뷰로 전투 진행
+          // 실전 전투 및 쓰러진 _ㅣㄱ 무릎 꿇기 자세 렌더링
           drawKaitenFx(kaitenFx, groundY);
-          // [신규 UI] 활성화된 파츠 직상단 오버헤드 실시간 체력바 렌더링
-          drawKaitenFxActivePartOverheadHpBar(kaitenFx, groundY);
+          // 사망 상태가 아닐 때만 활성화된 파츠 직상단 오버헤드 실시간 체력바 렌더링
+          if (!kaitenFx.isDead && kaitenFx.hp > 0) {
+            drawKaitenFxActivePartOverheadHpBar(kaitenFx, groundY);
+          }
         }
       }
 
