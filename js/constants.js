@@ -329,14 +329,15 @@
           skill1AttackType: ATTACK_TYPES.EXPLOSION, // 메인스킬 1 공격 유형: 폭발
           skill2AttackType: ATTACK_TYPES.EXPLOSION, // 메인스킬 2 공격 유형: 폭발
           specialAttackType: ATTACK_TYPES.EXPLOSION, // 특수스킬 공격 유형: 폭발
-          desc: '• 방어 장갑: 중장갑 | 장전: 40발 (연사) | 피해량: 400 | 포지션: BACK (1,420px) | 딜레이: 0.11초 | 재장전: 2.5초 | 탄창: 무제한',
+          hp: 65000,
+          desc: '• 체력: 65,000 | 방어 장갑: 중장갑 | 장전: 40발 (연사) | 피해량: 400 | 포지션: BACK (1,420px) | 딜레이: 0.11초 | 재장전: 2.5초 | 탄창: 무제한',
           skillName: '[폭발] 종막: 이스보셋',
           skillDesc: '• 소모: <b>6 코스트</b> | 라인 관통 <b>28발</b> 난사 (발당 600%)',
           skill2Name: '[폭발] 개연 : 이스보셋',
           skill2Desc: '• 소모: <b>10 코스트</b> | 15s 고정 사격 모드 | 3단계 순차 발사 (4,500% / 7,000% / 11,500%+최대체력 2%)',
           specialSkillName: '[폭발] 선도부장',
           specialSkillDesc: '• 발동: <b>체력 50% 이하 1회 해금</b> (0코스트) | 7s 폭풍 관통 난사 (자동조준 각도 연동 빔)',
-          stats: { capacity: 40, dmg: 400, reloadTime: 2.5, maxMags: Infinity, holdFire: true, fireDelay: 0.11, range: 1420 },
+          stats: { hp: 65000, capacity: 40, dmg: 400, reloadTime: 2.5, maxMags: Infinity, holdFire: true, fireDelay: 0.11, range: 1420 },
           skillDetails: {
             title: '[폭발] 종막: 이스보셋',
             keyLabel: '[K키 / Q키] 메인스킬 1',
@@ -383,14 +384,15 @@
           skill1AttackType: ATTACK_TYPES.MYSTIC, // 메인스킬 1 공격 유형: 신비
           skill2AttackType: ATTACK_TYPES.MYSTIC, // 메인스킬 2 공격 유형: 신비
           specialAttackType: ATTACK_TYPES.MYSTIC, // 특수스킬 (아비 에슈흐 전 공격): 신비
-          desc: '• 방어 장갑: 특수장갑 (아비 에슈흐 폼 체인지 시 복합장갑 전환) | 장전: 5발 (단발식) | 피해량: 4,100 | 포지션: BACK (1,420px) | 딜레이: 0.70초 | 재장전: 3.0초 | 탄창: 무제한',
+          hp: 65000,
+          desc: '• 체력: 65,000 | 방어 장갑: 특수장갑 (아비 에슈흐 폼 체인지 시 복합장갑 전환) | 장전: 5발 (단발식) | 피해량: 4,100 | 포지션: BACK (1,420px) | 딜레이: 0.70초 | 재장전: 3.0초 | 탄창: 무제한',
           skillName: '[신비] 밸런스 붕괴',
           skillDesc: '• 소모: <b>5 코스트</b> | 쿨타임 2.5초 | 1.2s 차징 관통탄 (270%, 재사용 시 1/2/3배 증폭)',
           skill2Name: '[신비] 빛의 검/각성 : 슈퍼노바',
           skill2Desc: '• 충전: <b>8코스트</b> (최대 2스택) | 발사: <b>10코스트</b> 4초 관통 레이저 (0.1s마다 120%, 쿨타임 2.5초)',
           specialSkillName: '[신비] 시스템 : 아비 에슈흐',
           specialSkillDesc: '• 발동: <b>누적 코스트 150 소모 시 1회 해금</b> | 폼 체인지 시 복합장갑 전환 & 모든 공격 신비',
-          stats: { capacity: 5, dmg: 4100, reloadTime: 3.0, maxMags: Infinity, holdFire: false, fireDelay: 0.70, range: 1420 },
+          stats: { hp: 65000, capacity: 5, dmg: 4100, reloadTime: 3.0, maxMags: Infinity, holdFire: false, fireDelay: 0.70, range: 1420 },
           skillDetails: {
             title: '[신비] 밸런스 붕괴',
             keyLabel: '[K키 / Q키] 메인스킬 1',
@@ -438,14 +440,15 @@
           skill1AttackType: ATTACK_TYPES.PIERCE, // 메인스킬 1 (기괴멸렬): 관통
           skill2AttackType: ATTACK_TYPES.MYSTIC, // 메인스킬 2 (격류 난사): 신비
           specialAttackType: ATTACK_TYPES.EXPLOSION, // 특수스킬 (불사 혈기 폭풍): 폭발
-          desc: '• 방어 장갑: 중장갑 | 장전: 4발 (단발식) | 피해량: 500*6 (3,000) | 포지션: FRONT (400px) | 딜레이: 0.25초 | 재장전: 0.75초 | 탄창: 무제한',
+          hp: 65000,
+          desc: '• 체력: 65,000 | 방어 장갑: 중장갑 | 장전: 4발 (단발식) | 피해량: 500*6 (3,000) | 포지션: FRONT (400px) | 딜레이: 0.25초 | 재장전: 0.75초 | 탄창: 무제한',
           skillName: '[관통] 기괴멸렬',
           skillDesc: '• 소모: <b>4 코스트</b> | 쿨타임 2.5초 | 탄창 3발 사격 & 즉시재장전 | 6회 산탄 강화 사격',
           skill2Name: '[신비] 격류',
           skill2Desc: '• 소모: <b>4 코스트</b> | 쿨타임 2.5초 | 0.5s 차징 후 산탄 8회 연속 발사',
           specialSkillName: '[폭발] 불사(不死)',
           specialSkillDesc: '• 발동: <b>상시 1회 발동 (S키)</b> | 5~10s 무적 & 무한 난사 | 종료 후 5% 흡혈 회복',
-          stats: { capacity: 4, dmg: 500, pellets: 6, reloadTime: 0.75, maxMags: Infinity, holdFire: false, fireDelay: 0.25, range: 400 },
+          stats: { hp: 65000, capacity: 4, dmg: 500, pellets: 6, reloadTime: 0.75, maxMags: Infinity, holdFire: false, fireDelay: 0.25, range: 400 },
           skillDetails: {
             title: '[관통] 기괴멸렬',
             keyLabel: '[K키 / Q키] 메인스킬 1',
@@ -491,14 +494,15 @@
           skill1AttackType: ATTACK_TYPES.EXPLOSION, // 메인스킬 1 (드론 소환): 폭발 (테러화 시 신비)
           skill2AttackType: ATTACK_TYPES.MYSTIC, // 메인스킬 2 (라이딩 그레네이드): 신비 (테러화 시 신비)
           specialAttackType: ATTACK_TYPES.MYSTIC, // 특수스킬 (테러화): 신비
-          desc: '• 방어 장갑: 경장갑 (테러화 시 특수장갑 전환) | 장전: 14발 (연발) | 피해량: 350 | 포지션: MIDDLE (750px) | 딜레이: 0.25초 | 재장전: 0.8초 | 탄창: 무제한',
+          hp: 65000,
+          desc: '• 체력: 65,000 | 방어 장갑: 경장갑 (테러화 시 특수장갑 전환) | 장전: 14발 (연발) | 피해량: 350 | 포지션: MIDDLE (750px) | 딜레이: 0.25초 | 재장전: 0.8초 | 탄창: 무제한',
           skillName: '[폭발] 드론 소환 : 화력 지원',
           skillDesc: '• 소모: <b>3 코스트</b> | 쿨타임 2.5초 | 2초간 화력지원 드론 소환 (발당 590% 미사일 20발 난사)',
           skill2Name: '[신비] 라이딩 그레네이드',
           skill2Desc: '• 소모: <b>3 코스트</b> | 쿨타임 2.5초 | 660% 범위 피해 (2,310) 및 피격 적 공격력 35% 감소 (12초, 폭발반경 +10%)',
           specialSkillName: '[신비] 테러화(恐怖化)',
           specialSkillDesc: '• 발동: <b>사망 시 1회 자동 각성</b> | 135% 최대체력 부활 & BLACK FANG 465 폼 체인지 (받는 회복량 -20%)',
-          stats: { capacity: 14, dmg: 350, reloadTime: 0.8, maxMags: Infinity, holdFire: true, fireDelay: 0.25, range: 750 },
+          stats: { hp: 65000, capacity: 14, dmg: 350, reloadTime: 0.8, maxMags: Infinity, holdFire: true, fireDelay: 0.25, range: 750 },
           skillDetails: {
             title: '[폭발] 드론 소환 : 화력 지원',
             keyLabel: '[K키 / Q키] 메인스킬 1',
@@ -546,14 +550,15 @@
           skill1AttackType: ATTACK_TYPES.EXPLOSION, // 메인스킬 1 (철벽의 방어): 폭발
           skill2AttackType: ATTACK_TYPES.EXPLOSION, // 메인스킬 2 (공세 전환): 폭발
           specialAttackType: ATTACK_TYPES.EXPLOSION, // 특수스킬 (전술 방패 전개): 폭발
-          desc: '• 방어 장갑: 경장갑 | 장전: 12발 (초고속 연사) | 피해량: 280 | 포지션: MIDDLE (850px) | 딜레이: 0.10초 | 재장전: 1.0초 | 탄창: 무제한',
+          hp: 65000,
+          desc: '• 체력: 65,000 | 방어 장갑: 경장갑 | 장전: 12발 (초고속 연사) | 피해량: 280 | 포지션: MIDDLE (850px) | 딜레이: 0.10초 | 재장전: 1.0초 | 탄창: 무제한',
           skillName: '[폭발] 철벽의 방어',
           skillDesc: '• 소모: <b>3 / 4 코스트</b> | 단일 770% / 540% & 기절 (2.5초 / 4.6초) (적중 시 소형 폭발)',
           skill2Name: '[폭발] 공세 전환',
           skill2Desc: '• 소모: <b>2 / 3 코스트</b> | 단일 550% / 410% & 치명 대미지 저항률 -22% / -44%',
           specialSkillName: '[폭발] 전술 방패 전개',
           specialSkillDesc: '• 발동: <b>상시 무제한 (S키)</b> | 쿨타임 40초 (4C) | 즉시 재장전 & 17초 전술 보호막 (최대체력 15%)',
-          stats: { capacity: 12, dmg: 280, reloadTime: 1.0, maxMags: Infinity, holdFire: true, fireDelay: 0.10, range: 850 },
+          stats: { hp: 65000, capacity: 12, dmg: 280, reloadTime: 1.0, maxMags: Infinity, holdFire: true, fireDelay: 0.10, range: 850 },
           skillDetails: {
             title: '[폭발] 철벽의 방어',
             keyLabel: '[K키 / Q키] 메인스킬 1',
@@ -600,14 +605,15 @@
           skill2AttackType: ATTACK_TYPES.NORMAL,
           specialAttackType: ATTACK_TYPES.NORMAL,
           isMelee: true,
-          desc: '• 방어 장갑: 경장갑 | 공격: 일반 근접 대검 | 피해량: 3,560 | 딜레이: 0.3초 | 탄약/재장전: 불필요 (무제한) | 3종 자세 전환 & E.G.O 개화',
+          hp: 65000,
+          desc: '• 체력: 65,000 | 방어 장갑: 경장갑 | 공격: 일반 근접 대검 | 피해량: 3,560 | 딜레이: 0.3초 | 탄약/재장전: 불필요 (무제한) | 3종 자세 전환 & E.G.O 개화',
           skillName: '[일반] 전환 (자세 순환)',
           skillDesc: '• 소모: <b>1 코스트 (개화 시 0C)</b> | 쿨타임 없음 | 횡베기 ⇋ 종베기 ⇋ 찌르기 순환 전환 & 다음 공격 +10%(개화 시 +35%)',
           skill2Name: '[일반] 기합 / 돌진',
           skill2Desc: '• 횡/종베기 시 [기합] (4C, 2.2s 기절, 3회 피해 +300%) | 찌르기 시 [돌진] (5C, 820% 대시, 치명타 시 쿨초기화+0C+공격력 누적)',
           specialSkillName: '[일반] 대절단 - 세로 / E.G.O 개화',
           specialSkillDesc: '• 스택 100 미만: [대절단-세로] (12~8C, 450% 3연타 + 피니시 1250% + 2.5s 기절) | 스택 100: [E.G.O 개화] (특색 붉은안개 발현)',
-          stats: { capacity: Infinity, dmg: 3560, reloadTime: 0, maxMags: Infinity, holdFire: true, fireDelay: 0.30, range: 140 },
+          stats: { hp: 65000, capacity: Infinity, dmg: 3560, reloadTime: 0, maxMags: Infinity, holdFire: true, fireDelay: 0.30, range: 140 },
           skillDetails: {
             title: '[일반] 전환',
             keyLabel: '[K키 / Q키] 메인스킬 1',

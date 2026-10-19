@@ -515,12 +515,14 @@
         }
 
         const descFormatted = item.desc ? item.desc.split('|').join('<br>') : '';
+        const hpTag = (slotId === 'slot1') ? `<div style="display: inline-block; font-size: 11px; padding: 2px 7px; border-radius: 4px; background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.35); margin-top: 4px; font-weight: bold;">💚 기본 체력: ${(item.hp || (item.stats && item.stats.hp) || 65000).toLocaleString()}</div>` : '';
         card.innerHTML = `
           <div class="modal-item-top">
             <span class="modal-item-name" style="color: ${item.color || '#fff'};">${item.name}</span>
             <span class="${tagClass}">${tagText}</span>
           </div>
-          <div class="modal-item-desc">${descFormatted}</div>
+          ${hpTag}
+          <div class="modal-item-desc" style="margin-top: 4px;">${descFormatted}</div>
           ${item.skillName ? `<div style="font-size: 11px; color: #f43f5e; margin-top: 3px;"><b>[전용스킬] ${item.skillName}</b>: ${item.skillDesc}</div>` : ''}
         `;
 
@@ -561,7 +563,14 @@
 
           document.getElementById('slot-1-name').innerText = item.name;
           document.getElementById('slot-1-name').style.color = item.color || '#facc15';
-          document.getElementById('slot-1-desc').innerHTML = `<div>${item.desc.split('|').join('</div><div>')}</div>`;
+          const formattedDesc = item.desc ? item.desc.split('|').map(s => {
+            const trimmed = s.trim();
+            if (trimmed.startsWith('• 체력:')) {
+              return `<div>• 체력: <b style="color: #22c55e;">${(item.hp || (item.stats && item.stats.hp) || 65000).toLocaleString()}</b></div>`;
+            }
+            return `<div>${trimmed}</div>`;
+          }).join('') : '';
+          document.getElementById('slot-1-desc').innerHTML = formattedDesc;
           document.getElementById('slot-2-name').innerText = item.skillName;
           document.getElementById('slot-2-desc').innerHTML = item.skillDesc;
 

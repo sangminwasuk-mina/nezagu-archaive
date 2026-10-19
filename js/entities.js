@@ -690,6 +690,7 @@
       introState: 'none', // 'none' | 'fade_out' | 'docking' | 'head' | 'eye_flash' | 'explosion' | 'ready'
       introTimer: 0
     };
+    window.boss = kaitenFx;
 
 
     const bullets = [];

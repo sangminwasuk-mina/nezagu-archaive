@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kaiten City - Weapon Attacks Complete</title>
-  <link rel="stylesheet" href="css/style.css?v=2.9.51">
+  <link rel="stylesheet" href="css/style.css?v=2.9.52">
 </head>
 <body>
   <!-- 메인 화면 (타이틀 오버레이) -->
@@ -141,10 +141,12 @@
           </div>
           <div class="slot-name" style="font-size: 18px; color: #facc15;" id="slot-1-name">MG (종막의 디스트로이어)</div>
           <div class="slot-desc" id="slot-1-desc" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-            <div>• 탄창 용량: <b>40발</b> (연사 홀딩 가능)</div>
+            <div>• 체력: <b style="color: #22c55e;">65,000</b></div>
+            <div>• 방어 장갑: <b>중장갑</b></div>
+            <div>• 탄창 용량: <b>40발</b> (연사 홀딩)</div>
             <div>• 발당 피해량: <b>400</b></div>
             <div>• 재장전 시간: <b>2.5초</b></div>
-            <div>• 보유 탄창: <b>7개</b> (1분 30초마다 +1 충전)</div>
+            <div>• 포지션: <b>BACK (1,420px)</b></div>
           </div>
           <span class="slot-click-hint">클릭하여 변경 ▾</span>
         </div>
@@ -830,15 +832,15 @@
   <canvas id="minimap" class="hidden"></canvas>
 
   <!-- WebRTC 순수 P2P 라이브러리 (로컬 내장 PeerJS) -->
-  <script src="js/peerjs.min.js?v=2.9.51"></script>
+  <script src="js/peerjs.min.js?v=2.9.52"></script>
   <script>window.Peer || document.write('<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"><\/script>');</script>
 
-  <!-- 게임 엔진 스크립트 모듈 순차 로드 (캐시 방지 v=2.9.51) -->
-  <script src="js/constants.js?v=2.9.51"></script>
-  <script src="js/entities.js?v=2.9.51"></script>
-  <script src="js/network.js?v=2.9.51"></script>
-  <script src="js/ui.js?v=2.9.51"></script>
-  <script src="js/render.js?v=2.9.51"></script>
-  <script src="js/main.js?v=2.9.51"></script>
+  <!-- 게임 엔진 스크립트 모듈 순차 로드 (캐시 방지 v=2.9.52) -->
+  <script src="js/constants.js?v=2.9.52"></script>
+  <script src="js/entities.js?v=2.9.52"></script>
+  <script src="js/network.js?v=2.9.52"></script>
+  <script src="js/ui.js?v=2.9.52"></script>
+  <script src="js/render.js?v=2.9.52"></script>
+  <script src="js/main.js?v=2.9.52"></script>
 </body>
 </html>

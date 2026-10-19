@@ -342,15 +342,14 @@
 
     // 정비실에서 선택한 세팅을 플레이어 실전에 동기화
     function applyMaintenanceLoadoutToPlayer() {
-      // 1. 기본 체력
-      const activePassives = [
-        (playerLoadout && playerLoadout.slot3 && playerLoadout.slot3.id) ? playerLoadout.slot3.id : '',
-        (playerLoadout && playerLoadout.slot4 && playerLoadout.slot4.id) ? playerLoadout.slot4.id : '',
-        (playerLoadout && playerLoadout.slot5 && playerLoadout.slot5.id) ? playerLoadout.slot5.id : ''
-      ];
+      // 선택한 메인 무기 스탯 적용
+      const selectedMain = (playerLoadout && playerLoadout.slot1) || EQUIPMENT_DATABASE.slot1[0];
+      const weaponHp = (selectedMain && (selectedMain.hp || (selectedMain.stats && selectedMain.stats.hp))) || 65000;
 
-      player.maxHp = player.baseMaxHp;
-      player.hp = player.baseMaxHp;
+      // 1. 메인 무기 지정 체력 적용 (기본 65,000)
+      player.baseMaxHp = weaponHp;
+      player.maxHp = weaponHp;
+      player.hp = weaponHp;
       const hpBadgeEl = document.getElementById('playerHpBadge');
       if (hpBadgeEl) hpBadgeEl.innerText = `HP: ${player.maxHp.toLocaleString()}`;
 
@@ -358,8 +357,6 @@
       player.maxCost = 15;
       if (player.cost > player.maxCost) player.cost = player.maxCost;
 
-      // 선택한 메인 무기 스탯 적용
-      const selectedMain = (playerLoadout && playerLoadout.slot1) || EQUIPMENT_DATABASE.slot1[0];
       const mainStats = selectedMain.stats || { capacity: 40, maxMags: Infinity, reloadTime: 2.5, fireDelay: 0.11 };
       const baseMainCap = mainStats.capacity || 40;
       player.mainWeapon.name = selectedMain.name;
@@ -871,6 +868,56 @@
       }
     }
 
+    // [2페이즈 KAITEN FX Mk.0 보스 대미지 적용 전용 헬퍼]
+    function damageKaitenFx(dmg, attackType = ATTACK_TYPES.NORMAL, isCrit = false) {
+      if (typeof kaitenFx === 'undefined' || !kaitenFx || !kaitenFx.isSpawned || kaitenFx.isDead) return 0;
+
+      const groundY = canvas.height - GROUND_OFFSET;
+      let dmgMult = 1.0;
+      if (kaitenFx.shieldActive) {
+        dmgMult = 0.5; // 실드 가드 시 50% 뎀감
+      }
+
+      let finalDmg = Math.round(dmg * dmgMult);
+      if (kaitenFx.partGroggyTimer > 0) {
+        finalDmg = Math.round(finalDmg * (kaitenFx.groggyDmgMultiplier || 1.5));
+      }
+
+      kaitenFx.hp = Math.max(0, kaitenFx.hp - finalDmg);
+      if (typeof recordDamageDealt === 'function') recordDamageDealt(finalDmg);
+
+      // 현재 활성 파츠 내구도 동시 차감
+      if (kaitenFx.activePart && kaitenFx.parts && kaitenFx.parts[kaitenFx.activePart] && !kaitenFx.parts[kaitenFx.activePart].isBroken) {
+        const curPart = kaitenFx.parts[kaitenFx.activePart];
+        curPart.hp = Math.max(0, curPart.hp - finalDmg);
+        if (curPart.hp <= 0) {
+          triggerPartBrokenGroggy(curPart, kaitenFx.x + kaitenFx.width / 2, groundY);
+        }
+      }
+
+      // 2인 멀티플레이 동기화
+      if (currentMode === 'duo' && myRole === 'guest_striker' && typeof sendNetPacket === 'function') {
+        sendNetPacket({
+          type: 'ENEMY_DAMAGE',
+          targetType: 'kaiten_fx',
+          targetId: 'kaiten_fx',
+          damage: finalDmg,
+          isCrit: isCrit,
+          part: kaitenFx.activePart
+        });
+      }
+
+      if (kaitenFx.hp <= 0) {
+        kaitenFx.hp = 0;
+        kaitenFx.isDead = true;
+        addDamageText(kaitenFx.x + kaitenFx.width / 2, groundY - 250, '💥 KAITEN FX Mk.0 완전 격파! MISSION COMPLETE!', '#10b981');
+      }
+
+      return finalDmg;
+    }
+    window.damageBoss = damageKaitenFx;
+    window.damageKaitenFx = damageKaitenFx;
+
     // [적 잔여 투사체 및 적 폭발 소거 함수] - const bullets/explosions 불변 배열 안전 조작
     function clearEnemyProjectiles() {
       if (typeof bullets !== 'undefined') {
@@ -1331,19 +1378,19 @@
       });
 
       // (B) 2페이즈 카이텐 FX Mk.0 (보스) 판정
-      if (typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead && boss.isActive) {
-        const bossCenterX = boss.x + boss.width / 2;
+      const targetBoss = (typeof kaitenFx !== 'undefined' && kaitenFx.isSpawned && !kaitenFx.isDead && kaitenFx.introState !== 'none') ? kaitenFx : ((typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead) ? boss : null);
+      if (targetBoss) {
+        const bossCenterX = targetBoss.x + targetBoss.width / 2;
         const dx = (bossCenterX - (player.x + player.width / 2)) * player.facing;
-        const dy = Math.abs((boss.y + boss.height / 2) - (player.y + player.height / 2));
-        if (dx >= -40 && dx <= hitRange + boss.width / 2 && dy <= 180) {
+        const bBottom = groundY;
+        const bTop = groundY - targetBoss.height;
+        const pY = player.y + player.height / 2;
+        const inYRange = (pY >= bTop - 80 && pY <= bBottom + 80);
+        if (dx >= -60 && dx <= hitRange + targetBoss.width / 2 && inYRange) {
           hitAnyEnemy = true;
-          const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, boss.armorType || ARMOR_TYPES.HEAVY));
-          if (typeof damageBoss === 'function') {
-            damageBoss(actualDmg, ATTACK_TYPES.NORMAL, isCrit);
-          } else {
-            boss.hp -= actualDmg;
-          }
-          addDamageText(boss.x + boss.width / 2, boss.y - 20, `${actualDmg}`, isCrit ? '#facc15' : '#ef4444', isCrit);
+          let actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, targetBoss.armorType || ARMOR_TYPES.LIGHT));
+          actualDmg = damageKaitenFx(actualDmg, ATTACK_TYPES.NORMAL, isCrit);
+          addDamageText(targetBoss.x + targetBoss.width / 2, groundY - 140, `${actualDmg}`, isCrit ? '#facc15' : '#ef4444', isCrit);
         }
       }
 
@@ -1405,20 +1452,18 @@
       });
 
       // (B) 카이텐 FX Mk.0 (보스) 판정
-      if (typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead && boss.isActive) {
+      const targetBoss = (typeof kaitenFx !== 'undefined' && kaitenFx.isSpawned && !kaitenFx.isDead && kaitenFx.introState !== 'none') ? kaitenFx : ((typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead) ? boss : null);
+      if (targetBoss) {
         if (!player.redMistDashHitEnemies.includes('boss')) {
-          const bCenterX = boss.x + boss.width / 2;
-          if (bCenterX >= minX && bCenterX <= maxX) {
+          const bLeft = targetBoss.x;
+          const bRight = targetBoss.x + targetBoss.width;
+          if (bRight >= minX && bLeft <= maxX) {
             player.redMistDashHitEnemies.push('boss');
             if (isCrit) player.redMistDashCritOccurred = true;
 
-            const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, boss.armorType || ARMOR_TYPES.HEAVY));
-            if (typeof damageBoss === 'function') {
-              damageBoss(actualDmg, ATTACK_TYPES.NORMAL, isCrit);
-            } else {
-              boss.hp -= actualDmg;
-            }
-            addDamageText(boss.x + boss.width / 2, boss.y - 25, `${actualDmg}`, isCrit ? '#facc15' : '#f97316', isCrit);
+            let actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, targetBoss.armorType || ARMOR_TYPES.LIGHT));
+            actualDmg = damageKaitenFx(actualDmg, ATTACK_TYPES.NORMAL, isCrit);
+            addDamageText(targetBoss.x + targetBoss.width / 2, groundY - 160, `${actualDmg}`, isCrit ? '#facc15' : '#f97316', isCrit);
           }
         }
       }
@@ -2185,13 +2230,15 @@
             }
           });
 
-          if (typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead && boss.isActive) {
-            const bCenterX = boss.x + boss.width / 2;
-            const bCenterY = boss.y + boss.height / 2;
+          const targetBoss = (typeof kaitenFx !== 'undefined' && kaitenFx.isSpawned && !kaitenFx.isDead && kaitenFx.introState !== 'none') ? kaitenFx : ((typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead) ? boss : null);
+          if (targetBoss) {
+            const bCenterX = targetBoss.x + targetBoss.width / 2;
+            const bCenterY = groundY - targetBoss.height / 2;
             const dist = Math.hypot(bCenterX - pCenterX, bCenterY - pCenterY);
-            if (dist <= kihapRadius + boss.width / 3) {
-              boss.stunTimer = Math.max(boss.stunTimer || 0, stunDur);
-              addDamageText(bCenterX, boss.y - 10, `기절 ${stunDur}s!`, '#fbbf24');
+            if (dist <= kihapRadius + targetBoss.width / 2) {
+              const actualStun = targetBoss.ccReductionRate ? stunDur * (1 - targetBoss.ccReductionRate) : stunDur;
+              targetBoss.stunTimer = Math.max(targetBoss.stunTimer || 0, actualStun);
+              addDamageText(bCenterX, groundY - 180, `기절 ${actualStun.toFixed(1)}s!`, '#fbbf24');
             }
           }
 
@@ -3065,8 +3112,9 @@
           }
         }
       });
-      if (typeof boss !== 'undefined' && boss && !boss.isDead) {
-        boss.stunTimer = Math.max(boss.stunTimer || 0, 1.8);
+      const targetBoss = (typeof kaitenFx !== 'undefined' && kaitenFx.isSpawned && !kaitenFx.isDead && kaitenFx.introState !== 'none') ? kaitenFx : ((typeof boss !== 'undefined' && boss && !boss.isDead) ? boss : null);
+      if (targetBoss) {
+        targetBoss.stunTimer = Math.max(targetBoss.stunTimer || 0, 1.8);
       }
 
       addDamageText(player.x, player.y - 35, '🩸 [대절단 - 가로] 초거대 횡베기 집중...', '#dc2626');
@@ -5148,10 +5196,13 @@
               hitTgt = k;
             }
           });
-          if (!hitTgt && typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead && boss.isActive) {
-            const dx = (boss.x + boss.width / 2 - (player.x + player.width / 2)) * player.facing;
-            if (dx >= -40 && dx <= 320) {
-              hitTgt = boss;
+          if (!hitTgt) {
+            const targetBoss = (typeof kaitenFx !== 'undefined' && kaitenFx.isSpawned && !kaitenFx.isDead && kaitenFx.introState !== 'none') ? kaitenFx : ((typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead) ? boss : null);
+            if (targetBoss) {
+              const dx = (targetBoss.x + targetBoss.width / 2 - (player.x + player.width / 2)) * player.facing;
+              if (dx >= -60 && dx <= 380) {
+                hitTgt = targetBoss;
+              }
             }
           }
 
@@ -5166,7 +5217,7 @@
             hitTgt.stunTimer = 6.0;
             hitTgt.vx = 0;
             hitTgt.vy = 0;
-            const isBoss = (typeof boss !== 'undefined' && hitTgt === boss);
+            const isBoss = (hitTgt === kaitenFx || (typeof boss !== 'undefined' && hitTgt === boss));
             if (!isBoss) {
               hitTgt.x = player.x + player.facing * 45;
               hitTgt.jumpY = 0;
@@ -5189,7 +5240,7 @@
             tgt.stunTimer = Math.max(tgt.stunTimer || 0, 2.0);
             tgt.vx = 0;
             tgt.vy = 0;
-            const isBoss = (typeof boss !== 'undefined' && tgt === boss);
+            const isBoss = (tgt === kaitenFx || (typeof boss !== 'undefined' && tgt === boss));
             if (!isBoss) {
               tgt.x = player.x + player.facing * 45;
               tgt.jumpY = 0;
@@ -5212,12 +5263,17 @@
               player.redMistSpecialTicksDone++;
 
               if (tgt && !tgt.isDead) {
-                const isBoss = (typeof boss !== 'undefined' && tgt === boss);
-                const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, tgt.armorType || ARMOR_TYPES.NORMAL));
-                tgt.hp -= actualDmg;
-                addDamageText(tgt.x + (isBoss ? tgt.width / 2 : tgt.size / 2), (isBoss ? tgt.y - 15 : groundY - tgt.size - 15), `⚡ ${actualDmg.toLocaleString()} (${player.redMistSpecialTicksDone}타!)`, '#ef4444', false);
-                if (!isBoss && typeof applyKaitenzerSharedDamage === 'function') {
-                  applyKaitenzerSharedDamage(actualDmg);
+                const isBoss = (tgt === kaitenFx || (typeof boss !== 'undefined' && tgt === boss));
+                let actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, tgt.armorType || ARMOR_TYPES.LIGHT));
+                if (isBoss) {
+                  actualDmg = damageKaitenFx(actualDmg, ATTACK_TYPES.NORMAL, false);
+                  addDamageText(tgt.x + tgt.width / 2, groundY - 160, `⚡ ${actualDmg.toLocaleString()} (${player.redMistSpecialTicksDone}타!)`, '#ef4444', false);
+                } else {
+                  tgt.hp -= actualDmg;
+                  addDamageText(tgt.x + tgt.size / 2, groundY - tgt.size - 15, `⚡ ${actualDmg.toLocaleString()} (${player.redMistSpecialTicksDone}타!)`, '#ef4444', false);
+                  if (typeof applyKaitenzerSharedDamage === 'function') {
+                    applyKaitenzerSharedDamage(actualDmg);
+                  }
                 }
               }
 
@@ -5258,7 +5314,7 @@
             tgt.stunTimer = Math.max(tgt.stunTimer || 0, 1.0);
             tgt.vx = 0;
             tgt.vy = 0;
-            const isBoss = (typeof boss !== 'undefined' && tgt === boss);
+            const isBoss = (tgt === kaitenFx || (typeof boss !== 'undefined' && tgt === boss));
             if (!isBoss) {
               tgt.x = player.x + player.facing * 45;
               tgt.jumpY = 0;
@@ -5276,16 +5332,21 @@
             const finalDmg = Math.round(dmg);
 
             if (tgt && !tgt.isDead) {
-              const isBoss = (typeof boss !== 'undefined' && tgt === boss);
-              const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, tgt.armorType || ARMOR_TYPES.NORMAL));
-              tgt.hp -= actualDmg;
-              tgt.stunTimer = Math.max(tgt.stunTimer || 0, stunDur);
-              if (!isBoss) {
+              const isBoss = (tgt === kaitenFx || (typeof boss !== 'undefined' && tgt === boss));
+              let actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, tgt.armorType || ARMOR_TYPES.LIGHT));
+              if (isBoss) {
+                actualDmg = damageKaitenFx(actualDmg, ATTACK_TYPES.NORMAL, false);
+                const actualStun = tgt.ccReductionRate ? stunDur * (1 - tgt.ccReductionRate) : stunDur;
+                tgt.stunTimer = Math.max(tgt.stunTimer || 0, actualStun);
+                addDamageText(tgt.x + tgt.width / 2, groundY - 200, `💥 ${actualDmg.toLocaleString()} (마지막 마무리 타격!)`, '#ef4444', false);
+              } else {
+                tgt.hp -= actualDmg;
+                tgt.stunTimer = Math.max(tgt.stunTimer || 0, stunDur);
                 tgt.x += player.facing * 120; // 전방으로 시원하게 날려버림!
-              }
-              addDamageText(tgt.x + (isBoss ? tgt.width / 2 : tgt.size / 2), (isBoss ? tgt.y - 30 : groundY - tgt.size - 30), `💥 ${actualDmg.toLocaleString()} (마지막 마무리 타격!)`, '#ef4444', false);
-              if (!isBoss && typeof applyKaitenzerSharedDamage === 'function') {
-                applyKaitenzerSharedDamage(actualDmg);
+                addDamageText(tgt.x + tgt.size / 2, groundY - tgt.size - 30, `💥 ${actualDmg.toLocaleString()} (마지막 마무리 타격!)`, '#ef4444', false);
+                if (!isBoss && typeof applyKaitenzerSharedDamage === 'function') {
+                  applyKaitenzerSharedDamage(actualDmg);
+                }
               }
             }
 
@@ -5326,8 +5387,9 @@
               }
             }
           });
-          if (typeof boss !== 'undefined' && boss && !boss.isDead) {
-            boss.stunTimer = Math.max(boss.stunTimer || 0, 1.5);
+          const targetBoss1 = (typeof kaitenFx !== 'undefined' && kaitenFx.isSpawned && !kaitenFx.isDead && kaitenFx.introState !== 'none') ? kaitenFx : ((typeof boss !== 'undefined' && boss && !boss.isDead) ? boss : null);
+          if (targetBoss1) {
+            targetBoss1.stunTimer = Math.max(targetBoss1.stunTimer || 0, 1.5);
           }
 
           if (player.redMistSpecialTimer <= 0) {
@@ -5353,8 +5415,9 @@
               }
             }
           });
-          if (typeof boss !== 'undefined' && boss && !boss.isDead) {
-            boss.stunTimer = Math.max(boss.stunTimer || 0, 1.5);
+          const targetBoss2 = (typeof kaitenFx !== 'undefined' && kaitenFx.isSpawned && !kaitenFx.isDead && kaitenFx.introState !== 'none') ? kaitenFx : ((typeof boss !== 'undefined' && boss && !boss.isDead) ? boss : null);
+          if (targetBoss2) {
+            targetBoss2.stunTimer = Math.max(targetBoss2.stunTimer || 0, 1.5);
           }
 
           if (player.redMistSpecialTimer <= 0) {
@@ -5390,16 +5453,13 @@
               }
             });
 
-            if (typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead && boss.isActive) {
-              const dx = (boss.x + boss.width / 2 - (player.x + player.width / 2)) * player.facing;
-              if (dx >= -120 && dx <= 450) {
-                const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, boss.armorType || ARMOR_TYPES.HEAVY));
-                if (typeof damageBoss === 'function') {
-                  damageBoss(actualDmg, ATTACK_TYPES.NORMAL, false);
-                } else {
-                  boss.hp -= actualDmg;
-                }
-                addDamageText(boss.x + boss.width / 2, boss.y - 30, `💥 ${actualDmg.toLocaleString()}`, '#dc2626', false);
+            const targetBoss3 = (typeof kaitenFx !== 'undefined' && kaitenFx.isSpawned && !kaitenFx.isDead && kaitenFx.introState !== 'none') ? kaitenFx : ((typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead) ? boss : null);
+            if (targetBoss3) {
+              const dx = (targetBoss3.x + targetBoss3.width / 2 - (player.x + player.width / 2)) * player.facing;
+              if (dx >= -120 && dx <= 550) {
+                let actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, targetBoss3.armorType || ARMOR_TYPES.LIGHT));
+                actualDmg = damageKaitenFx(actualDmg, ATTACK_TYPES.NORMAL, false);
+                addDamageText(targetBoss3.x + targetBoss3.width / 2, groundY - 180, `💥 ${actualDmg.toLocaleString()}`, '#dc2626', false);
               }
             }
 
@@ -6647,7 +6707,7 @@
           kaitenFx.introTimer = 0.8;
           kaitenFx.introProgress = 0;
           kaitenFx.x = Math.round(WORLD_WIDTH * 0.5 - kaitenFx.width / 2); // 맵 중앙에서 웅장하게 출현
-          kaitenFx.y = 0;
+          kaitenFx.y = groundY - kaitenFx.height;
           kaitenFx.facing = playerCenterX < (kaitenFx.x + kaitenFx.width / 2) ? -1 : 1;
           addDamageText(kaitenFx.x + kaitenFx.width / 2, groundY - 260, '⚡ [EMERGENCY] 거대 합체 카이텐 FX Mk.0 기동!', '#ef4444');
         }
@@ -6704,6 +6764,7 @@
 
         // C. [실전 전투 AI & 물리 이동 & 미니건 평타 패턴]
         if (kaitenFx.isSpawned && kaitenFx.introState === 'ready') {
+          kaitenFx.y = groundY - kaitenFx.height;
           // [스르륵 _ㅣㄱ 무릎 꿇기 / 기립 모션 보간 (kneelProgress: 0.0 -> 1.0)]
           const targetKneel = (kaitenFx.hp <= 0 || kaitenFx.isDead || (kaitenFx.partGroggyTimer && kaitenFx.partGroggyTimer > 0)) ? 1.0 : 0.0;
           kaitenFx.kneelProgress = kaitenFx.kneelProgress || 0;
