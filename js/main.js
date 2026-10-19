@@ -1276,8 +1276,9 @@
         finalDmg = Math.round(baseDmg);
       }
 
-      // 4. 근접 관통 범위 판정 (사거리 140, 개화 시 +35% -> 189)
-      const hitRange = player.isEgoActive ? (140 * 1.35) : 140;
+      // 4. 대검 검신 밀착형 타격 범위 판정 (종/횡베기: 실제 검날 길이 ~85px, 찌르기: 검신+돌풍파 ~150px)
+      let baseReach = (player.redMistStance === 'thrust') ? 150 : 85;
+      const hitRange = player.isEgoActive ? (baseReach * 1.35) : baseReach;
       const groundY = canvas.height - GROUND_OFFSET;
       let hitAnyEnemy = false;
 
