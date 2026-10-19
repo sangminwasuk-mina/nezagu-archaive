@@ -236,9 +236,11 @@
       redMistSkill2CooldownMax: 5.0, // 기본 5초 (개화 돌진 시 8초)
       redMistDashing: false, // 돌진 대시 실행 중 여부
       redMistDashTimer: 0,
+      redMistDashMaxTimer: 0.32, // 돌진 기본 지속시간 ("스으윽")
       redMistDashStartX: 0,
       redMistDashTargetX: 0,
       redMistDashHitEnemies: [],
+      redMistDashCritOccurred: false,
       // E.G.O 개화 상태
       isEgoActive: false, // E.G.O 개화 활성화 여부
       isEgoForced: false, // 체력 10% 이하 강제 개화 여부 (공격력 -40%, 치명타 봉인)

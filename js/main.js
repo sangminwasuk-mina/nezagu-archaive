@@ -1334,10 +1334,10 @@
       updateWeaponHUD();
     }
 
-    // [메인 근접 무기: Red Mist (미미크리)] 2스킬: [돌진] 대시 경로 적 관통 타격
-    function executeRedMistDashDamage(startX, targetX) {
-      const minX = Math.min(startX, targetX) - 20;
-      const maxX = Math.max(startX, targetX) + 60;
+    // [메인 근접 무기: Red Mist (미미크리)] 2스킬: [돌진] 대시 경로 적 실시간 관통 타격 ("스으윽")
+    function applyContinuousDashPierceDamage(startX, curX) {
+      const minX = Math.min(startX, curX) - 25;
+      const maxX = Math.max(startX, curX) + 65;
       const groundY = canvas.height - GROUND_OFFSET;
 
       // 기본 820% 피해
@@ -1352,40 +1352,55 @@
         const bonusCrit = player.isEgoActive ? 0.10 : 0.0;
         isCrit = checkCritSuccess(player.crit, 100, bonusCrit);
       }
-
       const finalDmg = Math.round(baseDmg); // 치명타 피해량 배율은 기본과 동일
 
-      // (A) 카이텐저 5인 판정
+      if (!player.redMistDashHitEnemies) player.redMistDashHitEnemies = [];
+
+      // (A) 카이텐저 5인 실시간 관통 판정
       kaitenzers.forEach(k => {
         if (!k.isSpawned || k.isDead || !k.isActive) return;
+        if (player.redMistDashHitEnemies.includes(k.id)) return;
         const kCenterX = k.x + k.size / 2;
         if (kCenterX >= minX && kCenterX <= maxX) {
+          player.redMistDashHitEnemies.push(k.id);
+          if (isCrit) player.redMistDashCritOccurred = true;
+
           const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, k.armorType || ARMOR_TYPES.NORMAL));
           k.hp -= actualDmg;
           addDamageText(k.x + k.size / 2, groundY - k.size - 25, `${actualDmg}`, isCrit ? '#facc15' : '#f97316', isCrit);
           if (typeof applyKaitenzerSharedDamage === 'function') {
             applyKaitenzerSharedDamage(actualDmg);
           }
-          k.x += player.facing * 20;
+          k.x += player.facing * 18;
         }
       });
 
       // (B) 카이텐 FX Mk.0 (보스) 판정
       if (typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead && boss.isActive) {
-        const bCenterX = boss.x + boss.width / 2;
-        if (bCenterX >= minX && bCenterX <= maxX) {
-          const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, boss.armorType || ARMOR_TYPES.HEAVY));
-          if (typeof damageBoss === 'function') {
-            damageBoss(actualDmg, ATTACK_TYPES.NORMAL, isCrit);
-          } else {
-            boss.hp -= actualDmg;
+        if (!player.redMistDashHitEnemies.includes('boss')) {
+          const bCenterX = boss.x + boss.width / 2;
+          if (bCenterX >= minX && bCenterX <= maxX) {
+            player.redMistDashHitEnemies.push('boss');
+            if (isCrit) player.redMistDashCritOccurred = true;
+
+            const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, boss.armorType || ARMOR_TYPES.HEAVY));
+            if (typeof damageBoss === 'function') {
+              damageBoss(actualDmg, ATTACK_TYPES.NORMAL, isCrit);
+            } else {
+              boss.hp -= actualDmg;
+            }
+            addDamageText(boss.x + boss.width / 2, boss.y - 25, `${actualDmg}`, isCrit ? '#facc15' : '#f97316', isCrit);
           }
-          addDamageText(boss.x + boss.width / 2, boss.y - 25, `${actualDmg}`, isCrit ? '#facc15' : '#f97316', isCrit);
         }
       }
+    }
 
-      // 치명타 판정 성공 시 리셋 기믹!
-      if (isCrit) {
+    // 돌진 완료 시 치명타 콤보 리셋 최종 정산
+    function finishRedMistDash() {
+      const hitAny = player.redMistDashHitEnemies && player.redMistDashHitEnemies.length > 0;
+      const isCrit = player.redMistDashCritOccurred;
+
+      if (hitAny && isCrit) {
         player.redMistSkill2Cooldown = 0;
         player.redMistThrustFreeCost = true;
         const addBonus = player.isEgoActive ? 1.35 : 0.55;
@@ -2093,17 +2108,18 @@
           player.redMistSkill2Cooldown = cd;
           player.redMistSkill2CooldownMax = cd;
 
-          // 대시 거리 연산 (개화 시 20% 증가: 250 -> 300)
-          const dashDist = player.isEgoActive ? 300 : 250;
+          // 대시 거리 연산 (개화 시 20% 증가: 270 -> 324)
+          const dashDist = player.isEgoActive ? 320 : 270;
           const startX = player.x;
           const targetX = Math.max(60, Math.min(2340, player.x + player.facing * dashDist));
 
           player.redMistDashing = true;
-          player.redMistDashTimer = 0.20;
+          player.redMistDashTimer = 0.32; // 0.32초 동안 부드럽게 미끄러지며 돌진 ("스으윽")
+          player.redMistDashMaxTimer = 0.32;
           player.redMistDashStartX = startX;
           player.redMistDashTargetX = targetX;
-
-          executeRedMistDashDamage(startX, targetX);
+          player.redMistDashHitEnemies = [];
+          player.redMistDashCritOccurred = false;
           return;
         } else {
           // [기합]
@@ -2122,25 +2138,31 @@
           player.redMistKihapBuffCount = 3;
           player.redMistKihapBuffMult = player.isEgoActive ? 6.5 : 3.0;
 
-          // 범위 내 적 기절 (기본 2.2초 / 개화 시 3.5초)
+          // 범위 내 적 기절 (기본 2.2초 / 개화 시 3.5초) - 유저 스케치 반영 360도 전방위 원형 판정
           const stunDur = player.isEgoActive ? 3.5 : 2.2;
-          const kihapRange = player.isEgoActive ? 240 : 200;
+          const kihapRadius = player.isEgoActive ? 250 : 205;
           const groundY = canvas.height - GROUND_OFFSET;
+          const pCenterX = player.x + player.width / 2;
+          const pCenterY = player.y + player.height / 2;
 
           kaitenzers.forEach(k => {
             if (!k.isSpawned || k.isDead || !k.isActive) return;
-            const dx = (k.x + k.size / 2 - (player.x + player.width / 2)) * player.facing;
-            if (dx >= -30 && dx <= kihapRange) {
+            const kCenterX = k.x + k.size / 2;
+            const kCenterY = groundY - k.size / 2;
+            const dist = Math.hypot(kCenterX - pCenterX, kCenterY - pCenterY);
+            if (dist <= kihapRadius) {
               k.stunTimer = Math.max(k.stunTimer || 0, stunDur);
-              addDamageText(k.x + k.size / 2, groundY - k.size - 10, `기절 ${stunDur}s!`, '#fbbf24');
+              addDamageText(kCenterX, groundY - k.size - 10, `기절 ${stunDur}s!`, '#fbbf24');
             }
           });
 
           if (typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead && boss.isActive) {
-            const dx = (boss.x + boss.width / 2 - (player.x + player.width / 2)) * player.facing;
-            if (dx >= -50 && dx <= kihapRange + boss.width / 2) {
+            const bCenterX = boss.x + boss.width / 2;
+            const bCenterY = boss.y + boss.height / 2;
+            const dist = Math.hypot(bCenterX - pCenterX, bCenterY - pCenterY);
+            if (dist <= kihapRadius + boss.width / 3) {
               boss.stunTimer = Math.max(boss.stunTimer || 0, stunDur);
-              addDamageText(boss.x + boss.width / 2, boss.y - 10, `기절 ${stunDur}s!`, '#fbbf24');
+              addDamageText(bCenterX, boss.y - 10, `기절 ${stunDur}s!`, '#fbbf24');
             }
           }
 
@@ -2149,7 +2171,7 @@
           }
 
           const buffPct = player.isEgoActive ? 650 : 300;
-          addDamageText(player.x, player.y - 35, `🔥 [기합] 전방 ${stunDur}s 기절 & 다음 3회 피해 +${buffPct}%!`, '#f97316');
+          addDamageText(player.x, player.y - 35, `🔥 [기합] 전방위 ${stunDur}s 기절 & 다음 3회 피해 +${buffPct}%!`, '#f97316');
           updateWeaponHUD();
           return;
         }
@@ -5034,11 +5056,18 @@
       }
       if (player.redMistDashing) {
         player.redMistDashTimer -= dt;
-        const prog = Math.min(1, Math.max(0, 1 - (player.redMistDashTimer / 0.20)));
-        player.x = player.redMistDashStartX + (player.redMistDashTargetX - player.redMistDashStartX) * prog;
+        const totalTimer = player.redMistDashMaxTimer || 0.32;
+        const prog = Math.min(1, Math.max(0, 1 - (player.redMistDashTimer / totalTimer)));
+        const easeProg = 1 - Math.pow(1 - prog, 3); // 부드럽게 감속하는 고속 슬라이딩 곡선 ("스으윽")
+        const lastX = player.x;
+        player.x = player.redMistDashStartX + (player.redMistDashTargetX - player.redMistDashStartX) * easeProg;
+
+        applyContinuousDashPierceDamage(lastX, player.x);
+
         if (player.redMistDashTimer <= 0) {
           player.redMistDashing = false;
           player.x = player.redMistDashTargetX;
+          finishRedMistDash();
         }
       }
       if (player.redMistThrustSlideTimer > 0) {

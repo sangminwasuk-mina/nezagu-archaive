@@ -745,46 +745,126 @@
         }
         ctx.restore();
       }
-      }
 
-      // 2. 2스킬 [기합] 시전자 0.7초 포효 충격파
+      // 2. 2스킬 [기합] 유저 스케치(Image 1) 완벽 반영: 플레이어 기준 360도 전방위 거대 원형 기운 돔 & 방사형 기운 폭발선
       if (ent.redMistKihapStunSelfTimer > 0) {
         const kTimer = ent.redMistKihapStunSelfTimer;
         const kp = Math.min(1, Math.max(0, 1 - (kTimer / 0.7)));
-        const kAlpha = (1 - kp) * 0.85;
-        const kRadius = 40 + kp * 180;
+        const kAlpha = (1 - kp) * 0.9;
+        const maxR = isEgo ? 250 : 205;
+        const kRadius = 35 + Math.pow(kp, 0.75) * maxR;
 
         ctx.save();
         ctx.translate(entScreenX, entScreenY);
-        ctx.scale(dir, 1);
+
+        // (A) 내부 전방위 원형 에너지 돔 채우기
+        const domeGrad = ctx.createRadialGradient(0, 0, kRadius * 0.25, 0, 0, kRadius);
+        domeGrad.addColorStop(0, isEgo ? `rgba(239, 68, 68, ${kAlpha * 0.45})` : `rgba(249, 115, 22, ${kAlpha * 0.4})`);
+        domeGrad.addColorStop(0.7, isEgo ? `rgba(185, 28, 28, ${kAlpha * 0.65})` : `rgba(234, 88, 12, ${kAlpha * 0.55})`);
+        domeGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = domeGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, kRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // (B) 360도 원형 외곽 이중 충격파 링
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3.5 * (1 - kp * 0.4);
+        ctx.beginPath();
+        ctx.arc(0, 0, kRadius, 0, Math.PI * 2);
+        ctx.stroke();
 
         ctx.strokeStyle = isEgo ? `rgba(239, 68, 68, ${kAlpha})` : `rgba(249, 115, 22, ${kAlpha})`;
-        ctx.lineWidth = 4.5 * (1 - kp * 0.5);
-        ctx.beginPath();
-        ctx.arc(0, 0, kRadius, -0.7, 0.7);
-        ctx.stroke();
-
-        ctx.strokeStyle = `rgba(255, 255, 255, ${kAlpha * 0.9})`;
         ctx.lineWidth = 2.0;
         ctx.beginPath();
-        ctx.arc(0, 0, kRadius - 8, -0.65, 0.65);
+        ctx.arc(0, 0, Math.max(10, kRadius - 10), 0, Math.PI * 2);
         ctx.stroke();
+
+        // (C) 스케치 핵심: 원형 외곽을 뚫고 360도 사방으로 뻗어나가는 방사형 기운 선들 (Radial Energy Rays)
+        const rayCount = 16;
+        for (let r = 0; r < rayCount; r++) {
+          const ang = (r / rayCount) * Math.PI * 2 + (kp * 0.5);
+          const innerR = kRadius - 6;
+          const rayLen = 22 + ((r * 7) % 5) * 6;
+          const outerR = kRadius + rayLen;
+
+          const cosA = Math.cos(ang);
+          const sinA = Math.sin(ang);
+
+          ctx.strokeStyle = (r % 2 === 0) ? `rgba(255, 255, 255, ${kAlpha * 0.95})` : (isEgo ? `rgba(254, 202, 202, ${kAlpha * 0.85})` : `rgba(254, 215, 170, ${kAlpha * 0.85})`);
+          ctx.lineWidth = (r % 3 === 0 ? 3.0 : 1.6) * (1 - kp * 0.3);
+          ctx.beginPath();
+          ctx.moveTo(cosA * innerR, sinA * innerR);
+          ctx.lineTo(cosA * outerR, sinA * outerR);
+          ctx.stroke();
+        }
 
         ctx.restore();
       }
 
-      // 3. 2스킬 [돌진] 대시 붉은 잔상 & 궤적
+      // 3. 2스킬 [돌진] 유저 스케치(Image 2) 완벽 반영: 전방을 감싸는 유선형 초음속 쐐기파 & 스피드라인 결 다발
       if (ent.redMistDashing) {
         ctx.save();
-        ctx.strokeStyle = isEgo ? 'rgba(239, 68, 68, 0.75)' : 'rgba(249, 115, 22, 0.75)';
-        ctx.lineWidth = 2.5;
-        for (let l = 0; l < 4; l++) {
-          const ly = entScreenY - ent.height * 0.3 + l * (ent.height * 0.2);
+        ctx.translate(entScreenX, entScreenY);
+        ctx.scale(dir, 1);
+
+        const totalTimer = ent.redMistDashMaxTimer || 0.32;
+        const dProg = Math.min(1, Math.max(0, 1 - (ent.redMistDashTimer / totalTimer)));
+        const dAlpha = Math.sin(dProg * Math.PI) * 0.9 + 0.1;
+        const coneFrontX = ent.width * 0.75 + 38;
+        const coneHalfH = 40;
+
+        // (A) 전방을 감싸는 유선형 초음속 쐐기파 본체
+        const bowGrad = ctx.createLinearGradient(coneFrontX - 35, 0, coneFrontX + 15, 0);
+        bowGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+        bowGrad.addColorStop(0.5, isEgo ? `rgba(239, 68, 68, ${dAlpha * 0.5})` : `rgba(249, 115, 22, ${dAlpha * 0.5})`);
+        bowGrad.addColorStop(0.9, isEgo ? `rgba(220, 38, 38, ${dAlpha * 0.85})` : `rgba(234, 88, 12, ${dAlpha * 0.85})`);
+        bowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+        ctx.fillStyle = bowGrad;
+        ctx.beginPath();
+        ctx.moveTo(coneFrontX - 45, -coneHalfH * 1.1);
+        ctx.quadraticCurveTo(coneFrontX + 10, -coneHalfH * 0.5, coneFrontX + 15, 0);
+        ctx.quadraticCurveTo(coneFrontX + 10, coneHalfH * 0.5, coneFrontX - 45, coneHalfH * 1.1);
+        ctx.quadraticCurveTo(coneFrontX - 10, 0, coneFrontX - 45, -coneHalfH * 1.1);
+        ctx.closePath();
+        ctx.fill();
+
+        // (B) 전방 충격파 쐐기 외곽 굵은 백색 림
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3.2 * dAlpha;
+        ctx.beginPath();
+        ctx.moveTo(coneFrontX - 40, -coneHalfH);
+        ctx.quadraticCurveTo(coneFrontX + 10, -coneHalfH * 0.45, coneFrontX + 15, 0);
+        ctx.quadraticCurveTo(coneFrontX + 10, coneHalfH * 0.45, coneFrontX - 40, coneHalfH);
+        ctx.stroke();
+
+        // (C) 스케치 핵심: 쐐기 꼭짓점에서 뒤쪽 상하로 거세게 휘감아 뻗는 유선형 참격선 결 다발 (Flowing Speedline Streamers)
+        const flowLines = 14;
+        for (let fl = 0; fl < flowLines; fl++) {
+          const isUpper = fl < flowLines / 2;
+          const idx = isUpper ? fl : (fl - flowLines / 2);
+          const frac = idx / (flowLines / 2 - 1);
+          const startOffset = frac * 12;
+          const endY = (isUpper ? -1 : 1) * (14 + frac * coneHalfH * 1.3);
+          const trailLen = 110 + ((fl * 11) % 7) * 15;
+
+          ctx.strokeStyle = (fl % 2 === 0) ? `rgba(255, 255, 255, ${dAlpha * 0.95})` : (isEgo ? `rgba(254, 202, 202, ${dAlpha * 0.9})` : `rgba(254, 215, 170, ${dAlpha * 0.9})`);
+          ctx.lineWidth = (fl % 3 === 0 ? 2.8 : 1.4) * dAlpha;
+
           ctx.beginPath();
-          ctx.moveTo(entScreenX, ly);
-          ctx.lineTo(entScreenX - dir * 120, ly + (Math.random() - 0.5) * 6);
+          ctx.moveTo(coneFrontX + 12 - startOffset, (isUpper ? -1 : 1) * (frac * 6));
+          ctx.quadraticCurveTo(coneFrontX - 25, endY * 0.85, coneFrontX - trailLen, endY + (Math.random() - 0.5) * 4);
           ctx.stroke();
         }
+
+        // (D) 플레이어 몸체 뒤편 고속 붉은 잔상 3개
+        for (let gh = 1; gh <= 3; gh++) {
+          const ghX = -gh * 28;
+          ctx.fillStyle = isEgo ? `rgba(220, 38, 38, ${dAlpha * (0.35 / gh)})` : `rgba(249, 115, 22, ${dAlpha * (0.35 / gh)})`;
+          ctx.fillRect(ghX - ent.width * 0.5, -ent.height * 0.5, ent.width, ent.height);
+        }
+
         ctx.restore();
       }
 
