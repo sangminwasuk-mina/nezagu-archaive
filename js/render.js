@@ -298,22 +298,23 @@
 
       // 특수스킬 시전 페이즈별 모션
       const sPhase = targetEntity.redMistSpecialPhase || 'none';
-      if (sPhase === 'vertical_dash') {
-        bladeAngle = -1.45;
-        offsetX = -8;
-      } else if (sPhase === 'vertical_slashes') {
-        bladeAngle = 0.0; // 수평 0도 꽂기 고정
-        offsetX = 10 + (Math.random() - 0.5) * 3;
-        offsetY = (Math.random() - 0.5) * 3;
-      } else if (sPhase === 'vertical_finish') {
-        bladeAngle = 0.45;
-        offsetX = 16;
-      } else if (sPhase === 'horizontal_windup') {
-        bladeAngle = -0.75;
-        offsetX = -6;
-      } else if (sPhase === 'horizontal_slash') {
-        bladeAngle = 0.75;
-        offsetX = 18;
+      if (sPhase === 'vertical_start') {
+        const vProg = Math.min(1, Math.max(0, 1 - ((targetEntity.redMistSpecialTimer || 0) / 0.28)));
+        bladeAngle = -1.6 + vProg * 2.8; // 머리 위에서 아래로 내려치는 대형 종베기 모션
+        offsetX = 8 + Math.sin(vProg * Math.PI) * 18;
+        offsetY = -8 + Math.sin(vProg * Math.PI) * 20;
+      } else if (sPhase === 'vertical_pin') {
+        bladeAngle = Math.PI * 0.5; // 검을 지면에 90도 수직으로 꽂아 적을 고정한 자세!
+        offsetX = 20;
+        offsetY = 14;
+      } else if (sPhase === 'horizontal_windup' || sPhase === 'horizontal_freeze') {
+        bladeAngle = -2.5; // 등 뒤로 깊숙이 젖혀 기운을 응축하는 대기 자세
+        offsetX = -16;
+        offsetY = 2;
+      } else if (sPhase === 'horizontal_red_screen') {
+        bladeAngle = 0.85; // 전방으로 대호쾌하게 횡베기를 휘두른 후의 수평 베기 완료 자세
+        offsetX = 24;
+        offsetY = 4;
       }
 
       // ==========================================
@@ -866,71 +867,118 @@
         ctx.restore();
       }
 
-      // 4. 특수스킬 [대절단 - 세로] & [대절단 - 가로] 시네마틱 렌더링
+      // 4. 특수스킬 [대절단 - 세로] & [대절단 - 가로] 지상 전투 이펙트
       const sPhase = ent.redMistSpecialPhase || 'none';
-      if (sPhase === 'vertical_slashes') {
+      if (sPhase === 'vertical_start') {
+        // [대절단 - 세로] 1단계: 대형 종베기 시동 참격호
+        const vProg = Math.min(1, Math.max(0, 1 - ((ent.redMistSpecialTimer || 0) / 0.28)));
         ctx.save();
-        const t = Date.now() * 0.01;
-        const sparkCount = 6;
-        for (let s = 0; s < sparkCount; s++) {
-          const ang = t + s * (Math.PI * 2 / sparkCount);
-          const dist = 25 + Math.sin(t * 3 + s) * 15;
-          ctx.strokeStyle = s % 2 === 0 ? '#ef4444' : '#fee2e2';
+        ctx.translate(entScreenX + dir * 30, entScreenY);
+        ctx.scale(dir, 1);
+        const arcGrad = ctx.createRadialGradient(0, 0, 30, 0, 0, 150);
+        arcGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+        arcGrad.addColorStop(0.5, 'rgba(239, 68, 68, 0.55)');
+        arcGrad.addColorStop(0.85, 'rgba(220, 38, 38, 0.9)');
+        arcGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = arcGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, 150, -Math.PI * 0.6, Math.PI * 0.45);
+        ctx.arc(0, 0, 35, Math.PI * 0.45, -Math.PI * 0.6, true);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      } else if (sPhase === 'vertical_pin') {
+        // [대절단 - 세로] 2단계: 수직 지면 꽂기 결박 (0~0.5s 및 1.4~1.5s 연출)
+        const maxT = ent.redMistSpecialMaxTimer || 1.50;
+        const curT = ent.redMistSpecialTimer || 0;
+        const elapsed = maxT - curT;
+        const pinScreenX = entScreenX + dir * 45;
+        const pinScreenY = groundY;
+
+        ctx.save();
+        // 0.5초 이전 지면 충격 및 결박 링
+        if (elapsed < 0.50) {
+          const pAlpha = 1 - (elapsed / 0.50) * 0.3;
+          // 지면 균열 충격파선
+          ctx.strokeStyle = `rgba(239, 68, 68, ${pAlpha})`;
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(pinScreenX - 35, pinScreenY);
+          ctx.lineTo(pinScreenX - 15, pinScreenY + 4);
+          ctx.lineTo(pinScreenX, pinScreenY);
+          ctx.lineTo(pinScreenX + 18, pinScreenY + 5);
+          ctx.lineTo(pinScreenX + 40, pinScreenY);
+          ctx.stroke();
+
+          // 적 결박 핏빛 에너지 링
+          const ringPulse = Math.sin(Date.now() * 0.02) * 4;
+          ctx.strokeStyle = '#ffffff';
           ctx.lineWidth = 2.0;
           ctx.beginPath();
-          ctx.moveTo(entScreenX + dir * 60, entScreenY);
-          ctx.lineTo(entScreenX + dir * 60 + Math.cos(ang) * dist, entScreenY + Math.sin(ang) * dist);
+          ctx.ellipse(pinScreenX, entScreenY, 32 + ringPulse, 14, 0, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 3.0;
+          ctx.beginPath();
+          ctx.ellipse(pinScreenX, entScreenY, 26, 11, 0, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (elapsed >= 1.40) {
+          // 1.4s~1.5s: 붉은 화면 해제 후 날려버리기 직전 폭발 에너지 응축
+          const blastAlpha = Math.min(1, (elapsed - 1.40) / 0.10);
+          ctx.fillStyle = `rgba(255, 255, 255, ${blastAlpha * 0.8})`;
+          ctx.beginPath();
+          ctx.arc(pinScreenX, entScreenY, 45 * blastAlpha, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 4.0;
+          ctx.beginPath();
+          ctx.arc(pinScreenX, entScreenY, 65 * blastAlpha, 0, Math.PI * 2);
           ctx.stroke();
         }
         ctx.restore();
-      } else if (sPhase === 'vertical_finish') {
+      } else if (sPhase === 'horizontal_windup' || sPhase === 'horizontal_freeze') {
+        // [대절단 - 가로] 1 & 2단계: 0.5초 대기 동안 초거대 횡베기 범위 표시 (평소 대비 3.5배 크게, 앞뒤 1.5배 길게)
         ctx.save();
-        const pillarX = entScreenX + dir * 75;
-        const fGrad = ctx.createLinearGradient(pillarX - 45, 0, pillarX + 45, 0);
-        fGrad.addColorStop(0, 'rgba(239, 68, 68, 0)');
-        fGrad.addColorStop(0.35, 'rgba(220, 38, 38, 0.7)');
-        fGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.95)');
-        fGrad.addColorStop(0.65, 'rgba(220, 38, 38, 0.7)');
-        fGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+        const pulse = Math.sin(Date.now() * 0.015) * 0.25 + 0.75;
+        const centerX = entScreenX + dir * 165;
+        const centerY = entScreenY;
+        const radX = 285;
+        const radY = 110;
 
-        ctx.fillStyle = fGrad;
-        ctx.fillRect(pillarX - 45, 0, 90, canvas.height);
-        ctx.restore();
-      } else if (sPhase === 'horizontal_windup') {
-        ctx.save();
-        ctx.fillStyle = 'rgba(69, 10, 10, 0.45)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 3.0;
+        // (1) 범위 전체 반투명 진홍빛 필 (경고 영역)
+        const rangeGrad = ctx.createRadialGradient(centerX, centerY, 30, centerX, centerY, radX);
+        rangeGrad.addColorStop(0, `rgba(239, 68, 68, ${0.30 * pulse})`);
+        rangeGrad.addColorStop(0.65, `rgba(185, 28, 28, ${0.18 * pulse})`);
+        rangeGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = rangeGrad;
         ctx.beginPath();
-        ctx.arc(entScreenX, entScreenY, 65, 0, Math.PI * 2);
+        ctx.ellipse(centerX, centerY, radX, radY, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // (2) 외곽 점선 펄스 림
+        ctx.strokeStyle = `rgba(239, 68, 68, ${0.9 * pulse})`;
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([12, 6]);
+        ctx.beginPath();
+        ctx.ellipse(centerX, centerY, radX, radY, 0, 0, Math.PI * 2);
         ctx.stroke();
-        ctx.restore();
-      } else if (sPhase === 'horizontal_slash') {
-        ctx.save();
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.65)';
-        ctx.lineWidth = 22;
-        ctx.beginPath();
-        ctx.moveTo(0, entScreenY);
-        ctx.lineTo(canvas.width, entScreenY);
-        ctx.stroke();
+        ctx.setLineDash([]);
 
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 7;
+        // (3) 내부 수평 예측 절단선
+        ctx.strokeStyle = `rgba(255, 255, 255, ${0.85 * pulse})`;
+        ctx.lineWidth = 2.2;
         ctx.beginPath();
-        ctx.moveTo(0, entScreenY);
-        ctx.lineTo(canvas.width, entScreenY);
+        ctx.moveTo(entScreenX - dir * 120, centerY);
+        ctx.lineTo(entScreenX + dir * 450, centerY);
         ctx.stroke();
 
+        // (4) 상단 사거리 표시 텍스트 뱃지
+        ctx.font = 'bold 12px monospace';
         ctx.fillStyle = '#fca5a5';
-        for (let p = 0; p < 20; p++) {
-          const px = (p * (canvas.width / 20)) + (Math.random() - 0.5) * 30;
-          const py = entScreenY + (Math.random() - 0.5) * 40;
-          ctx.beginPath();
-          ctx.arc(px, py, 2.5, 0, Math.PI * 2);
-          ctx.fill();
-        }
+        ctx.textAlign = 'center';
+        ctx.fillText(`⚡ [대절단 - 가로] 초거대 횡베기 집중 (사거리 450px) ⚡`, centerX, centerY - radY - 10);
         ctx.restore();
       }
     }
@@ -8243,6 +8291,9 @@
       // 카메라 줌 & 틸트 매트릭스 복구 (UI 오버레이는 정규 화각으로 출력)
       ctx.restore();
 
+      // 10.4. [Red Mist (미미크리)] 대절단 시네마틱 붉은 화면 & 단독 참격 연출 (캔버스 최상단 직결)
+      drawRedMistCinematicOverlay(ctx);
+
       // 10.5. [페이즈 1 후퇴 및 페이즈 2 전환 긴급 배너 연출]
       if (isPhase1Retreating) {
         ctx.save();
@@ -8494,4 +8545,161 @@
           ctx.restore();
         }
       }
+    }
+
+    // [Red Mist (미미크리)] 대절단 시네마틱 붉은 화면 & 단독 참격 연출 (캔버스 최상단 직결)
+    function drawRedMistCinematicOverlay(ctx) {
+      const p = (player && player.redMistSpecialPhase !== 'none') ? player : ((typeof remotePlayer !== 'undefined' && remotePlayer && remotePlayer.redMistSpecialPhase !== 'none') ? remotePlayer : null);
+      if (!p) return;
+
+      const sPhase = p.redMistSpecialPhase;
+      let isRedScreen = false;
+      let mode = '';
+      let prog = 0;
+      const dir = p.facing > 0 ? 1 : -1;
+      const pScreenX = (p.x + p.width / 2) - camera.x;
+      const pScreenY = p.y + p.height * 0.58;
+
+      if (sPhase === 'vertical_pin') {
+        const elapsed = (p.redMistSpecialMaxTimer || 1.50) - (p.redMistSpecialTimer || 0);
+        if (elapsed >= 0.50 && elapsed < 1.40) {
+          isRedScreen = true;
+          mode = 'vertical';
+          prog = Math.min(1, Math.max(0, (elapsed - 0.50) / 0.90)); // 0.5초부터 1.4초까지 (0.9초간)
+        }
+      } else if (sPhase === 'horizontal_red_screen') {
+        isRedScreen = true;
+        mode = 'horizontal';
+        prog = Math.min(1, Math.max(0, 1 - ((p.redMistSpecialTimer || 0) / (p.redMistSpecialMaxTimer || 0.70)))); // 0.7초간
+      }
+
+      if (!isRedScreen) return;
+
+      ctx.save();
+
+      // 1. 전체 화면을 붉은색으로 가림 (Red Screen)
+      ctx.fillStyle = '#7f1d1d';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 심연의 다크 크림슨 비네트
+      const vGrad = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, canvas.width * 0.2, canvas.width / 2, canvas.height / 2, canvas.width * 0.75);
+      vGrad.addColorStop(0, 'rgba(153, 27, 27, 0.45)');
+      vGrad.addColorStop(0.7, 'rgba(69, 10, 10, 0.85)');
+      vGrad.addColorStop(1, 'rgba(20, 3, 3, 0.98)');
+      ctx.fillStyle = vGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 2. 모드별 단독 참격 연출
+      if (mode === 'vertical') {
+        // [세로]: 위에서 아래로 단절하는 초거대 참격 연출
+        const slashX = Math.max(80, Math.min(canvas.width - 80, pScreenX + dir * 45));
+        const tipY = Math.min(canvas.height, prog * (canvas.height * 1.35));
+
+        // (A) 외곽 진홍빛 에너지 단절 폭
+        const auraWidth = 44 * Math.sin(prog * Math.PI) + 14;
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.95)';
+        ctx.lineWidth = auraWidth;
+        ctx.beginPath();
+        ctx.moveTo(slashX, 0);
+        ctx.lineTo(slashX, tipY);
+        ctx.stroke();
+
+        // (B) 중층 고열 루비 절단선
+        ctx.strokeStyle = '#dc2626';
+        ctx.lineWidth = 16 * Math.sin(prog * Math.PI) + 6;
+        ctx.beginPath();
+        ctx.moveTo(slashX, 0);
+        ctx.lineTo(slashX, tipY);
+        ctx.stroke();
+
+        // (C) 중심 초고온 백색 참격선
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 5 * Math.sin(prog * Math.PI) + 3;
+        ctx.beginPath();
+        ctx.moveTo(slashX, 0);
+        ctx.lineTo(slashX, tipY);
+        ctx.stroke();
+
+        // (D) 수직 하강 참격 선단 칼날 팁
+        if (tipY < canvas.height) {
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.moveTo(slashX, tipY);
+          ctx.lineTo(slashX - 18, tipY - 38);
+          ctx.lineTo(slashX + 18, tipY - 38);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // (E) 좌우로 거세게 튀는 핏빛 스파크 & 참격 파편
+        const sparkCount = 20;
+        for (let sp = 0; sp < sparkCount; sp++) {
+          const sy = (sp / sparkCount) * tipY;
+          const sDir = (sp % 2 === 0 ? 1 : -1);
+          const sLen = 30 + ((sp * 7) % 6) * 16;
+          ctx.strokeStyle = sp % 3 === 0 ? '#ffffff' : '#fca5a5';
+          ctx.lineWidth = 2.0;
+          ctx.beginPath();
+          ctx.moveTo(slashX, sy);
+          ctx.lineTo(slashX + sDir * sLen, sy + Math.sin(sp + prog * 12) * 15);
+          ctx.stroke();
+        }
+      } else if (mode === 'horizontal') {
+        // [가로]: 화면을 수평으로 양단하는 거대한 횡베기 연출
+        const slashY = Math.max(100, Math.min(canvas.height - 100, pScreenY));
+        const startX = dir > 0 ? -50 : canvas.width + 50;
+        const endX = dir > 0 ? (prog * (canvas.width + 120) - 50) : (canvas.width + 50 - prog * (canvas.width + 120));
+
+        // (A) 외곽 진홍빛 에너지 양단 폭
+        const auraWidth = 48 * Math.sin(prog * Math.PI) + 16;
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.95)';
+        ctx.lineWidth = auraWidth;
+        ctx.beginPath();
+        ctx.moveTo(startX, slashY);
+        ctx.lineTo(endX, slashY);
+        ctx.stroke();
+
+        // (B) 중층 고열 루비 절단선
+        ctx.strokeStyle = '#dc2626';
+        ctx.lineWidth = 18 * Math.sin(prog * Math.PI) + 6;
+        ctx.beginPath();
+        ctx.moveTo(startX, slashY);
+        ctx.lineTo(endX, slashY);
+        ctx.stroke();
+
+        // (C) 중심 초고온 백색 참격선
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 6 * Math.sin(prog * Math.PI) + 3;
+        ctx.beginPath();
+        ctx.moveTo(startX, slashY);
+        ctx.lineTo(endX, slashY);
+        ctx.stroke();
+
+        // (D) 수평 진행 선단 칼날 팁
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(endX, slashY);
+        ctx.lineTo(endX - dir * 38, slashY - 18);
+        ctx.lineTo(endX - dir * 38, slashY + 18);
+        ctx.closePath();
+        ctx.fill();
+
+        // (E) 상하로 맹렬하게 튀는 핏빛 스파크 & 단절 파편
+        const sparkCount = 24;
+        for (let sp = 0; sp < sparkCount; sp++) {
+          const sx = (sp / sparkCount) * canvas.width;
+          if ((dir > 0 && sx <= endX) || (dir < 0 && sx >= endX)) {
+            const sDir = (sp % 2 === 0 ? 1 : -1);
+            const sLen = 28 + ((sp * 5) % 7) * 14;
+            ctx.strokeStyle = sp % 3 === 0 ? '#ffffff' : '#fca5a5';
+            ctx.lineWidth = 2.0;
+            ctx.beginPath();
+            ctx.moveTo(sx, slashY);
+            ctx.lineTo(sx + Math.sin(sp + prog * 12) * 10, slashY + sDir * sLen);
+            ctx.stroke();
+          }
+        }
+      }
+
+      ctx.restore();
     }

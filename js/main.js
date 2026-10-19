@@ -3011,30 +3011,36 @@
     }
 
     function startRedMistVerticalCleaveSequence(isEnhanced) {
-      player.redMistSpecialPhase = 'vertical_dash';
-      player.redMistSpecialTimer = 0.25;
-      player.redMistSpecialStartX = player.x;
-      player.redMistSpecialTargetX = Math.max(50, Math.min(WORLD_WIDTH - 100, player.x + player.facing * 180));
+      player.redMistSpecialPhase = 'vertical_start';
+      player.redMistSpecialTimer = 0.28;
+      player.redMistSpecialMaxTimer = 0.28;
       player.redMistSpecialTarget = null;
       player.redMistSpecialIsEnhanced = isEnhanced;
       player.redMistSpecialTicksDone = 0;
-      addDamageText(player.x, player.y - 30, isEnhanced ? '⚡ [강화 대절단 - 세로] 돌격!' : '⚡ [대절단 - 세로] 돌격!', '#ef4444');
+      addDamageText(player.x, player.y - 30, isEnhanced ? '⚡ [강화 대절단 - 세로] 대형 종베기 시동!' : '⚡ [대절단 - 세로] 대형 종베기 시동!', '#ef4444');
       updateWeaponHUD();
     }
 
     function startRedMistHorizontalCleaveSequence() {
       player.redMistSpecialPhase = 'horizontal_windup';
-      player.redMistSpecialTimer = 0.50; // 0.5초 정지 암전
+      player.redMistSpecialTimer = 0.50; // 0.5초 대기 동안 초거대 횡베기 범위 표시 & 적 멈춤
+      player.redMistSpecialMaxTimer = 0.50;
 
-      // 범위 내 적 일시 완전 정지
+      // 횡베기 범위 (평소 85px 대비 앞뒤 1.5배, 상하 3.5배: reach 약 446px) 내 적 일시 완전 정지
+      const hReach = 85 * 1.5 * 3.5;
       kaitenzers.forEach(k => {
-        if (!k.isDead) k.stunTimer = Math.max(k.stunTimer || 0, 0.65);
+        if (!k.isDead) {
+          const dx = (k.x + k.size / 2 - (player.x + player.width / 2)) * player.facing;
+          if (dx >= -50 && dx <= hReach) {
+            k.stunTimer = Math.max(k.stunTimer || 0, 1.8);
+          }
+        }
       });
       if (typeof boss !== 'undefined' && boss && !boss.isDead) {
-        boss.stunTimer = Math.max(boss.stunTimer || 0, 0.65);
+        boss.stunTimer = Math.max(boss.stunTimer || 0, 1.8);
       }
 
-      addDamageText(player.x, player.y - 35, '🩸 [대절단 - 가로] 0.5초 참격 집중...', '#dc2626');
+      addDamageText(player.x, player.y - 35, '🩸 [대절단 - 가로] 초거대 횡베기 집중...', '#dc2626');
       updateWeaponHUD();
     }
 
@@ -5095,94 +5101,109 @@
       if (player.redMistSpecialPhase !== 'none') {
         const groundY = canvas.height - GROUND_OFFSET;
 
-        if (player.redMistSpecialPhase === 'vertical_dash') {
+        // [대절단 - 세로] 1단계: 대형 종베기 시동 (0.28s)
+        if (player.redMistSpecialPhase === 'vertical_start') {
           player.redMistSpecialTimer -= dt;
-          const prog = Math.min(1, Math.max(0, 1 - (player.redMistSpecialTimer / 0.25)));
-          player.x = player.redMistSpecialStartX + (player.redMistSpecialTargetX - player.redMistSpecialStartX) * prog;
+          player.vx = 0;
+          player.vy = 0;
 
-          // 가장 가까운 전방 적 1개 탐색 (단일 타겟)
-          if (!player.redMistSpecialTarget) {
-            let closest = null;
-            let minDist = 220;
-            kaitenzers.forEach(k => {
-              if (!k.isSpawned || k.isDead) return;
-              const dx = (k.x + k.size / 2 - (player.x + player.width / 2)) * player.facing;
-              if (dx >= -20 && dx <= minDist) {
-                minDist = dx;
-                closest = k;
-              }
-            });
-            if (!closest && typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead && boss.isActive) {
-              const dx = (boss.x + boss.width / 2 - (player.x + player.width / 2)) * player.facing;
-              if (dx >= -40 && dx <= 260) {
-                closest = boss;
-              }
+          // 전방 대형 종베기 판정: 적중 시 즉시 수직 꽂기 결박 전환!
+          let hitTgt = null;
+          let minDist = 260;
+          kaitenzers.forEach(k => {
+            if (!k.isSpawned || k.isDead) return;
+            const dx = (k.x + k.size / 2 - (player.x + player.width / 2)) * player.facing;
+            const dy = Math.abs((groundY - k.size / 2) - (player.y + player.height / 2));
+            if (dx >= -30 && dx <= minDist && dy <= 160) {
+              minDist = dx;
+              hitTgt = k;
             }
-            if (closest) {
-              player.redMistSpecialTarget = closest;
+          });
+          if (!hitTgt && typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead && boss.isActive) {
+            const dx = (boss.x + boss.width / 2 - (player.x + player.width / 2)) * player.facing;
+            if (dx >= -40 && dx <= 320) {
+              hitTgt = boss;
             }
           }
 
-          if (player.redMistSpecialTimer <= 0) {
-            player.redMistSpecialPhase = 'vertical_slashes';
-            player.redMistSpecialTimer = 0.70;
-            player.redMistSpecialTicksDone = 0;
-            if (player.redMistSpecialTarget) {
-              player.redMistSpecialTarget.stunTimer = 3.5;
+          if (hitTgt) {
+            player.redMistSpecialTarget = hitTgt;
+            player.redMistSpecialPhase = 'vertical_pin';
+            player.redMistSpecialTimer = 1.50; // 총 1.5초 딜레이
+            player.redMistSpecialMaxTimer = 1.50;
+            player.vx = 0;
+            player.vy = 0;
+            hitTgt.stunTimer = 2.0;
+            hitTgt.vx = 0;
+            hitTgt.vy = 0;
+            const isBoss = (typeof boss !== 'undefined' && hitTgt === boss);
+            if (!isBoss) {
+              hitTgt.x = player.x + player.facing * 45;
+              hitTgt.jumpY = 0;
             }
-            addDamageText(player.x, player.y - 30, '⚡ 대절단-세로: 수평 고정 꽂기!', '#ef4444');
+            addDamageText(player.x + player.facing * 45, player.y - 30, '⚡ [대절단 - 세로] 수직 결박!', '#ef4444');
+          } else if (player.redMistSpecialTimer <= 0) {
+            // 적중 실패 시 종료
+            player.redMistSpecialPhase = 'none';
+            player.redMistSpecialTarget = null;
+            updateWeaponHUD();
           }
-        } else if (player.redMistSpecialPhase === 'vertical_slashes') {
+        } else if (player.redMistSpecialPhase === 'vertical_pin') {
+          // [대절단 - 세로] 2단계: 수직 고정 꽂기 & 0.5s~1.4s 붉은 화면 & 1.5s 마무리 공격
           player.redMistSpecialTimer -= dt;
+          player.vx = 0;
+          player.vy = 0;
+
+          // 적과 플레이어 완전 이동/공격 정지 고정
+          const tgt = player.redMistSpecialTarget;
+          if (tgt && !tgt.isDead) {
+            tgt.stunTimer = Math.max(tgt.stunTimer || 0, 1.0);
+            tgt.vx = 0;
+            tgt.vy = 0;
+            const isBoss = (typeof boss !== 'undefined' && tgt === boss);
+            if (!isBoss) {
+              tgt.x = player.x + player.facing * 45;
+              tgt.jumpY = 0;
+            }
+          }
+
+          // 1.5초 만료 시: 날려버리는 마무리 극딜! (1.4초에 붉은 화면은 이미 해제됨)
           if (player.redMistSpecialTimer <= 0) {
-            // 0.7초마다 타격 (총 3번)
             const isEnh = player.redMistSpecialIsEnhanced;
-            const ratio = isEnh ? 5.60 : 4.50; // 560% or 450%
-            let dmg = 1550 * ratio;
-            dmg = calcPlayerAttackDamage(dmg);
-            const finalDmg = Math.round(dmg); // 치명타 미발동
-
-            const tgt = player.redMistSpecialTarget;
-            if (tgt) {
-              const isBoss = (typeof boss !== 'undefined' && tgt === boss);
-              const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, tgt.armorType || ARMOR_TYPES.NORMAL));
-              tgt.hp -= actualDmg;
-              addDamageText(tgt.x + (isBoss ? tgt.width / 2 : tgt.size / 2), (isBoss ? tgt.y - 15 : groundY - tgt.size - 15), `${actualDmg}`, '#ef4444', false);
-              if (!isBoss && typeof applyKaitenzerSharedDamage === 'function') {
-                applyKaitenzerSharedDamage(actualDmg);
-              }
-            }
-
-            player.redMistSpecialTicksDone++;
-            if (player.redMistSpecialTicksDone < 3) {
-              player.redMistSpecialTimer = 0.70;
-            } else {
-              player.redMistSpecialPhase = 'vertical_finish';
-              player.redMistSpecialTimer = 0.70;
-            }
-          }
-        } else if (player.redMistSpecialPhase === 'vertical_finish') {
-          player.redMistSpecialTimer -= dt;
-          if (player.redMistSpecialTimer <= 0) {
-            // 4번째 0.7초: 피니시 방출 및 날려보내기 + 기절
-            const isEnh = player.redMistSpecialIsEnhanced;
-            const finishRatio = isEnh ? 15.50 : 12.50; // 1550% or 1250%
+            const finishRatio = isEnh ? 32.50 : 26.00; // 피니시 계수 2,600% ~ 3,250%
             const stunDur = isEnh ? 4.0 : 2.5;
             let dmg = 1550 * finishRatio;
             dmg = calcPlayerAttackDamage(dmg);
-            const finalDmg = Math.round(dmg); // 치명타 미발동
+            const finalDmg = Math.round(dmg);
 
-            const tgt = player.redMistSpecialTarget;
-            if (tgt) {
+            if (tgt && !tgt.isDead) {
               const isBoss = (typeof boss !== 'undefined' && tgt === boss);
               const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, tgt.armorType || ARMOR_TYPES.NORMAL));
               tgt.hp -= actualDmg;
               tgt.stunTimer = Math.max(tgt.stunTimer || 0, stunDur);
-              tgt.x += player.facing * 50; // 전방 넉백
-              addDamageText(tgt.x + (isBoss ? tgt.width / 2 : tgt.size / 2), (isBoss ? tgt.y - 25 : groundY - tgt.size - 25), `💥 ${actualDmg} (기절 ${stunDur}s!)`, '#ef4444', false);
+              if (!isBoss) {
+                tgt.x += player.facing * 120; // 전방으로 날려버림!
+              }
+              addDamageText(tgt.x + (isBoss ? tgt.width / 2 : tgt.size / 2), (isBoss ? tgt.y - 30 : groundY - tgt.size - 30), `💥 ${actualDmg.toLocaleString()} (날리기!)`, '#ef4444', false);
               if (!isBoss && typeof applyKaitenzerSharedDamage === 'function') {
                 applyKaitenzerSharedDamage(actualDmg);
               }
+            }
+
+            if (typeof triggerScreenShake === 'function') triggerScreenShake(28, 0.45);
+            for (let p = 0; p < 24; p++) {
+              specialParticles.push({
+                type: 'spark',
+                x: player.x + player.facing * 45 + (Math.random() - 0.5) * 30,
+                y: player.y + 20 + (Math.random() - 0.5) * 30,
+                vx: player.facing * (Math.random() * 12 + 6),
+                vy: (Math.random() - 0.5) * 10,
+                color: '#ef4444',
+                size: Math.random() * 4 + 2,
+                life: 20,
+                maxLife: 20,
+                alpha: 1
+              });
             }
 
             player.redMistSpecialPhase = 'none';
@@ -5190,41 +5211,115 @@
             updateWeaponHUD();
           }
         } else if (player.redMistSpecialPhase === 'horizontal_windup') {
+          // [대절단 - 가로] 1단계: 0.5초 대기 & 초거대 횡베기 범위 표시 & 범위 내 적/플레이어 멈춤
           player.redMistSpecialTimer -= dt;
-          if (player.redMistSpecialTimer <= 0) {
-            // 0.5초 대기 종료 -> 화면 양단 참격 방출!
-            player.redMistSpecialPhase = 'horizontal_slash';
-            player.redMistSpecialTimer = 0.35; // 0.35초간 잔상 렌더링
+          player.vx = 0;
+          player.vy = 0;
 
+          // 범위 내 적 결빙 정지 유지 (앞뒤 1.5배, 상하 3.5배: 뒤 -120px ~ 앞 +450px, 상하 +-160px)
+          kaitenzers.forEach(k => {
+            if (!k.isDead) {
+              const dx = (k.x + k.size / 2 - (player.x + player.width / 2)) * player.facing;
+              const dy = Math.abs((groundY - k.size / 2) - (player.y + player.height / 2));
+              if (dx >= -120 && dx <= 450 && dy <= 160) {
+                k.stunTimer = Math.max(k.stunTimer || 0, 1.5);
+                k.vx = 0;
+              }
+            }
+          });
+          if (typeof boss !== 'undefined' && boss && !boss.isDead) {
+            boss.stunTimer = Math.max(boss.stunTimer || 0, 1.5);
+          }
+
+          if (player.redMistSpecialTimer <= 0) {
+            // 0.5초 대기 종료 -> 0.3초 대기(horizontal_freeze)로 전환
+            player.redMistSpecialPhase = 'horizontal_freeze';
+            player.redMistSpecialTimer = 0.30;
+            player.redMistSpecialMaxTimer = 0.30;
+          }
+        } else if (player.redMistSpecialPhase === 'horizontal_freeze') {
+          // [대절단 - 가로] 2단계: 0.3초 정지 대기
+          player.redMistSpecialTimer -= dt;
+          player.vx = 0;
+          player.vy = 0;
+
+          // 적 정지 유지
+          kaitenzers.forEach(k => {
+            if (!k.isDead) {
+              const dx = (k.x + k.size / 2 - (player.x + player.width / 2)) * player.facing;
+              const dy = Math.abs((groundY - k.size / 2) - (player.y + player.height / 2));
+              if (dx >= -120 && dx <= 450 && dy <= 160) {
+                k.stunTimer = Math.max(k.stunTimer || 0, 1.5);
+                k.vx = 0;
+              }
+            }
+          });
+          if (typeof boss !== 'undefined' && boss && !boss.isDead) {
+            boss.stunTimer = Math.max(boss.stunTimer || 0, 1.5);
+          }
+
+          if (player.redMistSpecialTimer <= 0) {
+            // 0.3초 경과 -> 0.7초간 붉은 화면 참격 연출(horizontal_red_screen) 발동!
+            player.redMistSpecialPhase = 'horizontal_red_screen';
+            player.redMistSpecialTimer = 0.70;
+            player.redMistSpecialMaxTimer = 0.70;
+          }
+        } else if (player.redMistSpecialPhase === 'horizontal_red_screen') {
+          // [대절단 - 가로] 3단계: 0.7초간 붉은 화면 & 화면 가로 참격 단독 연출 후 범위 내 일괄 광역 피해
+          player.redMistSpecialTimer -= dt;
+          player.vx = 0;
+          player.vy = 0;
+
+          if (player.redMistSpecialTimer <= 0) {
+            // 0.7초 종료: 붉은 화면 해제 및 범위 내 모든 적에게 일괄 광역 피해 적용!
             let dmg = 1550 * 21.50; // 2,150% 공격력 광역 피해
             dmg = calcPlayerAttackDamage(dmg);
-            const finalDmg = Math.round(dmg); // 치명타 미발동
+            const finalDmg = Math.round(dmg);
 
-            // 범위 내 모든 적에게 피해
             kaitenzers.forEach(k => {
               if (!k.isSpawned || k.isDead) return;
-              const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, k.armorType || ARMOR_TYPES.NORMAL));
-              k.hp -= actualDmg;
-              k.x += player.facing * 40;
-              addDamageText(k.x + k.size / 2, groundY - k.size - 30, `💥 ${actualDmg}`, '#dc2626', false);
-              if (typeof applyKaitenzerSharedDamage === 'function') {
-                applyKaitenzerSharedDamage(actualDmg);
+              const dx = (k.x + k.size / 2 - (player.x + player.width / 2)) * player.facing;
+              const dy = Math.abs((groundY - k.size / 2) - (player.y + player.height / 2));
+              if (dx >= -120 && dx <= 450 && dy <= 160) {
+                const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, k.armorType || ARMOR_TYPES.NORMAL));
+                k.hp -= actualDmg;
+                k.x += player.facing * 60; // 넉백
+                addDamageText(k.x + k.size / 2, groundY - k.size - 30, `💥 ${actualDmg.toLocaleString()}`, '#dc2626', false);
+                if (typeof applyKaitenzerSharedDamage === 'function') {
+                  applyKaitenzerSharedDamage(actualDmg);
+                }
               }
             });
 
             if (typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead && boss.isActive) {
-              const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, boss.armorType || ARMOR_TYPES.HEAVY));
-              if (typeof damageBoss === 'function') {
-                damageBoss(actualDmg, ATTACK_TYPES.NORMAL, false);
-              } else {
-                boss.hp -= actualDmg;
+              const dx = (boss.x + boss.width / 2 - (player.x + player.width / 2)) * player.facing;
+              if (dx >= -120 && dx <= 450) {
+                const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, boss.armorType || ARMOR_TYPES.HEAVY));
+                if (typeof damageBoss === 'function') {
+                  damageBoss(actualDmg, ATTACK_TYPES.NORMAL, false);
+                } else {
+                  boss.hp -= actualDmg;
+                }
+                addDamageText(boss.x + boss.width / 2, boss.y - 30, `💥 ${actualDmg.toLocaleString()}`, '#dc2626', false);
               }
-              addDamageText(boss.x + boss.width / 2, boss.y - 30, `💥 ${actualDmg}`, '#dc2626', false);
             }
-          }
-        } else if (player.redMistSpecialPhase === 'horizontal_slash') {
-          player.redMistSpecialTimer -= dt;
-          if (player.redMistSpecialTimer <= 0) {
+
+            if (typeof triggerScreenShake === 'function') triggerScreenShake(32, 0.5);
+            for (let p = 0; p < 30; p++) {
+              specialParticles.push({
+                type: 'spark',
+                x: player.x + (Math.random() - 0.5) * 300,
+                y: player.y + (Math.random() - 0.5) * 60,
+                vx: (Math.random() - 0.5) * 16,
+                vy: (Math.random() - 0.5) * 16,
+                color: '#dc2626',
+                size: Math.random() * 4 + 2,
+                life: 22,
+                maxLife: 22,
+                alpha: 1
+              });
+            }
+
             player.redMistSpecialPhase = 'none';
             updateWeaponHUD();
           }
@@ -5781,7 +5876,7 @@
       if (myRole === 'striker' || myRole === 'guest_striker') {
         const isFinisherLocked = (player.abiFinalPhase && player.abiFinalPhase !== 'none');
         const isStunned = (player.abiStunTimer > 0) || (player.stunTimer > 0);
-        const isMovementLocked = isFxIntroActive || isStunned || isFinisherLocked || player.isChargingSkill || player.rgAwakeCharging || player.rgAwakeFiring || player.mgStanceTransitioning || player.mgStanceActive || player.isFiringSpecial;
+        const isMovementLocked = isFxIntroActive || isStunned || isFinisherLocked || player.isChargingSkill || player.rgAwakeCharging || player.rgAwakeFiring || player.mgStanceTransitioning || player.mgStanceActive || player.isFiringSpecial || (player.redMistSpecialPhase && player.redMistSpecialPhase !== 'none');
 
         if (isFxIntroActive) {
           // [합체 연출 중 플레이어 완전 일시정지]: 입력 무시 및 정지
@@ -5860,7 +5955,7 @@
           if (player.rgAwakeFiring) {
             player.facing = player.rgAwakeFacing; // RG 발사 중 방향 전환 불가!
           }
-          // 기절 또는 지상 차징 중 중력 적용
+          // 기절 또는 지상 차징/특수스킬 중 중력 적용
           player.vy += 0.85;
           player.y += player.vy;
           if (player.y >= groundY - player.height) {
@@ -5892,7 +5987,7 @@
             moveSpeed *= 1.05; // 탈진 후 영구 이속 5% 증가
           }
 
-          if (isCutsceneRunning || player.stunTimer > 0 || player.redMistKihapStunSelfTimer > 0 || player.egoExhaustTimer > 0) {
+          if (isCutsceneRunning || player.stunTimer > 0 || player.redMistKihapStunSelfTimer > 0 || player.egoExhaustTimer > 0 || (player.redMistSpecialPhase && player.redMistSpecialPhase !== 'none')) {
             player.vx = 0;
           } else if (keys.left) {
             player.vx = -moveSpeed;
@@ -5902,8 +5997,8 @@
             player.vx = 0;
           }
 
-          // 점프 (컷신 중엔 점프 불가, 기절 중 불가)
-          if (!isCutsceneRunning && player.stunTimer <= 0 && player.redMistKihapStunSelfTimer <= 0 && player.egoExhaustTimer <= 0 && keys.jump && player.isGrounded) {
+          // 점프 (컷신 중엔 점프 불가, 기절 중 불가, 특수스킬 시전 중 불가)
+          if (!isCutsceneRunning && player.stunTimer <= 0 && player.redMistKihapStunSelfTimer <= 0 && player.egoExhaustTimer <= 0 && (!player.redMistSpecialPhase || player.redMistSpecialPhase === 'none') && keys.jump && player.isGrounded) {
             player.vy = -16;
             player.isGrounded = false;
           }
