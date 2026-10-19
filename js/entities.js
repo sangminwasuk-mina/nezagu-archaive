@@ -222,7 +222,37 @@
       isTacticalDefActive: false, // 전술 방어 상태 돌입 여부
       foxShieldCooldown: 0,     // 전술 방패 전개 쿨타임 (40초)
       foxSkill2Cooldown: 0,     // 공세 전환 쿨타임 (2.5초)
-      originalColor: '#0284c7' // 원래 플레이어 색상 보관
+      originalColor: '#0284c7', // 원래 플레이어 색상 보관
+
+      // [메인 근접 무기: Red Mist (미미크리) 시스템]
+      redMistStance: 'horizontal', // 'horizontal' (횡베기), 'vertical' (종베기), 'thrust' (찌르기)
+      redMistStack: 0, // 붉은안개 스택 (0 ~ 100)
+      redMistStanceDmgBuff: false, // 1스킬 전환 후 다음 공격 피해량 +10% (개화 시 +35%)
+      redMistKihapBuffCount: 0, // 기합 발동 후 다음 공격 3회 피해량 증가 카운트 (300% / 개화 시 650%)
+      redMistKihapBuffMult: 3.0,
+      redMistKihapStunSelfTimer: 0, // 기합 시전 후 0.7초 이동 불가 타이머
+      redMistThrustBonusDmgRatio: 0, // 돌진 치명타 발동 시 누적 피해량 비율 (+0.55씩 합산, 개화 시 +1.35)
+      redMistSkill2Cooldown: 0, // 2스킬 (기합/돌진) 쿨타임
+      redMistSkill2CooldownMax: 5.0, // 기본 5초 (개화 돌진 시 8초)
+      redMistDashing: false, // 돌진 대시 실행 중 여부
+      redMistDashTimer: 0,
+      redMistDashStartX: 0,
+      redMistDashTargetX: 0,
+      redMistDashHitEnemies: [],
+      // E.G.O 개화 상태
+      isEgoActive: false, // E.G.O 개화 활성화 여부
+      isEgoForced: false, // 체력 10% 이하 강제 개화 여부 (공격력 -40%, 치명타 봉인)
+      egoExhausted: false, // 스택 0 도달 시 영구 탈진 (8초 기절, 충전 불가, 패시브 획득)
+      egoExhaustTimer: 0, // 8초 탈진 기절 타이머
+      egoPassiveSpeedBuff: false, // 탈진 후 영구 이동속도 +5%
+      egoPassiveCostBuff: false, // 탈진 후 영구 코스트 회복속도 10% 단축
+      // 특수스킬 시전 페이즈
+      redMistSpecialPhase: 'none', // 'none' | 'vertical_dash' | 'vertical_slashes' | 'vertical_finish' | 'horizontal_windup' | 'horizontal_slash'
+      redMistSpecialTimer: 0,
+      redMistSpecialTarget: null,
+      redMistSpecialHitEnemies: [],
+      redMistSpecialTicksDone: 0,
+      redMistAttackAnim: null // 평타 애니메이션: { type: 'horizontal'|'vertical'|'thrust', timer: 0.3, maxTimer: 0.3 }
     };
 
     // 1.5. 동료 스트라이커 (2인 멀티플레이 시 동기화되는 2P 스트라이커)

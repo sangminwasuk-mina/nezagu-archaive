@@ -282,6 +282,7 @@
     // 수동 재장전 (A)
     function startManualReload() {
       const cur = player.activeWeaponSlot === 'main' ? player.mainWeapon : player.subWeapon;
+      if (cur.isMelee) return; // 근접 무기는 재장전 불필요 (무제한)
       if (cur.isReloading) return;
       if (cur.ammo >= cur.maxAmmo) {
         addDamageText(player.x, player.y - 15, '탄약 가득 참', '#94a3b8');
@@ -327,6 +328,14 @@
       player.mainWeapon.reloadDuration = mainStats.reloadTime || 2.5;
       player.mainWeapon.dmg = mainStats.dmg || 400;
       player.mainWeapon.isReloading = false;
+      player.mainWeapon.isMelee = !!selectedMain.isMelee;
+      if (player.mainWeapon.isMelee) {
+        player.mainWeapon.maxAmmo = Infinity;
+        player.mainWeapon.ammo = Infinity;
+        player.mainWeapon.maxMags = Infinity;
+        player.mainWeapon.mags = Infinity;
+        player.mainWeapon.reloadDuration = 0;
+      }
       player.isColorActive = false;
       player.healingReceivedPenalty = 0;
       player.calmBreathActive = false;
@@ -629,6 +638,32 @@
       player.colorErosionTimer = 0;
       player.specialAimAngle = 0;
       player.armorType = (player.mainWeapon && player.mainWeapon.armorType) || ARMOR_TYPES.NORMAL;
+
+      // [Red Mist (미미크리) 초기화]
+      player.redMistStance = 'horizontal';
+      player.redMistStack = 0;
+      player.redMistStanceDmgBuff = false;
+      player.redMistKihapBuffCount = 0;
+      player.redMistKihapBuffMult = 3.0;
+      player.redMistKihapStunSelfTimer = 0;
+      player.redMistThrustBonusDmgRatio = 0;
+      player.redMistSkill2Cooldown = 0;
+      player.redMistSkill2CooldownMax = 5.0;
+      player.redMistDashing = false;
+      player.redMistDashTimer = 0;
+      player.redMistDashHitEnemies = [];
+      player.isEgoActive = false;
+      player.isEgoForced = false;
+      player.egoExhausted = false;
+      player.egoExhaustTimer = 0;
+      player.egoPassiveSpeedBuff = false;
+      player.egoPassiveCostBuff = false;
+      player.redMistSpecialPhase = 'none';
+      player.redMistSpecialTimer = 0;
+      player.redMistSpecialTarget = null;
+      player.redMistSpecialHitEnemies = [];
+      player.redMistSpecialTicksDone = 0;
+      player.redMistAttackAnim = null;
 
       // [서포터 초기화 제거]
 

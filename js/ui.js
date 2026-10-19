@@ -864,7 +864,10 @@
 
       const statusBadge = getCachedEl('reloadStatusBadge');
       if (statusBadge) {
-        if (player.isAbiEshuhActive) {
+        if (cur.isMelee) {
+          setTextIfChanged(statusBadge, '[근접 무장: 미미크리]');
+          setColorIfChanged(statusBadge, '#ef4444');
+        } else if (player.isAbiEshuhActive) {
           setTextIfChanged(statusBadge, '[비행 호버링 중]');
           setColorIfChanged(statusBadge, '#38bdf8');
         } else if (player.isColorActive) {
@@ -881,7 +884,10 @@
 
       const ammoCountEl = getCachedEl('ammoCountText');
       const magCountEl = getCachedEl('magCountText');
-      if (player.isAbiEshuhActive) {
+      if (cur.isMelee) {
+        setTextIfChanged(ammoCountEl, '∞');
+        setTextIfChanged(magCountEl, '근접 무기');
+      } else if (player.isAbiEshuhActive) {
         setTextIfChanged(ammoCountEl, '∞');
         setTextIfChanged(magCountEl, '에너지');
       } else if (player.isColorActive) {
@@ -1160,7 +1166,10 @@
 
       if (nameEl) setTextIfChanged(nameEl, curW.name || '무기');
       if (curAmmoEl) {
-        if (curW.isReloading) {
+        if (curW.isMelee) {
+          setTextIfChanged(curAmmoEl, '∞');
+          setColorIfChanged(curAmmoEl, '#ef4444');
+        } else if (curW.isReloading) {
           setTextIfChanged(curAmmoEl, '장전 중');
           setColorIfChanged(curAmmoEl, '#f59e0b');
         } else {
@@ -1169,7 +1178,11 @@
         }
       }
       if (magEl) {
-        setTextIfChanged(magEl, (curW.mags === Infinity || curW.mags == null) ? '∞' : `${curW.mags}`);
+        if (curW.isMelee) {
+          setTextIfChanged(magEl, '근접');
+        } else {
+          setTextIfChanged(magEl, (curW.mags === Infinity || curW.mags == null) ? '∞' : `${curW.mags}`);
+        }
       }
       if (aimBadgeEl) {
         setTextIfChanged(aimBadgeEl, player.aimMode === 'manual' ? '[Shift] 수동' : '[Shift] 자동');
