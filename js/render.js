@@ -236,39 +236,57 @@
       const isForced = !!targetEntity.isEgoForced;
       const stance = targetEntity.redMistStance || 'horizontal';
 
-      let bladeAngle = 0.12; // 기본 횡베기: 살짝 아래로 비스듬한 정자세
-      let offsetX = 0;
-      let offsetY = 0;
+      // [기본 파지 자세] 유저 스케치 반영: 몸체 뒤/어깨 위로 대각선 비스듬히 세워 든 대기 자세
+      let bladeAngle = -2.18; // 약 -125도 (대각선 뒤쪽 위로 치켜세운 시그니처 대기 자세)
+      let offsetX = -12;
+      let offsetY = 2;
 
-      if (stance === 'vertical') {
-        bladeAngle = -1.15; // 어깨 뒤로 높게 치켜든 종베기 대기세
-        offsetX = -6;
-        offsetY = -3;
-      } else if (stance === 'thrust') {
-        bladeAngle = 0.0; // 전방을 정조준한 찌르기 대기세
-        offsetX = 4;
-      }
-
-      // 평타 공격 애니메이션 중일 때 휘두르는 모션
+      // 평타 공격 애니메이션 중일 때 휘두르는 모션 (유저 스케치 모션 반영)
       if (targetEntity.redMistAttackAnim && targetEntity.redMistAttackAnim.timer > 0) {
         const anim = targetEntity.redMistAttackAnim;
         const progress = Math.min(1, Math.max(0, 1 - (anim.timer / anim.maxTimer)));
         if (anim.type === 'horizontal') {
-          bladeAngle = -0.55 + progress * 1.35;
-          offsetX += Math.sin(progress * Math.PI) * 14;
+          // [횡베기] 뒤로 살짝 뺐다가 전방 180도 수평으로 크게 회전 베기
+          if (progress < 0.20) {
+            const wp = progress / 0.20;
+            bladeAngle = -2.18 + wp * 0.98;
+            offsetX = -12 - wp * 6;
+          } else {
+            const sp = (progress - 0.20) / 0.80;
+            bladeAngle = -1.2 + sp * 2.15;
+            offsetX = -18 + Math.sin(sp * Math.PI) * 28;
+            offsetY = 2 + Math.sin(sp * Math.PI) * 6;
+          }
         } else if (anim.type === 'vertical') {
-          bladeAngle = -1.35 + progress * 2.1;
-          offsetY += Math.sin(progress * Math.PI) * 10;
+          // [종베기] 머리 위로 높게 치켜들었다가 지면을 향해 맹렬하게 내리찍음
+          if (progress < 0.22) {
+            const wp = progress / 0.22;
+            bladeAngle = -2.18 + wp * 0.68;
+            offsetY = 2 - wp * 10;
+          } else {
+            const sp = (progress - 0.22) / 0.78;
+            bladeAngle = -1.50 + Math.pow(sp, 1.45) * 2.85;
+            offsetX = -12 + Math.sin(sp * Math.PI) * 20;
+            offsetY = -8 + Math.sin(sp * Math.PI) * 16;
+          }
         } else if (anim.type === 'thrust') {
+          // [찌르기] 검을 전방 수평 0도로 곧게 정렬하여 깊숙이 찌름
           bladeAngle = 0.0;
-          offsetX += Math.sin(progress * Math.PI) * 22;
+          offsetX = -2 + Math.sin(progress * Math.PI) * 28;
+          offsetY = 2;
         }
+      }
+
+      // 찌르기 슬라이딩 중일 때 전방 수평 고정
+      if (targetEntity.redMistThrustSlideTimer > 0) {
+        bladeAngle = 0.0;
+        offsetX += 8;
       }
 
       // 2스킬 돌진 대시 중일 때
       if (targetEntity.redMistDashing) {
         bladeAngle = 0.0;
-        offsetX += 12;
+        offsetX += 14;
       }
 
       // 특수스킬 시전 페이즈별 모션
@@ -546,88 +564,187 @@
         ctx.translate(entScreenX, entScreenY);
         ctx.scale(dir, 1);
 
-        if (anim.type === 'horizontal') {
-          // [횡베기] 전방 180도 거대 초승달 붉은 참격파
-          const sweepAngle = -0.6 + p * 1.4;
-          const slashGrad = ctx.createRadialGradient(0, 0, slashRadius * 0.4, 0, 0, slashRadius);
-          slashGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
-          slashGrad.addColorStop(0.5, isForced ? `rgba(185, 28, 28, ${alpha * 0.55})` : `rgba(239, 68, 68, ${alpha * 0.65})`);
-          slashGrad.addColorStop(0.85, isForced ? `rgba(127, 29, 29, ${alpha * 0.85})` : `rgba(220, 38, 38, ${alpha * 0.95})`);
-          slashGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        if (anim.type === 'vertical') {
+          // [종베기] 유저 스케치(Image 3) 완벽 반영: 위에서 아래로 둥근 포물선을 그리며 쏟아져 내리는 거대한 수직 초승달 참격호
+          const vProg = Math.min(1, p * 1.35);
+          const vAngleStart = -1.68;
+          const vAngleEnd = -1.68 + vProg * 2.85; // 위(-96도)에서 전방 아래(+67도)로 스윙
+          const arcR = slashRadius * 1.08;
 
-          ctx.fillStyle = slashGrad;
+          ctx.save();
+          // (A) 거대 초승달 본체 (두터운 핏빛 호 그라디언트)
+          const vGrad = ctx.createRadialGradient(0, -10, arcR * 0.42, 0, -10, arcR * 1.12);
+          vGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+          vGrad.addColorStop(0.35, isForced ? `rgba(185, 28, 28, ${alpha * 0.45})` : `rgba(239, 68, 68, ${alpha * 0.55})`);
+          vGrad.addColorStop(0.75, isForced ? `rgba(127, 29, 29, ${alpha * 0.85})` : `rgba(220, 38, 38, ${alpha * 0.95})`);
+          vGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+          ctx.fillStyle = vGrad;
           ctx.beginPath();
-          ctx.arc(0, 0, slashRadius, sweepAngle - 0.7, sweepAngle + 0.3);
-          ctx.arc(0, 0, slashRadius * 0.45, sweepAngle + 0.3, sweepAngle - 0.7, true);
+          ctx.arc(0, -10, arcR, vAngleStart, vAngleEnd, false);
+          ctx.arc(0, -10, arcR * 0.52, vAngleEnd, vAngleStart, true);
           ctx.closePath();
           ctx.fill();
 
-          ctx.strokeStyle = isEgo ? '#ffffff' : '#fca5a5';
-          ctx.lineWidth = 2.5 * alpha;
-          ctx.beginPath();
-          ctx.arc(0, 0, slashRadius * 0.95, sweepAngle - 0.65, sweepAngle + 0.25);
-          ctx.stroke();
-
-        } else if (anim.type === 'vertical') {
-          // [종베기] 위에서 아래 지면으로 수직 낙하하는 묵직한 참격호 & 지면 충격파
-          const vAngle = -1.35 + p * 1.95;
-          ctx.strokeStyle = isForced ? `rgba(185, 28, 28, ${alpha})` : `rgba(239, 68, 68, ${alpha})`;
-          ctx.lineWidth = (isEgo ? 10 : 7) * alpha;
-          ctx.beginPath();
-          ctx.arc(0, 0, slashRadius, vAngle - 0.5, vAngle + 0.2);
-          ctx.stroke();
-
+          // (B) 초승달 외곽 굵은 예기 테두리 (Sharp Outer Ridge)
           ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 2.5 * alpha;
+          ctx.lineWidth = 3.0 * alpha;
           ctx.beginPath();
-          ctx.arc(0, 0, slashRadius, vAngle - 0.4, vAngle + 0.15);
+          ctx.arc(0, -10, arcR * 0.98, vAngleStart + 0.08, vAngleEnd);
           ctx.stroke();
 
-          if (p > 0.4) {
-            const impactX = slashRadius * 0.75;
-            ctx.fillStyle = `rgba(220, 38, 38, ${alpha * 0.6})`;
+          // (C) 스케치 핵심: 초승달 내부를 채우며 위에서 아래로 쏟아져 내리는 세로 참격선 결 다발 (Sweeping Vertical Arc Lines)
+          const lineCount = 9;
+          for (let i = 0; i < lineCount; i++) {
+            const frac = i / (lineCount - 1);
+            const lineR = arcR * (0.56 + frac * 0.40);
+            const lStart = vAngleStart + frac * 0.22;
+            const lEnd = vAngleEnd - (1 - frac) * 0.14;
+            if (lEnd > lStart) {
+              ctx.strokeStyle = (i % 2 === 0) ? `rgba(255, 255, 255, ${alpha * 0.9})` : (isForced ? `rgba(239, 68, 68, ${alpha * 0.9})` : `rgba(254, 202, 202, ${alpha * 0.95})`);
+              ctx.lineWidth = (i === 4 || i === 5 ? 2.6 : 1.4) * alpha;
+              ctx.beginPath();
+              ctx.arc(0, -10, lineR, lStart, lEnd, false);
+              ctx.stroke();
+            }
+          }
+          ctx.restore();
+
+          // (D) 지면 강타 충격파 및 핏빛 파편
+          if (p > 0.35) {
+            const impactX = arcR * 0.82;
+            const impactY = groundY - entScreenY;
+            ctx.fillStyle = `rgba(220, 38, 38, ${alpha * 0.75})`;
             ctx.beginPath();
-            ctx.ellipse(impactX, groundY - entScreenY, 35 * p, 8 * p, 0, 0, Math.PI * 2);
+            ctx.ellipse(impactX, impactY, 40 * p, 9 * p, 0, 0, Math.PI * 2);
             ctx.fill();
+
+            ctx.fillStyle = '#fee2e2';
+            for (let sp = 0; sp < 4; sp++) {
+              ctx.fillRect(impactX + (sp - 2) * 12 * p, impactY - (sp + 1) * 4 * p, 2.5, 2.5);
+            }
           }
 
-        } else if (anim.type === 'thrust') {
-          // [찌르기] 전방으로 뿜어지는 원뿔형 관통 붉은 충격파
-          const thrustLen = slashRadius * 1.25 * p;
-          const thrustWidth = 24 * (1 - p * 0.4);
+        } else if (anim.type === 'horizontal') {
+          // [횡베기] 유저 스케치(Image 4) 완벽 반영: 전방을 수평으로 넓고 길게 베어 가르는 와이드 수평 반원형 호 & 수평 참격선 결 다발
+          const hProg = Math.min(1, p * 1.35);
+          const hAngleStart = -0.75;
+          const hAngleEnd = -0.75 + hProg * 1.68; // 수평 전방 와이드 회전
+          const arcR = slashRadius * 1.18;
 
-          const coneGrad = ctx.createLinearGradient(15, 0, thrustLen, 0);
+          ctx.save();
+          // (A) 와이드 수평 초승달 본체
+          const hGrad = ctx.createRadialGradient(10, 0, arcR * 0.32, 10, 0, arcR * 1.12);
+          hGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+          hGrad.addColorStop(0.35, isForced ? `rgba(185, 28, 28, ${alpha * 0.5})` : `rgba(239, 68, 68, ${alpha * 0.6})`);
+          hGrad.addColorStop(0.8, isForced ? `rgba(127, 29, 29, ${alpha * 0.85})` : `rgba(220, 38, 38, ${alpha * 0.95})`);
+          hGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+          ctx.fillStyle = hGrad;
+          ctx.beginPath();
+          ctx.arc(10, 0, arcR, hAngleStart, hAngleEnd, false);
+          ctx.arc(10, 0, arcR * 0.46, hAngleEnd, hAngleStart, true);
+          ctx.closePath();
+          ctx.fill();
+
+          // (B) 초승달 외곽 굵은 예기 테두리
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 3.2 * alpha;
+          ctx.beginPath();
+          ctx.arc(10, 0, arcR * 0.98, hAngleStart + 0.05, hAngleEnd);
+          ctx.stroke();
+
+          // (C) 스케치 핵심: 수평 방향으로 앞을 향해 뻗어나가는 참격선 결 다발 (Horizontal Sweeping Lines)
+          const hLineCount = 9;
+          for (let i = 0; i < hLineCount; i++) {
+            const frac = i / (hLineCount - 1);
+            const lineR = arcR * (0.50 + frac * 0.46);
+            const lStart = hAngleStart + frac * 0.18;
+            const lEnd = hAngleEnd - (1 - frac) * 0.12;
+            if (lEnd > lStart) {
+              ctx.strokeStyle = (i % 2 === 0) ? `rgba(255, 255, 255, ${alpha * 0.9})` : (isForced ? `rgba(239, 68, 68, ${alpha * 0.85})` : `rgba(254, 202, 202, ${alpha * 0.95})`);
+              ctx.lineWidth = (i === 3 || i === 4 ? 2.8 : 1.5) * alpha;
+              ctx.beginPath();
+              ctx.arc(10, 0, lineR, lStart, lEnd, false);
+              ctx.stroke();
+            }
+          }
+          ctx.restore();
+
+        } else if (anim.type === 'thrust') {
+          // [찌르기] 유저 스케치(Image 5) 완벽 반영: 칼끝 전방으로 날카로운 V자/원뿔형 관통 돌풍파 & 직선 스피드라인 다발
+          const tLen = (slashRadius * 1.38) * Math.min(1, p * 1.4);
+          const tHalfW = 32 * Math.sin(p * Math.PI);
+
+          ctx.save();
+          // (A) 중심 관통 V자 콘 (Arrowhead / Spearhead V-Cone)
+          const coneGrad = ctx.createLinearGradient(15, 0, 15 + tLen, 0);
           coneGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
           coneGrad.addColorStop(0.3, isForced ? `rgba(185, 28, 28, ${alpha * 0.85})` : `rgba(239, 68, 68, ${alpha * 0.85})`);
-          coneGrad.addColorStop(0.8, isForced ? `rgba(127, 29, 29, ${alpha * 0.5})` : `rgba(220, 38, 38, ${alpha * 0.5})`);
+          coneGrad.addColorStop(0.85, isForced ? `rgba(127, 29, 29, ${alpha * 0.6})` : `rgba(220, 38, 38, ${alpha * 0.6})`);
           coneGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
           ctx.fillStyle = coneGrad;
           ctx.beginPath();
-          ctx.moveTo(15, -thrustWidth * 0.4);
-          ctx.lineTo(thrustLen, 0);
-          ctx.lineTo(15, thrustWidth * 0.4);
+          ctx.moveTo(15, -tHalfW * 0.5);
+          ctx.lineTo(15 + tLen, 0);
+          ctx.lineTo(15, tHalfW * 0.5);
           ctx.closePath();
           ctx.fill();
 
+          // (B) V자 외곽 날카로운 충격파 날개 (Outer V-Wings)
           ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 2.5 * alpha;
+          ctx.lineWidth = 3.0 * alpha;
           ctx.beginPath();
-          ctx.moveTo(10, 0);
-          ctx.lineTo(thrustLen, 0);
+          ctx.moveTo(10, -tHalfW * 0.95);
+          ctx.lineTo(15 + tLen * 1.06, 0);
+          ctx.lineTo(10, tHalfW * 0.95);
           ctx.stroke();
 
-          for (let r = 1; r <= 2; r++) {
-            const rx = thrustLen * (r * 0.4);
-            ctx.strokeStyle = `rgba(254, 202, 202, ${alpha * 0.7})`;
-            ctx.lineWidth = 1.5;
+          // (C) 스케치 핵심: 칼끝에서 전방으로 뿜어져 나가는 직선형 및 사선 스피드라인 다발 (Dense Piercing Needles)
+          const needleCount = 13;
+          for (let n = 0; n < needleCount; n++) {
+            const ny = ((n / (needleCount - 1)) - 0.5) * tHalfW * 1.6;
+            const nStart = 5 + (n % 3) * 10;
+            const nLen = tLen * (0.65 + ((n * 7) % 5) * 0.08);
+            ctx.strokeStyle = (n % 3 === 0) ? `rgba(255, 255, 255, ${alpha * 0.95})` : (isForced ? `rgba(239, 68, 68, ${alpha * 0.85})` : `rgba(254, 202, 202, ${alpha * 0.9})`);
+            ctx.lineWidth = (n % 4 === 0 ? 2.6 : 1.4) * alpha;
             ctx.beginPath();
-            ctx.ellipse(rx, 0, 5, thrustWidth * 0.6 * (1 - r * 0.2), 0, 0, Math.PI * 2);
+            ctx.moveTo(nStart, ny * 0.6);
+            ctx.lineTo(nStart + nLen, ny);
             ctx.stroke();
           }
+
+          // (D) 소닉 충격파 링 2개
+          for (let r = 1; r <= 2; r++) {
+            const rx = 15 + tLen * (r * 0.38);
+            ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.85})`;
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.ellipse(rx, 0, 6, tHalfW * 0.75 * (1 - r * 0.25), 0, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+          ctx.restore();
         }
 
         ctx.restore();
+      }
+
+      // 1-1. 찌르기 부드러운 슬라이딩 ("스윽") 잔상 궤적 효과
+      if (ent.redMistThrustSlideTimer > 0) {
+        const slideAlpha = (ent.redMistThrustSlideTimer / 0.20) * 0.65;
+        ctx.save();
+        ctx.strokeStyle = `rgba(239, 68, 68, ${slideAlpha})`;
+        ctx.lineWidth = 2.2;
+        for (let s = 0; s < 3; s++) {
+          const sy = entScreenY + 12 + s * 10;
+          ctx.beginPath();
+          ctx.moveTo(entScreenX - dir * 18, sy);
+          ctx.lineTo(entScreenX - dir * (45 + s * 16), sy);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
       }
 
       // 2. 2스킬 [기합] 시전자 0.7초 포효 충격파
@@ -775,18 +892,25 @@
         }
       }
 
-      const anchorX = pScreenX + (dir > 0 ? targetEntity.width * 0.72 : targetEntity.width * 0.28) + (recoilX * dir);
-      const anchorY = pScreenY + targetEntity.height * 0.58;
+      const isRedMist = (isMain && targetMain && targetMain.id === 'melee_red_mist');
+      let anchorX, anchorY;
+      if (isRedMist) {
+        anchorX = pScreenX + (dir > 0 ? targetEntity.width * 0.44 : targetEntity.width * 0.56);
+        anchorY = pScreenY + targetEntity.height * 0.58;
+      } else {
+        anchorX = pScreenX + (dir > 0 ? targetEntity.width * 0.72 : targetEntity.width * 0.28) + (recoilX * dir);
+        anchorY = pScreenY + targetEntity.height * 0.58;
+      }
 
       ctx.save();
       ctx.translate(anchorX, anchorY);
       ctx.scale(dir, 1);
-      ctx.rotate(elev);
+      if (!isRedMist) {
+        ctx.rotate(elev);
+      }
 
       ctx.lineWidth = 1.4;
       ctx.strokeStyle = '#0f172a';
-
-      const isRedMist = (isMain && targetMain && targetMain.id === 'melee_red_mist');
       const isRG = (isMain && targetMain && targetMain.id === 'rg_supernova');
       const isSG = (isMain && targetMain && targetMain.id === 'sg_bloody_gunpowder');
       const isAR = (isMain && targetMain && targetMain.id === 'ar_white_fang');

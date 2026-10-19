@@ -161,6 +161,16 @@
       const armRow = DAMAGE_EFFECTIVENESS[armType] || DAMAGE_EFFECTIVENESS.normal;
       return armRow[atkType] || { mult: 1.0, label: 'NORMAL', color: '#ffffff' };
     }
+    window.getDamageEffectiveness = getDamageEffectiveness;
+
+    /**
+     * 최종 상성 대미지 연산 헬퍼 함수
+     */
+    function calculateFinalDamage(dmg, atkType = 'normal', armType = 'normal') {
+      const eff = getDamageEffectiveness(atkType, armType);
+      return Math.round(dmg * eff.mult);
+    }
+    window.calculateFinalDamage = calculateFinalDamage;
 
     // ==========================================
     // [블루 아카이브 기반 세부 전투 스탯 공식 엔진]

@@ -1226,10 +1226,10 @@
         maxTimer: 0.30
       };
 
-      // 2. 찌르기(thrust) 시 전방 살짝 대시 (20px)
+      // 2. 찌르기(thrust) 시 전방 부드러운 슬라이딩 대시 ("스윽" 하고 이동)
       if (player.redMistStance === 'thrust') {
-        const step = player.facing * 20;
-        player.x = Math.max(60, Math.min(2340, player.x + step));
+        player.redMistThrustSlideTimer = 0.20;
+        player.redMistThrustSlideSpeed = 240;
       }
 
       // 3. 기본 데미지 (1,550) 및 버프 연산
@@ -5040,6 +5040,13 @@
           player.redMistDashing = false;
           player.x = player.redMistDashTargetX;
         }
+      }
+      if (player.redMistThrustSlideTimer > 0) {
+        player.redMistThrustSlideTimer -= dt;
+        const prog = Math.max(0, player.redMistThrustSlideTimer / 0.20);
+        const step = player.facing * (player.redMistThrustSlideSpeed || 240) * (prog * 1.5 + 0.3) * dt;
+        player.x = Math.max(60, Math.min(2340, player.x + step));
+        if (player.redMistThrustSlideTimer < 0) player.redMistThrustSlideTimer = 0;
       }
 
       // [Red Mist (미미크리)] E.G.O 개화 자연 스택 감소 (초당 0.1 ~ 0.5, 평균 0.3)

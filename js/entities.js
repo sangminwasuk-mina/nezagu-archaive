@@ -252,7 +252,9 @@
       redMistSpecialTarget: null,
       redMistSpecialHitEnemies: [],
       redMistSpecialTicksDone: 0,
-      redMistAttackAnim: null // 평타 애니메이션: { type: 'horizontal'|'vertical'|'thrust', timer: 0.3, maxTimer: 0.3 }
+      redMistAttackAnim: null, // 평타 애니메이션: { type: 'horizontal'|'vertical'|'thrust', timer: 0.3, maxTimer: 0.3 }
+      redMistThrustSlideTimer: 0, // 찌르기 부드러운 슬라이딩 대시 타이머
+      redMistThrustSlideSpeed: 0
     };
 
     // 1.5. 동료 스트라이커 (2인 멀티플레이 시 동기화되는 2P 스트라이커)
