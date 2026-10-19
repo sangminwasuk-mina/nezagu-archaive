@@ -581,7 +581,7 @@
           const specDescEl = document.getElementById('slot-special-desc');
           if (specNameEl) {
             specNameEl.innerText = item.specialSkillName || '미지원';
-            specNameEl.style.color = item.id === 'rg_supernova' ? '#38bdf8' : (item.id === 'mg_destructor' ? '#c084fc' : (item.id === 'sg_bloody_gunpowder' ? '#dc2626' : (item.id === 'ar_white_fang' ? '#06b6d4' : (item.id === 'smg_fox45' ? '#f59e0b' : '#94a3b8'))));
+            specNameEl.style.color = item.id === 'melee_red_mist' ? '#f43f5e' : (item.id === 'rg_supernova' ? '#38bdf8' : (item.id === 'mg_destructor' ? '#c084fc' : (item.id === 'sg_bloody_gunpowder' ? '#dc2626' : (item.id === 'ar_white_fang' ? '#06b6d4' : (item.id === 'smg_fox45' ? '#f59e0b' : '#94a3b8')))));
           }
           if (specDescEl) {
             specDescEl.innerHTML = item.specialSkillDesc ? `<div>${item.specialSkillDesc.split('|').join('</div><div>')}</div>` : '• 현재 무기 특수스킬 미지원';
@@ -1192,6 +1192,38 @@
       if (aimBadgeEl) {
         setTextIfChanged(aimBadgeEl, player.aimMode === 'manual' ? '[Shift] 수동' : '[Shift] 자동');
         setColorIfChanged(aimBadgeEl, player.aimMode === 'manual' ? '#f59e0b' : '#38bdf8');
+      }
+
+      // 붉은안개(미미크리) 전용 스택/자세/개화 상태 칩 갱신
+      const redMistStackEl = getCachedEl('deck-redmist-stack');
+      if (redMistStackEl) {
+        if (curW.id === 'melee_red_mist') {
+          if (redMistStackEl.classList.contains('hidden')) redMistStackEl.classList.remove('hidden');
+          const stanceKorean = player.redMistStance === 'vertical' ? '종베기' : (player.redMistStance === 'thrust' ? '찌르기' : '횡베기');
+          if (player.egoExhaustTimer > 0) {
+            setTextIfChanged(redMistStackEl, `😵 탈진 기절 [${player.egoExhaustTimer.toFixed(1)}s]`);
+            redMistStackEl.style.color = '#94a3b8';
+            redMistStackEl.style.borderColor = 'rgba(148, 163, 184, 0.4)';
+            redMistStackEl.style.boxShadow = 'none';
+          } else if (player.isEgoActive) {
+            setTextIfChanged(redMistStackEl, `🔴 E.G.O 개화 [${(player.redMistStack || 0).toFixed(1)}] | ${stanceKorean}`);
+            redMistStackEl.style.color = '#f87171';
+            redMistStackEl.style.borderColor = 'rgba(239, 68, 68, 0.8)';
+            redMistStackEl.style.boxShadow = '0 0 10px rgba(239, 68, 68, 0.5)';
+          } else if (player.egoPassiveSpeedBuff) {
+            setTextIfChanged(redMistStackEl, `🩸 탈진 패시브 (이속+5%, 코스트10%) | ${stanceKorean}`);
+            redMistStackEl.style.color = '#fbbf24';
+            redMistStackEl.style.borderColor = 'rgba(251, 191, 36, 0.5)';
+            redMistStackEl.style.boxShadow = 'none';
+          } else {
+            setTextIfChanged(redMistStackEl, `🩸 붉은안개 [${(player.redMistStack || 0).toFixed(1)}/100] | ${stanceKorean}`);
+            redMistStackEl.style.color = '#f87171';
+            redMistStackEl.style.borderColor = 'rgba(239, 68, 68, 0.45)';
+            redMistStackEl.style.boxShadow = '0 0 6px rgba(220, 38, 38, 0.3)';
+          }
+        } else {
+          if (!redMistStackEl.classList.contains('hidden')) redMistStackEl.classList.add('hidden');
+        }
       }
 
       // 2. 15개 코스트 사선 세그먼트 생성 및 점등

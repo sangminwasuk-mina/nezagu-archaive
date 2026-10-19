@@ -388,6 +388,23 @@
       player.colorErosionTimer = 0;
       player.specialAimAngle = 0;
 
+      // 붉은안개(미미크리) 실전 상태 변수 초기화
+      player.redMistStance = 'horizontal';
+      player.redMistStack = 0;
+      player.isEgoActive = false;
+      player.isEgoForced = false;
+      player.egoExhausted = false;
+      player.egoExhaustTimer = 0;
+      player.egoPassiveSpeedBuff = false;
+      player.egoPassiveCostBuff = false;
+      player.redMistThrustCritCount = 0;
+      player.redMistThrustFreeCost = false;
+      player.redMistThrustCooldownTimer = 0;
+      player.redMistKihapBuffStacks = 0;
+      player.redMistStanceNextDmgBuff = 0;
+      player.redMistSpecialPhase = 'none';
+      player.redMistSpecialTimer = 0;
+
       // 선택한 보조 무기 스탯 적용 (HG 루거 P08 vs HG 상식적 수단)
       const selectedSub = (playerLoadout && playerLoadout.slot7) || EQUIPMENT_DATABASE.slot7[0];
       const subStats = selectedSub.stats || { capacity: 6, maxMags: Infinity, reloadTime: 1.0, fireDelay: 0.20 };
