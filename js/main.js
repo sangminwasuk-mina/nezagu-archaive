@@ -1219,21 +1219,46 @@
       if (cur.fireTimer < cur.fireDelay) return;
       cur.fireTimer = 0;
 
+      // [동일 일반공격 3타 강화 규칙]: 같은 공격(횡/종/찌)을 2번 연속 사용 후 3번째 공격은 피해량 150%, 공격범위 125% 강화!
+      const currentStance = player.redMistStance || 'horizontal';
+      if (player.redMistSameAttackStance === currentStance) {
+        player.redMistSameAttackCount = (player.redMistSameAttackCount || 0) + 1;
+      } else {
+        player.redMistSameAttackStance = currentStance;
+        player.redMistSameAttackCount = 1;
+      }
+
+      let isThirdEmpowered = false;
+      if (player.redMistSameAttackCount === 3) {
+        isThirdEmpowered = true;
+        player.redMistSameAttackCount = 0; // 3번째 발동 후 리셋 (2번 후 3번째 발동 주기 반복)
+      }
+
       // 1. 공격 애니메이션 트리거 (0.30s 딜레이)
       player.redMistAttackAnim = {
-        type: player.redMistStance || 'horizontal',
+        type: currentStance,
         timer: 0.30,
-        maxTimer: 0.30
+        maxTimer: 0.30,
+        isEmpowered: isThirdEmpowered
       };
+
+      if (isThirdEmpowered) {
+        addDamageText(player.x, player.y - 35, '🔥 [3타 강화!] 피해 150% / 범위 125%', '#fb923c');
+      }
 
       // 2. 찌르기(thrust) 시 전방 부드러운 슬라이딩 대시 ("스윽" 하고 이동)
       if (player.redMistStance === 'thrust') {
         player.redMistThrustSlideTimer = 0.20;
-        player.redMistThrustSlideSpeed = 240;
+        player.redMistThrustSlideSpeed = isThirdEmpowered ? 300 : 240;
       }
 
       // 3. 기본 데미지 (3,560) 및 버프 연산
       let baseDmg = (player.mainWeapon && player.mainWeapon.stats && player.mainWeapon.stats.dmg) ? player.mainWeapon.stats.dmg : 3560;
+
+      // 3타 강화 피해량 150% 적용
+      if (isThirdEmpowered) {
+        baseDmg *= 1.50;
+      }
 
       // E.G.O 개화 상태 피해량 증감
       if (player.isEgoActive) {
@@ -1278,6 +1303,9 @@
 
       // 4. 대검 검신 밀착형 타격 범위 판정 (종/횡베기: 실제 검날 길이 ~85px, 찌르기: 검신+돌풍파 ~150px)
       let baseReach = (player.redMistStance === 'thrust') ? 150 : 85;
+      if (isThirdEmpowered) {
+        baseReach *= 1.25; // 3타 강화: 공격범위 125%
+      }
       const hitRange = player.isEgoActive ? (baseReach * 1.35) : baseReach;
       const groundY = canvas.height - GROUND_OFFSET;
       let hitAnyEnemy = false;
@@ -3017,6 +3045,7 @@
       player.redMistSpecialTarget = null;
       player.redMistSpecialIsEnhanced = isEnhanced;
       player.redMistSpecialTicksDone = 0;
+      player.redMistSpecialHitsDone = 0;
       addDamageText(player.x, player.y - 30, isEnhanced ? '⚡ [강화 대절단 - 세로] 대형 종베기 시동!' : '⚡ [대절단 - 세로] 대형 종베기 시동!', '#ef4444');
       updateWeaponHUD();
     }
@@ -5149,7 +5178,7 @@
             updateWeaponHUD();
           }
         } else if (player.redMistSpecialPhase === 'vertical_pin') {
-          // [대절단 - 세로] 2단계: 수직 고정 꽂기 & 0.5s~1.4s 붉은 화면 & 1.5s 마무리 공격
+          // [대절단 - 세로] 2단계: 수직 고정 꽂기 & 0.5s~1.4s 붉은 화면 & 마지막 공격 전 3연타 & 1.5s 마무리 공격
           player.redMistSpecialTimer -= dt;
           player.vx = 0;
           player.vy = 0;
@@ -5167,12 +5196,60 @@
             }
           }
 
-          // 1.5초 만료 시: 날려버리는 마무리 극딜! (1.4초에 붉은 화면은 이미 해제됨)
+          const elapsed = (player.redMistSpecialMaxTimer || 1.50) - player.redMistSpecialTimer;
+          const isEnh = player.redMistSpecialIsEnhanced;
+          const baseWpDmg = (player.mainWeapon && player.mainWeapon.stats && player.mainWeapon.stats.dmg) ? player.mainWeapon.stats.dmg : 3560;
+
+          // [마지막 공격 전 3번의 타격 공격 (0.75s, 1.00s, 1.25s)]
+          const tickRatio = isEnh ? 5.60 : 4.50; // 450% (강화 시 560%)
+          let tickDmg = calcPlayerAttackDamage(baseWpDmg * tickRatio);
+          const finalTickDmg = Math.round(tickDmg);
+
+          function applyCleaveStrike(hitIndex) {
+            if (tgt && !tgt.isDead) {
+              const isBoss = (typeof boss !== 'undefined' && tgt === boss);
+              const actualDmg = Math.round(calculateFinalDamage(finalTickDmg, ATTACK_TYPES.NORMAL, tgt.armorType || ARMOR_TYPES.NORMAL));
+              tgt.hp -= actualDmg;
+              addDamageText(tgt.x + (isBoss ? tgt.width / 2 : tgt.size / 2), (isBoss ? tgt.y - 15 : groundY - tgt.size - 15), `⚡ ${actualDmg.toLocaleString()} (${hitIndex}타!)`, '#ef4444', false);
+              if (!isBoss && typeof applyKaitenzerSharedDamage === 'function') {
+                applyKaitenzerSharedDamage(actualDmg);
+              }
+            }
+            if (typeof triggerScreenShake === 'function') triggerScreenShake(14, 0.20);
+            for (let p = 0; p < 12; p++) {
+              specialParticles.push({
+                type: 'spark',
+                x: player.x + player.facing * 45 + (Math.random() - 0.5) * 20,
+                y: player.y + 20 + (Math.random() - 0.5) * 20,
+                vx: (Math.random() - 0.5) * 12,
+                vy: (Math.random() - 0.5) * 12,
+                color: '#ef4444',
+                size: Math.random() * 3 + 1.5,
+                life: 14,
+                maxLife: 14,
+                alpha: 1
+              });
+            }
+          }
+
+          if (elapsed >= 0.75 && (!player.redMistSpecialHitsDone || player.redMistSpecialHitsDone < 1)) {
+            player.redMistSpecialHitsDone = 1;
+            applyCleaveStrike(1);
+          }
+          if (elapsed >= 1.00 && player.redMistSpecialHitsDone < 2) {
+            player.redMistSpecialHitsDone = 2;
+            applyCleaveStrike(2);
+          }
+          if (elapsed >= 1.25 && player.redMistSpecialHitsDone < 3) {
+            player.redMistSpecialHitsDone = 3;
+            applyCleaveStrike(3);
+          }
+
+          // 1.5초 만료 시: 마지막 4번째 마무리 공격 (날려보내기 + 피니시 극딜 + 기절!)
           if (player.redMistSpecialTimer <= 0) {
-            const isEnh = player.redMistSpecialIsEnhanced;
-            const finishRatio = isEnh ? 32.50 : 26.00; // 피니시 계수 2,600% ~ 3,250%
+            const finishRatio = isEnh ? 15.50 : 12.50; // 피니시 계수 1,250% ~ 1,550%
             const stunDur = isEnh ? 4.0 : 2.5;
-            let dmg = ((player.mainWeapon && player.mainWeapon.stats && player.mainWeapon.stats.dmg) ? player.mainWeapon.stats.dmg : 3560) * finishRatio;
+            let dmg = baseWpDmg * finishRatio;
             dmg = calcPlayerAttackDamage(dmg);
             const finalDmg = Math.round(dmg);
 
@@ -5184,7 +5261,7 @@
               if (!isBoss) {
                 tgt.x += player.facing * 120; // 전방으로 날려버림!
               }
-              addDamageText(tgt.x + (isBoss ? tgt.width / 2 : tgt.size / 2), (isBoss ? tgt.y - 30 : groundY - tgt.size - 30), `💥 ${actualDmg.toLocaleString()} (날리기!)`, '#ef4444', false);
+              addDamageText(tgt.x + (isBoss ? tgt.width / 2 : tgt.size / 2), (isBoss ? tgt.y - 30 : groundY - tgt.size - 30), `💥 ${actualDmg.toLocaleString()} (마무리 날리기!)`, '#ef4444', false);
               if (!isBoss && typeof applyKaitenzerSharedDamage === 'function') {
                 applyKaitenzerSharedDamage(actualDmg);
               }
@@ -5208,6 +5285,7 @@
 
             player.redMistSpecialPhase = 'none';
             player.redMistSpecialTarget = null;
+            player.redMistSpecialHitsDone = 0;
             updateWeaponHUD();
           }
         } else if (player.redMistSpecialPhase === 'horizontal_windup') {
