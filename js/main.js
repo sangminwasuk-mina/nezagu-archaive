@@ -546,6 +546,8 @@
       };
       const vModal = document.getElementById('victory-modal');
       if (vModal) vModal.classList.add('hidden');
+      const bHud = document.getElementById('ba-boss-hud');
+      if (bHud) bHud.classList.remove('defeated');
 
       // 1. 플레이어 상태 초기화
       player.x = 350;
@@ -5795,7 +5797,7 @@
             kaitenFx.isFiringNormal = false;
             kaitenFx.shieldActive = false;
 
-            // [승리 시퀀스]: 플레이어 조작키만 즉시 봉인! 게임은 계속 흘러가서 2초간 로봇 쓰러짐 모션 감상
+            // [승리 시퀀스]: 플레이어 조작키만 즉시 봉인! 총알, 미사일, 파티클 등 인게임 물리와 UI는 계속 60fps로 살아있음
             if (!window.isVictorySequenceActive) {
               window.isVictorySequenceActive = true;
               window.victoryTimer = 0;
@@ -5830,8 +5832,8 @@
                 });
               }
             }
-            return; // 컷신/폭발 없이 그 자세 그대로 멈춤!
-          }
+            // return; 하지 않고 else로 감싸서, 보스의 공격 패턴만 멈추고 날아가던 총알들과 체력바는 계속 정상 업데이트!
+          } else {
 
           // [파츠 파괴 5초 무릎 꿇기 그로기 타이머]
           const isPartGroggy = (kaitenFx.partGroggyTimer > 0);
@@ -6271,6 +6273,7 @@
               }
             }
           }
+          } // if/else (kaitenFx.hp <= 0) 닫기
         }
         }
       }

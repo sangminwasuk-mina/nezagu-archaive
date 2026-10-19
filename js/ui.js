@@ -1508,6 +1508,21 @@
         if (seg1) setClassIfChanged(seg1, 'ba-atg-seg' + (fill1 >= 99 ? ' active' : ''));
         if (seg2) setClassIfChanged(seg2, 'ba-atg-seg' + (fill2 >= 99 ? ' active' : ''));
         if (seg3) setClassIfChanged(seg3, 'ba-atg-seg' + (fill3 >= 99 ? ' warning' : (fill3 > 0 ? ' active' : '')));
+
+        // 4. [보스 격파 시 체력바 페이드 아웃 소멸 연출]
+        const isDefeated = isP2 && (kaitenFx.hp <= 0 || kaitenFx.isDead);
+        if (isDefeated) {
+          // 보스 체력이 다한 후 0.4초 동안 0 게이지를 보여준 뒤 스르륵 페이드 아웃
+          if (window.victoryTimer && window.victoryTimer >= 0.4) {
+            if (!bossHud.classList.contains('defeated')) {
+              bossHud.classList.add('defeated');
+            }
+          }
+        } else {
+          if (bossHud.classList.contains('defeated')) {
+            bossHud.classList.remove('defeated');
+          }
+        }
       }
 
       // 동료 스트라이커 종합 상태 패널 실시간 동기화 (2인 모드 시)
