@@ -246,28 +246,35 @@
         const anim = targetEntity.redMistAttackAnim;
         const progress = Math.min(1, Math.max(0, 1 - (anim.timer / anim.maxTimer)));
         if (anim.type === 'horizontal') {
-          // [횡베기] 검을 수평으로 뒤로 살짝 뺐다가 전방을 향해 지면과 평행하게 수평 베기
-          if (progress < 0.20) {
-            const wp = progress / 0.20;
-            bladeAngle = -0.72 + wp * 0.57; // -0.72 -> -0.15 (수평 정렬)
-            offsetX = 6 - wp * 12;
+          // [횡베기] 유저 요청 완벽 반영: 몸 뒤에서 앞으로 시원하게 베어왔다가 다시 뒤로 빠져나가는 묵직한 대회전 횡베기
+          if (progress < 0.22) {
+            const wp = progress / 0.22;
+            bladeAngle = -0.72 - wp * 1.83; // -0.72 -> -2.55 rad (등 뒤로 깊숙이 젖힘)
+            offsetX = 6 - wp * 22;          // 몸 뒤편으로 검 후퇴
+            offsetY = 1 - wp * 3;
+          } else if (progress < 0.75) {
+            const sp = (progress - 0.22) / 0.53;
+            bladeAngle = -2.55 + sp * 3.45; // -2.55 -> +0.90 rad (등 뒤에서 전방을 가로질러 반대편 앞으로 대호쾌 횡단!)
+            offsetX = -16 + Math.sin(sp * Math.PI) * 44;
+            offsetY = -2 + Math.sin(sp * Math.PI) * 6;
           } else {
-            const sp = (progress - 0.20) / 0.80;
-            bladeAngle = -0.15 + sp * 0.32; // -0.15 -> +0.17 (지면과 거의 수평인 궤적)
-            offsetX = -6 + Math.sin(sp * Math.PI) * 28;
-            offsetY = 1 + Math.sin(sp * Math.PI) * 3;
+            const fp = (progress - 0.75) / 0.25;
+            bladeAngle = 0.90 + fp * 1.35;  // +0.90 -> +2.25 rad (반대편 등 뒤로 빠져나가며 회수)
+            offsetX = 8 - fp * 14;
+            offsetY = 4 - fp * 3;
           }
         } else if (anim.type === 'vertical') {
           // [종베기] 머리 위로 높게 치켜들었다가 지면을 향해 위에서 아래로 맹렬하게 내리찍음
           if (progress < 0.20) {
             const wp = progress / 0.20;
-            bladeAngle = -0.72 - wp * 0.73; // -0.72 -> -1.45 (머리 위 수직 치켜들기)
-            offsetY = 1 - wp * 8;
+            bladeAngle = -0.72 - wp * 0.83; // -0.72 -> -1.55 (머리 위 수직 치켜들기)
+            offsetY = 1 - wp * 9;
+            offsetX = 6 - wp * 4;
           } else {
             const sp = (progress - 0.20) / 0.80;
-            bladeAngle = -1.45 + Math.pow(sp, 1.40) * 2.80; // -1.45 -> +1.35 (위에서 아래로 강타)
-            offsetX = 6 + Math.sin(sp * Math.PI) * 18;
-            offsetY = -7 + Math.sin(sp * Math.PI) * 18;
+            bladeAngle = -1.55 + Math.pow(sp, 1.35) * 2.95; // -1.55 -> +1.40 (위에서 아래로 강타)
+            offsetX = 2 + Math.sin(sp * Math.PI) * 22;
+            offsetY = -8 + Math.sin(sp * Math.PI) * 20;
           }
         } else if (anim.type === 'thrust') {
           // [찌르기] 검을 전방 수평 0도로 곧게 정렬하여 깊숙이 찌름
@@ -364,24 +371,25 @@
             ctx.restore();
           }
         } else if (anim.type === 'horizontal') {
-          // [횡베기] 유저 스케치 완벽 반영: 가로로 얇고 길게 뻗는 "납작한" 수평 초승달 참격 & 결 다발
-          if (p >= 0.14) {
-            const sp = (p - 0.14) / 0.86;
-            const trailSpan = 1.10 * (1 - sp * 0.20);
+          // [횡베기] 유저 요청 완벽 반영: 과도하게 찌부되지 않고 뒤에서 앞으로 시원하게 베어 가르는 와이드 횡베기 호 & 수평 결
+          if (p >= 0.18 && p <= 0.88) {
+            const sp = (p - 0.18) / 0.70;
+            const hAlpha = Math.sin(sp * Math.PI);
+            const trailSpan = 1.35 * (1 - sp * 0.20);
             const startAng = bladeAngle - trailSpan;
-            const endAng = bladeAngle + 0.08;
-            const innerR = 12;
-            const outerR = isEgo ? 96 : 82;
+            const endAng = bladeAngle + 0.12;
+            const innerR = 15;
+            const outerR = isEgo ? 104 : 88;
 
             ctx.save();
-            ctx.translate(offsetX + 10, offsetY);
-            // [스케치 핵심]: Y축을 0.28배로 압축하여 위아래가 얇고 좌우로 긴 "납작한" 타원형 참격호 형성
-            ctx.scale(1.30, 0.28);
+            ctx.translate(offsetX, offsetY);
+            // 과도하게 찌그러지지 않고 적당한 입체감을 가진 자연스러운 와이드 타원 호 (1.18, 0.62)
+            ctx.scale(1.18, 0.62);
 
             const hGrad = ctx.createRadialGradient(0, 0, innerR, 0, 0, outerR);
             hGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
-            hGrad.addColorStop(0.35, isForced ? `rgba(185, 28, 28, ${alpha * 0.55})` : `rgba(239, 68, 68, ${alpha * 0.65})`);
-            hGrad.addColorStop(0.85, isForced ? `rgba(127, 29, 29, ${alpha * 0.9})` : `rgba(220, 38, 38, ${alpha * 0.95})`);
+            hGrad.addColorStop(0.35, isForced ? `rgba(185, 28, 28, ${hAlpha * 0.55})` : `rgba(239, 68, 68, ${hAlpha * 0.65})`);
+            hGrad.addColorStop(0.85, isForced ? `rgba(127, 29, 29, ${hAlpha * 0.9})` : `rgba(220, 38, 38, ${hAlpha * 0.95})`);
             hGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
             ctx.fillStyle = hGrad;
@@ -393,18 +401,18 @@
 
             // 백색 예기 테두리 선
             ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 3.0 * alpha;
+            ctx.lineWidth = 3.0 * hAlpha;
             ctx.beginPath();
             ctx.arc(0, 0, outerR * 0.98, startAng + 0.06, endAng);
             ctx.stroke();
 
-            // 스케치 핵심: 수평으로 곧게 뻗어나가는 가로 결 참격선 다발 (납작한 수평 결)
+            // 스케치 핵심: 수평으로 곧게 뻗어나가는 가로 결 참격선 다발
             for (let l = 1; l <= 5; l++) {
               const lr = innerR + (outerR - innerR) * (l / 5.5);
-              ctx.strokeStyle = (l % 2 === 0) ? `rgba(255, 255, 255, ${alpha * 0.95})` : (isForced ? `rgba(239, 68, 68, ${alpha * 0.85})` : `rgba(254, 202, 202, ${alpha * 0.9})`);
-              ctx.lineWidth = (l === 3 ? 2.5 : 1.4) * alpha;
+              ctx.strokeStyle = (l % 2 === 0) ? `rgba(255, 255, 255, ${hAlpha * 0.95})` : (isForced ? `rgba(239, 68, 68, ${hAlpha * 0.85})` : `rgba(254, 202, 202, ${hAlpha * 0.9})`);
+              ctx.lineWidth = (l === 3 ? 2.6 : 1.4) * hAlpha;
               ctx.beginPath();
-              ctx.arc(0, 0, lr, startAng + l * 0.06, endAng);
+              ctx.arc(0, 0, lr, startAng + l * 0.07, endAng);
               ctx.stroke();
             }
 
@@ -417,10 +425,11 @@
       ctx.translate(offsetX, offsetY);
       ctx.rotate(bladeAngle);
 
-      // E.G.O 개화 붉은 발광 섀도우
+      // (렉의 주범이었던 ctx.shadowBlur를 100% 제거하고 초경량 렉 0% 네온 림을 적용)
       if (isEgo) {
-        ctx.shadowColor = isForced ? '#7f1d1d' : '#ef4444';
-        ctx.shadowBlur = isForced ? 8 : 14;
+        ctx.strokeStyle = isForced ? 'rgba(185, 28, 28, 0.45)' : 'rgba(239, 68, 68, 0.5)';
+        ctx.lineWidth = 3.5;
+        ctx.strokeRect(-16, -3, 88, 12);
       }
 
       // 1. 손잡이 (Hilt Grip) & 원형 폼멜 (Pommel)
