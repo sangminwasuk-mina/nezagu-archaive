@@ -303,7 +303,7 @@
         bladeAngle = -1.6 + vProg * 2.8; // 머리 위에서 아래로 내려치는 대형 종베기 모션
         offsetX = 8 + Math.sin(vProg * Math.PI) * 18;
         offsetY = -8 + Math.sin(vProg * Math.PI) * 20;
-      } else if (sPhase === 'vertical_pin') {
+      } else if (sPhase === 'vertical_pin_slashes' || sPhase === 'vertical_finish') {
         bladeAngle = Math.PI * 0.5; // 검을 지면에 90도 수직으로 꽂아 적을 고정한 자세!
         offsetX = 20;
         offsetY = 14;
@@ -889,56 +889,36 @@
         ctx.closePath();
         ctx.fill();
         ctx.restore();
-      } else if (sPhase === 'vertical_pin') {
-        // [대절단 - 세로] 2단계: 수직 지면 꽂기 결박 (0~0.5s 및 1.4~1.5s 연출)
-        const maxT = ent.redMistSpecialMaxTimer || 1.50;
-        const curT = ent.redMistSpecialTimer || 0;
-        const elapsed = maxT - curT;
+      } else if (sPhase === 'vertical_pin_slashes' || sPhase === 'vertical_finish') {
+        // [대절단 - 세로] 결박 상태: 적 고정 및 핏빛 결박 링/지면 균열
         const pinScreenX = entScreenX + dir * 45;
         const pinScreenY = groundY;
 
         ctx.save();
-        // 0.5초 이전 지면 충격 및 결박 링
-        if (elapsed < 0.50) {
-          const pAlpha = 1 - (elapsed / 0.50) * 0.3;
-          // 지면 균열 충격파선
-          ctx.strokeStyle = `rgba(239, 68, 68, ${pAlpha})`;
-          ctx.lineWidth = 2.5;
-          ctx.beginPath();
-          ctx.moveTo(pinScreenX - 35, pinScreenY);
-          ctx.lineTo(pinScreenX - 15, pinScreenY + 4);
-          ctx.lineTo(pinScreenX, pinScreenY);
-          ctx.lineTo(pinScreenX + 18, pinScreenY + 5);
-          ctx.lineTo(pinScreenX + 40, pinScreenY);
-          ctx.stroke();
+        // 지면 균열 충격파선
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.85)';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(pinScreenX - 35, pinScreenY);
+        ctx.lineTo(pinScreenX - 15, pinScreenY + 4);
+        ctx.lineTo(pinScreenX, pinScreenY);
+        ctx.lineTo(pinScreenX + 18, pinScreenY + 5);
+        ctx.lineTo(pinScreenX + 40, pinScreenY);
+        ctx.stroke();
 
-          // 적 결박 핏빛 에너지 링
-          const ringPulse = Math.sin(Date.now() * 0.02) * 4;
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 2.0;
-          ctx.beginPath();
-          ctx.ellipse(pinScreenX, entScreenY, 32 + ringPulse, 14, 0, 0, Math.PI * 2);
-          ctx.stroke();
+        // 적 결박 핏빛 에너지 링
+        const ringPulse = Math.sin(Date.now() * 0.02) * 4;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2.0;
+        ctx.beginPath();
+        ctx.ellipse(pinScreenX, entScreenY, 32 + ringPulse, 14, 0, 0, Math.PI * 2);
+        ctx.stroke();
 
-          ctx.strokeStyle = '#ef4444';
-          ctx.lineWidth = 3.0;
-          ctx.beginPath();
-          ctx.ellipse(pinScreenX, entScreenY, 26, 11, 0, 0, Math.PI * 2);
-          ctx.stroke();
-        } else if (elapsed >= 1.40) {
-          // 1.4s~1.5s: 붉은 화면 해제 후 날려버리기 직전 폭발 에너지 응축
-          const blastAlpha = Math.min(1, (elapsed - 1.40) / 0.10);
-          ctx.fillStyle = `rgba(255, 255, 255, ${blastAlpha * 0.8})`;
-          ctx.beginPath();
-          ctx.arc(pinScreenX, entScreenY, 45 * blastAlpha, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.strokeStyle = '#ef4444';
-          ctx.lineWidth = 4.0;
-          ctx.beginPath();
-          ctx.arc(pinScreenX, entScreenY, 65 * blastAlpha, 0, Math.PI * 2);
-          ctx.stroke();
-        }
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 3.0;
+        ctx.beginPath();
+        ctx.ellipse(pinScreenX, entScreenY, 26, 11, 0, 0, Math.PI * 2);
+        ctx.stroke();
         ctx.restore();
       } else if (sPhase === 'horizontal_windup' || sPhase === 'horizontal_freeze') {
         // [대절단 - 가로] 1 & 2단계: 0.5초 대기 동안 초거대 횡베기 범위 표시 (평소 대비 3.5배 크게, 앞뒤 1.5배 길게)
@@ -8562,13 +8542,10 @@
       const pScreenX = (p.x + p.width / 2) - camera.x;
       const pScreenY = p.y + p.height * 0.58;
 
-      if (sPhase === 'vertical_pin') {
-        const elapsed = (p.redMistSpecialMaxTimer || 1.50) - (p.redMistSpecialTimer || 0);
-        if (elapsed >= 0.50 && elapsed < 1.40) {
-          isRedScreen = true;
-          mode = 'vertical';
-          prog = Math.min(1, Math.max(0, (elapsed - 0.50) / 0.90)); // 0.5초부터 1.4초까지 (0.9초간)
-        }
+      if (sPhase === 'vertical_finish') {
+        isRedScreen = true;
+        mode = 'vertical';
+        prog = Math.min(1, Math.max(0, 1 - ((p.redMistSpecialTimer || 0) / (p.redMistSpecialMaxTimer || 1.40)))); // 1.4초간
       } else if (sPhase === 'horizontal_red_screen') {
         isRedScreen = true;
         mode = 'horizontal';
@@ -8593,76 +8570,67 @@
 
       // 2. 모드별 단독 참격 연출
       if (mode === 'vertical') {
-        // [세로]: 마지막 공격 전 3번의 타격 공격과 100% 동기화된 3연속 수직 참격 단절 연출
-        const baseSlashX = Math.max(100, Math.min(canvas.width - 100, pScreenX + dir * 45));
+        // [세로]: 1.4초 동안 화면 전체를 위에서 아래로 가르는 거대한 세로 참격 연출
+        const slashX = Math.max(100, Math.min(canvas.width - 100, pScreenX + dir * 45));
+        const tipY = Math.min(canvas.height, prog * (canvas.height * 1.25));
 
-        // 3연타 각각의 진행률 및 타격선 (1타: prog 0~0.33, 2타: prog 0.33~0.66, 3타: prog 0.66~1.0)
-        const strikes = [
-          { startP: 0.0, endP: 0.333, xOff: -22 * dir },
-          { startP: 0.333, endP: 0.666, xOff: 22 * dir },
-          { startP: 0.666, endP: 1.0, xOff: 0 }
-        ];
+        // (A) 외곽 진홍빛 에너지 단절 폭
+        const auraWidth = 52 * Math.sin(prog * Math.PI) + 18;
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.95)';
+        ctx.lineWidth = Math.max(3, auraWidth);
+        ctx.beginPath();
+        ctx.moveTo(slashX, 0);
+        ctx.lineTo(slashX, tipY);
+        ctx.stroke();
 
-        strikes.forEach((st, idx) => {
-          if (prog < st.startP) return; // 아직 발동 전
+        // (B) 중층 고열 루비 절단선
+        ctx.strokeStyle = '#dc2626';
+        ctx.lineWidth = Math.max(2, 20 * Math.sin(prog * Math.PI) + 7);
+        ctx.beginPath();
+        ctx.moveTo(slashX, 0);
+        ctx.lineTo(slashX, tipY);
+        ctx.stroke();
 
-          const stProg = Math.min(1.0, (prog - st.startP) / (st.endP - st.startP));
-          const slashX = baseSlashX + st.xOff;
-          const tipY = Math.min(canvas.height, stProg * (canvas.height * 1.35));
+        // (C) 중심 초고온 백색 참격선
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = Math.max(1.5, 7 * Math.sin(prog * Math.PI) + 3);
+        ctx.beginPath();
+        ctx.moveTo(slashX, 0);
+        ctx.lineTo(slashX, tipY);
+        ctx.stroke();
 
-          // 참격 에너지가 지속되는 동안의 알파
-          const cutAlpha = prog >= st.endP ? Math.max(0.45, 1.0 - (prog - st.endP) * 0.7) : 1.0;
-
-          // (A) 외곽 진홍빛 에너지 단절 폭
-          const auraWidth = (38 * Math.sin(stProg * Math.PI) + 12) * cutAlpha;
-          ctx.strokeStyle = `rgba(239, 68, 68, ${0.95 * cutAlpha})`;
-          ctx.lineWidth = Math.max(2, auraWidth);
+        // (D) 수직 하강 참격 선단 칼날 팁
+        if (prog < 1.0 && tipY < canvas.height) {
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
-          ctx.moveTo(slashX, 0);
-          ctx.lineTo(slashX, tipY);
-          ctx.stroke();
+          ctx.moveTo(slashX, tipY);
+          ctx.lineTo(slashX - 18, tipY - 40);
+          ctx.lineTo(slashX + 18, tipY - 40);
+          ctx.closePath();
+          ctx.fill();
 
-          // (B) 중층 고열 루비 절단선
-          ctx.strokeStyle = '#dc2626';
-          ctx.lineWidth = Math.max(1.5, (14 * Math.sin(stProg * Math.PI) + 5) * cutAlpha);
+          ctx.fillStyle = '#ef4444';
           ctx.beginPath();
-          ctx.moveTo(slashX, 0);
-          ctx.lineTo(slashX, tipY);
-          ctx.stroke();
+          ctx.moveTo(slashX, tipY - 5);
+          ctx.lineTo(slashX - 10, tipY - 32);
+          ctx.lineTo(slashX + 10, tipY - 32);
+          ctx.closePath();
+          ctx.fill();
+        }
 
-          // (C) 중심 초고온 백색 참격선
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = Math.max(1, (5 * Math.sin(stProg * Math.PI) + 2.5) * cutAlpha);
+        // (E) 좌우로 거세게 튀는 핏빛 스파크 & 참격 파편
+        const sparkCount = 18;
+        for (let sp = 0; sp < sparkCount; sp++) {
+          const sy = (sp / sparkCount) * tipY;
+          const sDir = (sp % 2 === 0 ? 1 : -1);
+          const sLen = 30 + ((sp * 7) % 6) * 16;
+          ctx.strokeStyle = sp % 3 === 0 ? '#ffffff' : '#fca5a5';
+          ctx.lineWidth = 2.0;
           ctx.beginPath();
-          ctx.moveTo(slashX, 0);
-          ctx.lineTo(slashX, tipY);
+          ctx.moveTo(slashX, sy);
+          ctx.lineTo(slashX + sDir * sLen, sy + Math.sin(sp + prog * 10) * 14);
           ctx.stroke();
-
-          // (D) 수직 하강 참격 선단 칼날 팁 (진행 중일 때)
-          if (stProg < 1.0 && tipY < canvas.height) {
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.moveTo(slashX, tipY);
-            ctx.lineTo(slashX - 16, tipY - 35);
-            ctx.lineTo(slashX + 16, tipY - 35);
-            ctx.closePath();
-            ctx.fill();
-          }
-
-          // (E) 좌우로 거세게 튀는 핏빛 스파크 & 참격 파편
-          const sparkCount = 14;
-          for (let sp = 0; sp < sparkCount; sp++) {
-            const sy = (sp / sparkCount) * tipY;
-            const sDir = (sp % 2 === 0 ? 1 : -1);
-            const sLen = (24 + ((sp * 7) % 6) * 14) * cutAlpha;
-            ctx.strokeStyle = sp % 3 === 0 ? '#ffffff' : '#fca5a5';
-            ctx.lineWidth = 1.8 * cutAlpha;
-            ctx.beginPath();
-            ctx.moveTo(slashX, sy);
-            ctx.lineTo(slashX + sDir * sLen, sy + Math.sin(sp + stProg * 12) * 12);
-            ctx.stroke();
-          }
-        });
+        }
       } else if (mode === 'horizontal') {
         // [가로]: 화면을 수평으로 양단하는 거대한 횡베기 연출
         const slashY = Math.max(100, Math.min(canvas.height - 100, pScreenY));

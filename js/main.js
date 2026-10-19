@@ -5157,12 +5157,13 @@
 
           if (hitTgt) {
             player.redMistSpecialTarget = hitTgt;
-            player.redMistSpecialPhase = 'vertical_pin';
-            player.redMistSpecialTimer = 1.50; // 총 1.5초 딜레이
-            player.redMistSpecialMaxTimer = 1.50;
+            player.redMistSpecialPhase = 'vertical_pin_slashes';
+            player.redMistSpecialInitialDelay = 0.50; // 결박 후 0.5초 대기
+            player.redMistSpecialTimer = 0.70; // 0.7초마다 1번씩 타격
+            player.redMistSpecialTicksDone = 0;
             player.vx = 0;
             player.vy = 0;
-            hitTgt.stunTimer = 2.0;
+            hitTgt.stunTimer = 6.0;
             hitTgt.vx = 0;
             hitTgt.vy = 0;
             const isBoss = (typeof boss !== 'undefined' && hitTgt === boss);
@@ -5177,13 +5178,81 @@
             player.redMistSpecialTarget = null;
             updateWeaponHUD();
           }
-        } else if (player.redMistSpecialPhase === 'vertical_pin') {
-          // [대절단 - 세로] 2단계: 수직 고정 꽂기 & 0.5s~1.4s 붉은 화면 & 마지막 공격 전 3연타 & 1.5s 마무리 공격
-          player.redMistSpecialTimer -= dt;
+        } else if (player.redMistSpecialPhase === 'vertical_pin_slashes') {
+          // [대절단 - 세로] 결박 후 0.5초 대기 -> 0.7초마다 1번씩 총 3번 타격 공격
           player.vx = 0;
           player.vy = 0;
 
           // 적과 플레이어 완전 이동/공격 정지 고정
+          const tgt = player.redMistSpecialTarget;
+          if (tgt && !tgt.isDead) {
+            tgt.stunTimer = Math.max(tgt.stunTimer || 0, 2.0);
+            tgt.vx = 0;
+            tgt.vy = 0;
+            const isBoss = (typeof boss !== 'undefined' && tgt === boss);
+            if (!isBoss) {
+              tgt.x = player.x + player.facing * 45;
+              tgt.jumpY = 0;
+            }
+          }
+
+          if (player.redMistSpecialInitialDelay > 0) {
+            player.redMistSpecialInitialDelay -= dt;
+          } else {
+            player.redMistSpecialTimer -= dt;
+            if (player.redMistSpecialTimer <= 0) {
+              // 0.7초마다 타격 (총 3번)
+              const isEnh = player.redMistSpecialIsEnhanced;
+              const ratio = isEnh ? 5.60 : 4.50; // 450% (강화 시 560%)
+              const baseWpDmg = (player.mainWeapon && player.mainWeapon.stats && player.mainWeapon.stats.dmg) ? player.mainWeapon.stats.dmg : 3560;
+              let dmg = baseWpDmg * ratio;
+              dmg = calcPlayerAttackDamage(dmg);
+              const finalDmg = Math.round(dmg);
+
+              player.redMistSpecialTicksDone++;
+
+              if (tgt && !tgt.isDead) {
+                const isBoss = (typeof boss !== 'undefined' && tgt === boss);
+                const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, tgt.armorType || ARMOR_TYPES.NORMAL));
+                tgt.hp -= actualDmg;
+                addDamageText(tgt.x + (isBoss ? tgt.width / 2 : tgt.size / 2), (isBoss ? tgt.y - 15 : groundY - tgt.size - 15), `⚡ ${actualDmg.toLocaleString()} (${player.redMistSpecialTicksDone}타!)`, '#ef4444', false);
+                if (!isBoss && typeof applyKaitenzerSharedDamage === 'function') {
+                  applyKaitenzerSharedDamage(actualDmg);
+                }
+              }
+
+              if (typeof triggerScreenShake === 'function') triggerScreenShake(14, 0.20);
+              for (let p = 0; p < 12; p++) {
+                specialParticles.push({
+                  type: 'spark',
+                  x: player.x + player.facing * 45 + (Math.random() - 0.5) * 20,
+                  y: player.y + 20 + (Math.random() - 0.5) * 20,
+                  vx: (Math.random() - 0.5) * 12,
+                  vy: (Math.random() - 0.5) * 12,
+                  color: '#ef4444',
+                  size: Math.random() * 3 + 1.5,
+                  life: 14,
+                  maxLife: 14,
+                  alpha: 1
+                });
+              }
+
+              if (player.redMistSpecialTicksDone < 3) {
+                player.redMistSpecialTimer = 0.70;
+              } else {
+                // 3번 공격 완료 -> 그다음 붉은색 화면 1.4초 후 마지막 타격!
+                player.redMistSpecialPhase = 'vertical_finish';
+                player.redMistSpecialTimer = 1.40;
+                player.redMistSpecialMaxTimer = 1.40;
+              }
+            }
+          }
+        } else if (player.redMistSpecialPhase === 'vertical_finish') {
+          // [대절단 - 세로] 붉은색 화면 1.4초 동안 지속 -> 마지막 타격 날리기
+          player.redMistSpecialTimer -= dt;
+          player.vx = 0;
+          player.vy = 0;
+
           const tgt = player.redMistSpecialTarget;
           if (tgt && !tgt.isDead) {
             tgt.stunTimer = Math.max(tgt.stunTimer || 0, 1.0);
@@ -5196,59 +5265,12 @@
             }
           }
 
-          const elapsed = (player.redMistSpecialMaxTimer || 1.50) - player.redMistSpecialTimer;
-          const isEnh = player.redMistSpecialIsEnhanced;
-          const baseWpDmg = (player.mainWeapon && player.mainWeapon.stats && player.mainWeapon.stats.dmg) ? player.mainWeapon.stats.dmg : 3560;
-
-          // [마지막 공격 전 3번의 타격 공격 (0.75s, 1.00s, 1.25s)]
-          const tickRatio = isEnh ? 5.60 : 4.50; // 450% (강화 시 560%)
-          let tickDmg = calcPlayerAttackDamage(baseWpDmg * tickRatio);
-          const finalTickDmg = Math.round(tickDmg);
-
-          function applyCleaveStrike(hitIndex) {
-            if (tgt && !tgt.isDead) {
-              const isBoss = (typeof boss !== 'undefined' && tgt === boss);
-              const actualDmg = Math.round(calculateFinalDamage(finalTickDmg, ATTACK_TYPES.NORMAL, tgt.armorType || ARMOR_TYPES.NORMAL));
-              tgt.hp -= actualDmg;
-              addDamageText(tgt.x + (isBoss ? tgt.width / 2 : tgt.size / 2), (isBoss ? tgt.y - 15 : groundY - tgt.size - 15), `⚡ ${actualDmg.toLocaleString()} (${hitIndex}타!)`, '#ef4444', false);
-              if (!isBoss && typeof applyKaitenzerSharedDamage === 'function') {
-                applyKaitenzerSharedDamage(actualDmg);
-              }
-            }
-            if (typeof triggerScreenShake === 'function') triggerScreenShake(14, 0.20);
-            for (let p = 0; p < 12; p++) {
-              specialParticles.push({
-                type: 'spark',
-                x: player.x + player.facing * 45 + (Math.random() - 0.5) * 20,
-                y: player.y + 20 + (Math.random() - 0.5) * 20,
-                vx: (Math.random() - 0.5) * 12,
-                vy: (Math.random() - 0.5) * 12,
-                color: '#ef4444',
-                size: Math.random() * 3 + 1.5,
-                life: 14,
-                maxLife: 14,
-                alpha: 1
-              });
-            }
-          }
-
-          if (elapsed >= 0.75 && (!player.redMistSpecialHitsDone || player.redMistSpecialHitsDone < 1)) {
-            player.redMistSpecialHitsDone = 1;
-            applyCleaveStrike(1);
-          }
-          if (elapsed >= 1.00 && player.redMistSpecialHitsDone < 2) {
-            player.redMistSpecialHitsDone = 2;
-            applyCleaveStrike(2);
-          }
-          if (elapsed >= 1.25 && player.redMistSpecialHitsDone < 3) {
-            player.redMistSpecialHitsDone = 3;
-            applyCleaveStrike(3);
-          }
-
-          // 1.5초 만료 시: 마지막 4번째 마무리 공격 (날려보내기 + 피니시 극딜 + 기절!)
           if (player.redMistSpecialTimer <= 0) {
-            const finishRatio = isEnh ? 15.50 : 12.50; // 피니시 계수 1,250% ~ 1,550%
+            // 1.4초 붉은 화면 만료 -> 마지막 타격 날리기!
+            const isEnh = player.redMistSpecialIsEnhanced;
+            const finishRatio = isEnh ? 15.50 : 12.50; // 피니시 1,250% ~ 1,550%
             const stunDur = isEnh ? 4.0 : 2.5;
+            const baseWpDmg = (player.mainWeapon && player.mainWeapon.stats && player.mainWeapon.stats.dmg) ? player.mainWeapon.stats.dmg : 3560;
             let dmg = baseWpDmg * finishRatio;
             dmg = calcPlayerAttackDamage(dmg);
             const finalDmg = Math.round(dmg);
@@ -5259,9 +5281,9 @@
               tgt.hp -= actualDmg;
               tgt.stunTimer = Math.max(tgt.stunTimer || 0, stunDur);
               if (!isBoss) {
-                tgt.x += player.facing * 120; // 전방으로 날려버림!
+                tgt.x += player.facing * 120; // 전방으로 시원하게 날려버림!
               }
-              addDamageText(tgt.x + (isBoss ? tgt.width / 2 : tgt.size / 2), (isBoss ? tgt.y - 30 : groundY - tgt.size - 30), `💥 ${actualDmg.toLocaleString()} (마무리 날리기!)`, '#ef4444', false);
+              addDamageText(tgt.x + (isBoss ? tgt.width / 2 : tgt.size / 2), (isBoss ? tgt.y - 30 : groundY - tgt.size - 30), `💥 ${actualDmg.toLocaleString()} (마지막 마무리 타격!)`, '#ef4444', false);
               if (!isBoss && typeof applyKaitenzerSharedDamage === 'function') {
                 applyKaitenzerSharedDamage(actualDmg);
               }
@@ -5285,7 +5307,6 @@
 
             player.redMistSpecialPhase = 'none';
             player.redMistSpecialTarget = null;
-            player.redMistSpecialHitsDone = 0;
             updateWeaponHUD();
           }
         } else if (player.redMistSpecialPhase === 'horizontal_windup') {
