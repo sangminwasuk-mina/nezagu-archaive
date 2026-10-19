@@ -2914,15 +2914,105 @@
       }
     }
 
-    // [특수스킬 (S키)]: 선도부장(MG) & 시스템 : 아비 에슈흐(RG) 발동 함수
+    // [Red Mist (미미크리)] 특수스킬 (S키): 대절단-세로 / E.G.O 개화 / 대절단-가로
+    function fireRedMistSpecialSkill() {
+      if (player.egoExhaustTimer > 0 || player.redMistKihapStunSelfTimer > 0 || player.redMistSpecialPhase !== 'none' || player.redMistDashing) {
+        return;
+      }
+
+      // [분기 1: 비개화 상태]
+      if (!player.isEgoActive) {
+        if (player.redMistStack >= 100) {
+          // [E.G.O 개화] 발동! (코스트 0)
+          player.isEgoActive = true;
+          player.isEgoForced = false;
+          player.redMistStack = 100;
+          addDamageText(player.x, player.y - 45, '🔴 [E.G.O 개화 : 붉은안개] 특색 발현! (이속 +50%, 공격력 +20%, 범위 +35%)', '#ef4444');
+          updateWeaponHUD();
+          return;
+        }
+
+        // [대절단 - 세로] (기본 12 코스트, 20% 스택마다 -1 코스트, 최소 8 코스트)
+        const reqCost = Math.max(8, 12 - Math.floor((player.redMistStack || 0) / 20));
+        if (player.cost < reqCost) {
+          addDamageText(player.x, player.y - 20, `코스트 부족! (${reqCost} 필요)`, '#ef4444');
+          return;
+        }
+        spendPlayerCost(reqCost);
+        startRedMistVerticalCleaveSequence(false);
+        return;
+      }
+
+      // [분기 2: E.G.O 개화 상태]
+      const isThrust = (player.redMistStance === 'thrust');
+      if (isThrust) {
+        // [강화 대절단 - 세로] (코스트 8, 스택 -15, 단일 타겟)
+        const reqCost = 8;
+        if (player.cost < reqCost) {
+          addDamageText(player.x, player.y - 20, `코스트 부족! (${reqCost} 필요)`, '#ef4444');
+          return;
+        }
+        spendPlayerCost(reqCost);
+        consumeRedMistStack(15);
+        startRedMistVerticalCleaveSequence(true);
+        return;
+      } else {
+        // [대절단 - 가로] (코스트 12, 스택 -25, 광역 참격)
+        const reqCost = 12;
+        if (player.cost < reqCost) {
+          addDamageText(player.x, player.y - 20, `코스트 부족! (${reqCost} 필요)`, '#ef4444');
+          return;
+        }
+        spendPlayerCost(reqCost);
+        consumeRedMistStack(25);
+        startRedMistHorizontalCleaveSequence();
+        return;
+      }
+    }
+
+    function startRedMistVerticalCleaveSequence(isEnhanced) {
+      player.redMistSpecialPhase = 'vertical_dash';
+      player.redMistSpecialTimer = 0.25;
+      player.redMistSpecialStartX = player.x;
+      player.redMistSpecialTargetX = Math.max(60, Math.min(2340, player.x + player.facing * 180));
+      player.redMistSpecialTarget = null;
+      player.redMistSpecialIsEnhanced = isEnhanced;
+      player.redMistSpecialTicksDone = 0;
+      addDamageText(player.x, player.y - 30, isEnhanced ? '⚡ [강화 대절단 - 세로] 돌격!' : '⚡ [대절단 - 세로] 돌격!', '#ef4444');
+      updateWeaponHUD();
+    }
+
+    function startRedMistHorizontalCleaveSequence() {
+      player.redMistSpecialPhase = 'horizontal_windup';
+      player.redMistSpecialTimer = 0.50; // 0.5초 정지 암전
+
+      // 범위 내 적 일시 완전 정지
+      kaitenzers.forEach(k => {
+        if (!k.isDead) k.stunTimer = Math.max(k.stunTimer || 0, 0.65);
+      });
+      if (typeof boss !== 'undefined' && boss && !boss.isDead) {
+        boss.stunTimer = Math.max(boss.stunTimer || 0, 0.65);
+      }
+
+      addDamageText(player.x, player.y - 35, '🩸 [대절단 - 가로] 0.5초 참격 집중...', '#dc2626');
+      updateWeaponHUD();
+    }
+
+    // [특수스킬 (S키)]: 선도부장(MG) & 시스템 : 아비 에슈흐(RG) & 미미크리(대절단/개화) 발동 함수
     function tryFireSpecialSkill() {
       if ((window.phase1Cutscene && window.phase1Cutscene.active) || (window.phase2Cutscene && window.phase2Cutscene.active)) return;
       if (player.activeWeaponSlot !== 'main') {
         addDamageText(player.x, player.y - 20, '메인 무기만 사용 가능!', '#ef4444');
         return;
       }
-      if (!player.mainWeapon || (player.mainWeapon.id !== 'mg_destructor' && player.mainWeapon.id !== 'rg_supernova' && player.mainWeapon.id !== 'sg_bloody_gunpowder' && player.mainWeapon.id !== 'ar_white_fang' && player.mainWeapon.id !== 'smg_fox45')) {
+      if (!player.mainWeapon || (player.mainWeapon.id !== 'mg_destructor' && player.mainWeapon.id !== 'rg_supernova' && player.mainWeapon.id !== 'sg_bloody_gunpowder' && player.mainWeapon.id !== 'ar_white_fang' && player.mainWeapon.id !== 'smg_fox45' && player.mainWeapon.id !== 'melee_red_mist')) {
         addDamageText(player.x, player.y - 20, '특수스킬 미지원 무기입니다!', '#94a3b8');
+        return;
+      }
+
+      // [Red Mist (미미크리)] 특수스킬 (S키): 대절단-세로 / E.G.O 개화 / 대절단-가로
+      if (player.mainWeapon.id === 'melee_red_mist') {
+        fireRedMistSpecialSkill();
         return;
       }
 
@@ -4944,6 +5034,146 @@
       if (player.mainWeapon && player.mainWeapon.id === 'melee_red_mist') {
         if (!player.isEgoActive && !player.egoExhausted && (player.hp / player.maxHp) <= 0.10) {
           triggerForcedEgoTransformation();
+        }
+      }
+
+      // [Red Mist (미미크리)] 특수스킬 페이즈 머신 (대절단-세로 & 대절단-가로)
+      if (player.redMistSpecialPhase !== 'none') {
+        const groundY = canvas.height - GROUND_OFFSET;
+
+        if (player.redMistSpecialPhase === 'vertical_dash') {
+          player.redMistSpecialTimer -= dt;
+          const prog = Math.min(1, Math.max(0, 1 - (player.redMistSpecialTimer / 0.25)));
+          player.x = player.redMistSpecialStartX + (player.redMistSpecialTargetX - player.redMistSpecialStartX) * prog;
+
+          // 가장 가까운 전방 적 1개 탐색 (단일 타겟)
+          if (!player.redMistSpecialTarget) {
+            let closest = null;
+            let minDist = 220;
+            kaitenzers.forEach(k => {
+              if (!k.isSpawned || k.isDead || !k.isActive) return;
+              const dx = (k.x + k.size / 2 - (player.x + player.width / 2)) * player.facing;
+              if (dx >= -20 && dx <= minDist) {
+                minDist = dx;
+                closest = k;
+              }
+            });
+            if (!closest && typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead && boss.isActive) {
+              const dx = (boss.x + boss.width / 2 - (player.x + player.width / 2)) * player.facing;
+              if (dx >= -40 && dx <= 260) {
+                closest = boss;
+              }
+            }
+            if (closest) {
+              player.redMistSpecialTarget = closest;
+            }
+          }
+
+          if (player.redMistSpecialTimer <= 0) {
+            player.redMistSpecialPhase = 'vertical_slashes';
+            player.redMistSpecialTimer = 0.70;
+            player.redMistSpecialTicksDone = 0;
+            if (player.redMistSpecialTarget) {
+              player.redMistSpecialTarget.stunTimer = 3.5;
+            }
+            addDamageText(player.x, player.y - 30, '⚡ 대절단-세로: 수평 고정 꽂기!', '#ef4444');
+          }
+        } else if (player.redMistSpecialPhase === 'vertical_slashes') {
+          player.redMistSpecialTimer -= dt;
+          if (player.redMistSpecialTimer <= 0) {
+            // 0.7초마다 타격 (총 3번)
+            const isEnh = player.redMistSpecialIsEnhanced;
+            const ratio = isEnh ? 5.60 : 4.50; // 560% or 450%
+            let dmg = 1550 * ratio;
+            dmg = calcPlayerAttackDamage(dmg);
+            const finalDmg = Math.round(dmg); // 치명타 미발동
+
+            const tgt = player.redMistSpecialTarget;
+            if (tgt) {
+              const isBoss = (typeof boss !== 'undefined' && tgt === boss);
+              const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, tgt.armorType || ARMOR_TYPES.NORMAL));
+              tgt.hp -= actualDmg;
+              addDamageText(tgt.x + (isBoss ? tgt.width / 2 : tgt.size / 2), (isBoss ? tgt.y - 15 : groundY - tgt.size - 15), `${actualDmg}`, '#ef4444', false);
+              if (!isBoss && typeof applyKaitenzerSharedDamage === 'function') {
+                applyKaitenzerSharedDamage(actualDmg);
+              }
+            }
+
+            player.redMistSpecialTicksDone++;
+            if (player.redMistSpecialTicksDone < 3) {
+              player.redMistSpecialTimer = 0.70;
+            } else {
+              player.redMistSpecialPhase = 'vertical_finish';
+              player.redMistSpecialTimer = 0.70;
+            }
+          }
+        } else if (player.redMistSpecialPhase === 'vertical_finish') {
+          player.redMistSpecialTimer -= dt;
+          if (player.redMistSpecialTimer <= 0) {
+            // 4번째 0.7초: 피니시 방출 및 날려보내기 + 기절
+            const isEnh = player.redMistSpecialIsEnhanced;
+            const finishRatio = isEnh ? 15.50 : 12.50; // 1550% or 1250%
+            const stunDur = isEnh ? 4.0 : 2.5;
+            let dmg = 1550 * finishRatio;
+            dmg = calcPlayerAttackDamage(dmg);
+            const finalDmg = Math.round(dmg); // 치명타 미발동
+
+            const tgt = player.redMistSpecialTarget;
+            if (tgt) {
+              const isBoss = (typeof boss !== 'undefined' && tgt === boss);
+              const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, tgt.armorType || ARMOR_TYPES.NORMAL));
+              tgt.hp -= actualDmg;
+              tgt.stunTimer = Math.max(tgt.stunTimer || 0, stunDur);
+              tgt.x += player.facing * 50; // 전방 넉백
+              addDamageText(tgt.x + (isBoss ? tgt.width / 2 : tgt.size / 2), (isBoss ? tgt.y - 25 : groundY - tgt.size - 25), `💥 ${actualDmg} (기절 ${stunDur}s!)`, '#ef4444', false);
+              if (!isBoss && typeof applyKaitenzerSharedDamage === 'function') {
+                applyKaitenzerSharedDamage(actualDmg);
+              }
+            }
+
+            player.redMistSpecialPhase = 'none';
+            player.redMistSpecialTarget = null;
+            updateWeaponHUD();
+          }
+        } else if (player.redMistSpecialPhase === 'horizontal_windup') {
+          player.redMistSpecialTimer -= dt;
+          if (player.redMistSpecialTimer <= 0) {
+            // 0.5초 대기 종료 -> 화면 양단 참격 방출!
+            player.redMistSpecialPhase = 'horizontal_slash';
+            player.redMistSpecialTimer = 0.35; // 0.35초간 잔상 렌더링
+
+            let dmg = 1550 * 21.50; // 2,150% 공격력 광역 피해
+            dmg = calcPlayerAttackDamage(dmg);
+            const finalDmg = Math.round(dmg); // 치명타 미발동
+
+            // 범위 내 모든 적에게 피해
+            kaitenzers.forEach(k => {
+              if (!k.isSpawned || k.isDead || !k.isActive) return;
+              const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, k.armorType || ARMOR_TYPES.NORMAL));
+              k.hp -= actualDmg;
+              k.x += player.facing * 40;
+              addDamageText(k.x + k.size / 2, groundY - k.size - 30, `💥 ${actualDmg}`, '#dc2626', false);
+              if (typeof applyKaitenzerSharedDamage === 'function') {
+                applyKaitenzerSharedDamage(actualDmg);
+              }
+            });
+
+            if (typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead && boss.isActive) {
+              const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, boss.armorType || ARMOR_TYPES.HEAVY));
+              if (typeof damageBoss === 'function') {
+                damageBoss(actualDmg, ATTACK_TYPES.NORMAL, false);
+              } else {
+                boss.hp -= actualDmg;
+              }
+              addDamageText(boss.x + boss.width / 2, boss.y - 30, `💥 ${actualDmg}`, '#dc2626', false);
+            }
+          }
+        } else if (player.redMistSpecialPhase === 'horizontal_slash') {
+          player.redMistSpecialTimer -= dt;
+          if (player.redMistSpecialTimer <= 0) {
+            player.redMistSpecialPhase = 'none';
+            updateWeaponHUD();
+          }
         }
       }
 
