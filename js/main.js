@@ -342,6 +342,12 @@
 
     // 정비실에서 선택한 세팅을 플레이어 실전에 동기화
     function applyMaintenanceLoadoutToPlayer() {
+      const activePassives = [
+        (playerLoadout && playerLoadout.slot3 && playerLoadout.slot3.id) ? playerLoadout.slot3.id : '',
+        (playerLoadout && playerLoadout.slot4 && playerLoadout.slot4.id) ? playerLoadout.slot4.id : '',
+        (playerLoadout && playerLoadout.slot5 && playerLoadout.slot5.id) ? playerLoadout.slot5.id : ''
+      ];
+
       // 선택한 메인 무기 스탯 적용
       const selectedMain = (playerLoadout && playerLoadout.slot1) || EQUIPMENT_DATABASE.slot1[0];
       const weaponHp = (selectedMain && (selectedMain.hp || (selectedMain.stats && selectedMain.stats.hp))) || 65000;
