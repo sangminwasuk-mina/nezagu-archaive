@@ -236,44 +236,44 @@
       const isForced = !!targetEntity.isEgoForced;
       const stance = targetEntity.redMistStance || 'horizontal';
 
-      // [기본 파지 자세] 유저 스케치 반영: 몸체 뒤/어깨 위로 대각선 비스듬히 세워 든 대기 자세
-      let bladeAngle = -2.18; // 약 -125도 (대각선 뒤쪽 위로 치켜세운 시그니처 대기 자세)
-      let offsetX = -12;
-      let offsetY = 2;
+      // [기본 파지 자세] 유저 스케치 반영: 전방 대각선 위(-41도)로 곧게 세워 든 대기 자세
+      let bladeAngle = -0.72; // 약 -41도 (전방 대각선 위를 향해 비스듬히 겨눈 기본 대기 자세)
+      let offsetX = 6;
+      let offsetY = 1;
 
       // 평타 공격 애니메이션 중일 때 휘두르는 모션 (유저 스케치 모션 반영)
       if (targetEntity.redMistAttackAnim && targetEntity.redMistAttackAnim.timer > 0) {
         const anim = targetEntity.redMistAttackAnim;
         const progress = Math.min(1, Math.max(0, 1 - (anim.timer / anim.maxTimer)));
         if (anim.type === 'horizontal') {
-          // [횡베기] 뒤로 살짝 뺐다가 전방 180도 수평으로 크게 회전 베기
+          // [횡베기] 검을 수평으로 뒤로 살짝 뺐다가 전방을 향해 지면과 평행하게 수평 베기
           if (progress < 0.20) {
             const wp = progress / 0.20;
-            bladeAngle = -2.18 + wp * 0.98;
-            offsetX = -12 - wp * 6;
+            bladeAngle = -0.72 + wp * 0.57; // -0.72 -> -0.15 (수평 정렬)
+            offsetX = 6 - wp * 12;
           } else {
             const sp = (progress - 0.20) / 0.80;
-            bladeAngle = -1.2 + sp * 2.15;
-            offsetX = -18 + Math.sin(sp * Math.PI) * 28;
-            offsetY = 2 + Math.sin(sp * Math.PI) * 6;
+            bladeAngle = -0.15 + sp * 0.32; // -0.15 -> +0.17 (지면과 거의 수평인 궤적)
+            offsetX = -6 + Math.sin(sp * Math.PI) * 28;
+            offsetY = 1 + Math.sin(sp * Math.PI) * 3;
           }
         } else if (anim.type === 'vertical') {
-          // [종베기] 머리 위로 높게 치켜들었다가 지면을 향해 맹렬하게 내리찍음
-          if (progress < 0.22) {
-            const wp = progress / 0.22;
-            bladeAngle = -2.18 + wp * 0.68;
-            offsetY = 2 - wp * 10;
+          // [종베기] 머리 위로 높게 치켜들었다가 지면을 향해 위에서 아래로 맹렬하게 내리찍음
+          if (progress < 0.20) {
+            const wp = progress / 0.20;
+            bladeAngle = -0.72 - wp * 0.73; // -0.72 -> -1.45 (머리 위 수직 치켜들기)
+            offsetY = 1 - wp * 8;
           } else {
-            const sp = (progress - 0.22) / 0.78;
-            bladeAngle = -1.50 + Math.pow(sp, 1.45) * 2.85;
-            offsetX = -12 + Math.sin(sp * Math.PI) * 20;
-            offsetY = -8 + Math.sin(sp * Math.PI) * 16;
+            const sp = (progress - 0.20) / 0.80;
+            bladeAngle = -1.45 + Math.pow(sp, 1.40) * 2.80; // -1.45 -> +1.35 (위에서 아래로 강타)
+            offsetX = 6 + Math.sin(sp * Math.PI) * 18;
+            offsetY = -7 + Math.sin(sp * Math.PI) * 18;
           }
         } else if (anim.type === 'thrust') {
           // [찌르기] 검을 전방 수평 0도로 곧게 정렬하여 깊숙이 찌름
           bladeAngle = 0.0;
-          offsetX = -2 + Math.sin(progress * Math.PI) * 28;
-          offsetY = 2;
+          offsetX = 4 + Math.sin(progress * Math.PI) * 28;
+          offsetY = 1;
         }
       }
 
@@ -364,21 +364,23 @@
             ctx.restore();
           }
         } else if (anim.type === 'horizontal') {
-          // [횡베기] 대검 칼날 바로 뒤를 따르는 수평 초승달 참격호 (검날 길이 78px에 밀착)
-          if (p >= 0.16) {
-            const sp = (p - 0.16) / 0.84;
-            const trailSpan = 0.90 * (1 - sp * 0.25);
+          // [횡베기] 유저 스케치 완벽 반영: 가로로 얇고 길게 뻗는 "납작한" 수평 초승달 참격 & 결 다발
+          if (p >= 0.14) {
+            const sp = (p - 0.14) / 0.86;
+            const trailSpan = 1.10 * (1 - sp * 0.20);
             const startAng = bladeAngle - trailSpan;
-            const endAng = bladeAngle + 0.05;
-            const innerR = 15;
-            const outerR = isEgo ? 94 : 80;
+            const endAng = bladeAngle + 0.08;
+            const innerR = 12;
+            const outerR = isEgo ? 96 : 82;
 
             ctx.save();
-            ctx.translate(offsetX, offsetY);
+            ctx.translate(offsetX + 10, offsetY);
+            // [스케치 핵심]: Y축을 0.28배로 압축하여 위아래가 얇고 좌우로 긴 "납작한" 타원형 참격호 형성
+            ctx.scale(1.30, 0.28);
 
             const hGrad = ctx.createRadialGradient(0, 0, innerR, 0, 0, outerR);
             hGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
-            hGrad.addColorStop(0.35, isForced ? `rgba(185, 28, 28, ${alpha * 0.5})` : `rgba(239, 68, 68, ${alpha * 0.6})`);
+            hGrad.addColorStop(0.35, isForced ? `rgba(185, 28, 28, ${alpha * 0.55})` : `rgba(239, 68, 68, ${alpha * 0.65})`);
             hGrad.addColorStop(0.85, isForced ? `rgba(127, 29, 29, ${alpha * 0.9})` : `rgba(220, 38, 38, ${alpha * 0.95})`);
             hGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
@@ -389,20 +391,20 @@
             ctx.closePath();
             ctx.fill();
 
-            // 백색 예기 선
+            // 백색 예기 테두리 선
             ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 2.8 * alpha;
+            ctx.lineWidth = 3.0 * alpha;
             ctx.beginPath();
             ctx.arc(0, 0, outerR * 0.98, startAng + 0.06, endAng);
             ctx.stroke();
 
-            // 가로 결 참격선 다발
-            for (let l = 1; l <= 4; l++) {
-              const lr = innerR + (outerR - innerR) * (l / 4.5);
-              ctx.strokeStyle = (l % 2 === 0) ? `rgba(255, 255, 255, ${alpha * 0.9})` : `rgba(254, 202, 202, ${alpha * 0.85})`;
-              ctx.lineWidth = 1.5 * alpha;
+            // 스케치 핵심: 수평으로 곧게 뻗어나가는 가로 결 참격선 다발 (납작한 수평 결)
+            for (let l = 1; l <= 5; l++) {
+              const lr = innerR + (outerR - innerR) * (l / 5.5);
+              ctx.strokeStyle = (l % 2 === 0) ? `rgba(255, 255, 255, ${alpha * 0.95})` : (isForced ? `rgba(239, 68, 68, ${alpha * 0.85})` : `rgba(254, 202, 202, ${alpha * 0.9})`);
+              ctx.lineWidth = (l === 3 ? 2.5 : 1.4) * alpha;
               ctx.beginPath();
-              ctx.arc(0, 0, lr, startAng + l * 0.07, endAng);
+              ctx.arc(0, 0, lr, startAng + l * 0.06, endAng);
               ctx.stroke();
             }
 
@@ -962,8 +964,8 @@
       const isRedMist = (isMain && targetMain && targetMain.id === 'melee_red_mist');
       let anchorX, anchorY;
       if (isRedMist) {
-        anchorX = pScreenX + (dir > 0 ? targetEntity.width * 0.44 : targetEntity.width * 0.56);
-        anchorY = pScreenY + targetEntity.height * 0.58;
+        anchorX = pScreenX + (dir > 0 ? targetEntity.width * 0.52 : targetEntity.width * 0.48);
+        anchorY = pScreenY + targetEntity.height * 0.56;
       } else {
         anchorX = pScreenX + (dir > 0 ? targetEntity.width * 0.72 : targetEntity.width * 0.28) + (recoilX * dir);
         anchorY = pScreenY + targetEntity.height * 0.58;

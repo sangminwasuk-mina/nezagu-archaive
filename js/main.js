@@ -1284,7 +1284,7 @@
 
       // (A) 카이텐저 5인 판정
       kaitenzers.forEach(k => {
-        if (!k.isSpawned || k.isDead || !k.isActive) return;
+        if (!k.isSpawned || k.isDead) return;
         const enemyCenterX = k.x + k.size / 2;
         const enemyCenterY = groundY - k.size / 2;
         const dx = (enemyCenterX - (player.x + player.width / 2)) * player.facing;
@@ -1359,7 +1359,7 @@
 
       // (A) 카이텐저 5인 실시간 관통 판정
       kaitenzers.forEach(k => {
-        if (!k.isSpawned || k.isDead || !k.isActive) return;
+        if (!k.isSpawned || k.isDead) return;
         if (player.redMistDashHitEnemies.includes(k.id)) return;
         const kCenterX = k.x + k.size / 2;
         if (kCenterX >= minX && kCenterX <= maxX) {
@@ -2112,7 +2112,7 @@
           // 대시 거리 연산 (개화 시 20% 증가: 270 -> 324)
           const dashDist = player.isEgoActive ? 320 : 270;
           const startX = player.x;
-          const targetX = Math.max(60, Math.min(2340, player.x + player.facing * dashDist));
+          const targetX = Math.max(50, Math.min(WORLD_WIDTH - 100, player.x + player.facing * dashDist));
 
           player.redMistDashing = true;
           player.redMistDashTimer = 0.32; // 0.32초 동안 부드럽게 미끄러지며 돌진 ("스으윽")
@@ -2147,7 +2147,7 @@
           const pCenterY = player.y + player.height / 2;
 
           kaitenzers.forEach(k => {
-            if (!k.isSpawned || k.isDead || !k.isActive) return;
+            if (!k.isSpawned || k.isDead) return;
             const kCenterX = k.x + k.size / 2;
             const kCenterY = groundY - k.size / 2;
             const dist = Math.hypot(kCenterX - pCenterX, kCenterY - pCenterY);
@@ -3014,7 +3014,7 @@
       player.redMistSpecialPhase = 'vertical_dash';
       player.redMistSpecialTimer = 0.25;
       player.redMistSpecialStartX = player.x;
-      player.redMistSpecialTargetX = Math.max(60, Math.min(2340, player.x + player.facing * 180));
+      player.redMistSpecialTargetX = Math.max(50, Math.min(WORLD_WIDTH - 100, player.x + player.facing * 180));
       player.redMistSpecialTarget = null;
       player.redMistSpecialIsEnhanced = isEnhanced;
       player.redMistSpecialTicksDone = 0;
@@ -5075,7 +5075,7 @@
         player.redMistThrustSlideTimer -= dt;
         const prog = Math.max(0, player.redMistThrustSlideTimer / 0.20);
         const step = player.facing * (player.redMistThrustSlideSpeed || 240) * (prog * 1.5 + 0.3) * dt;
-        player.x = Math.max(60, Math.min(2340, player.x + step));
+        player.x = Math.max(50, Math.min(WORLD_WIDTH - 100, player.x + step));
         if (player.redMistThrustSlideTimer < 0) player.redMistThrustSlideTimer = 0;
       }
 
@@ -5105,7 +5105,7 @@
             let closest = null;
             let minDist = 220;
             kaitenzers.forEach(k => {
-              if (!k.isSpawned || k.isDead || !k.isActive) return;
+              if (!k.isSpawned || k.isDead) return;
               const dx = (k.x + k.size / 2 - (player.x + player.width / 2)) * player.facing;
               if (dx >= -20 && dx <= minDist) {
                 minDist = dx;
@@ -5202,7 +5202,7 @@
 
             // 범위 내 모든 적에게 피해
             kaitenzers.forEach(k => {
-              if (!k.isSpawned || k.isDead || !k.isActive) return;
+              if (!k.isSpawned || k.isDead) return;
               const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, k.armorType || ARMOR_TYPES.NORMAL));
               k.hp -= actualDmg;
               k.x += player.facing * 40;
