@@ -230,6 +230,516 @@
       ctx.restore();
     }
 
+    // [메인 근접 무기: Red Mist (미미크리)] 순수 캔버스 2D 벡터 대검 렌더링 함수
+    function drawPlayerMimicryBlade(ctx, targetEntity) {
+      const isEgo = !!targetEntity.isEgoActive;
+      const isForced = !!targetEntity.isEgoForced;
+      const stance = targetEntity.redMistStance || 'horizontal';
+
+      let bladeAngle = 0.12; // 기본 횡베기: 살짝 아래로 비스듬한 정자세
+      let offsetX = 0;
+      let offsetY = 0;
+
+      if (stance === 'vertical') {
+        bladeAngle = -1.15; // 어깨 뒤로 높게 치켜든 종베기 대기세
+        offsetX = -6;
+        offsetY = -3;
+      } else if (stance === 'thrust') {
+        bladeAngle = 0.0; // 전방을 정조준한 찌르기 대기세
+        offsetX = 4;
+      }
+
+      // 평타 공격 애니메이션 중일 때 휘두르는 모션
+      if (targetEntity.redMistAttackAnim && targetEntity.redMistAttackAnim.timer > 0) {
+        const anim = targetEntity.redMistAttackAnim;
+        const progress = Math.min(1, Math.max(0, 1 - (anim.timer / anim.maxTimer)));
+        if (anim.type === 'horizontal') {
+          bladeAngle = -0.55 + progress * 1.35;
+          offsetX += Math.sin(progress * Math.PI) * 14;
+        } else if (anim.type === 'vertical') {
+          bladeAngle = -1.35 + progress * 2.1;
+          offsetY += Math.sin(progress * Math.PI) * 10;
+        } else if (anim.type === 'thrust') {
+          bladeAngle = 0.0;
+          offsetX += Math.sin(progress * Math.PI) * 22;
+        }
+      }
+
+      // 2스킬 돌진 대시 중일 때
+      if (targetEntity.redMistDashing) {
+        bladeAngle = 0.0;
+        offsetX += 12;
+      }
+
+      // 특수스킬 시전 페이즈별 모션
+      const sPhase = targetEntity.redMistSpecialPhase || 'none';
+      if (sPhase === 'vertical_dash') {
+        bladeAngle = -1.45;
+        offsetX = -8;
+      } else if (sPhase === 'vertical_slashes') {
+        bladeAngle = 0.0; // 수평 0도 꽂기 고정
+        offsetX = 10 + (Math.random() - 0.5) * 3;
+        offsetY = (Math.random() - 0.5) * 3;
+      } else if (sPhase === 'vertical_finish') {
+        bladeAngle = 0.45;
+        offsetX = 16;
+      } else if (sPhase === 'horizontal_windup') {
+        bladeAngle = -0.75;
+        offsetX = -6;
+      } else if (sPhase === 'horizontal_slash') {
+        bladeAngle = 0.75;
+        offsetX = 18;
+      }
+
+      ctx.save();
+      ctx.translate(offsetX, offsetY);
+      ctx.rotate(bladeAngle);
+
+      // E.G.O 개화 붉은 발광 섀도우
+      if (isEgo) {
+        ctx.shadowColor = isForced ? '#7f1d1d' : '#ef4444';
+        ctx.shadowBlur = isForced ? 8 : 14;
+      }
+
+      // 1. 손잡이 (Hilt Grip) & 원형 폼멜 (Pommel)
+      // (A) 폼멜 (원형 금속 캡)
+      ctx.fillStyle = '#1e1b18';
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(-16, 0, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      // 폼멜 중앙 핏빛 코어
+      ctx.fillStyle = isEgo ? '#dc2626' : '#7f1d1d';
+      ctx.beginPath();
+      ctx.arc(-16, 0, 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // (B) 손잡이 (가죽 붕대 랩핑)
+      ctx.fillStyle = '#292524';
+      ctx.fillRect(-15, -2.5, 18, 5);
+      ctx.strokeRect(-15, -2.5, 18, 5);
+      // X자 붕대 끈 줄무늬
+      ctx.strokeStyle = '#57534e';
+      ctx.lineWidth = 1.0;
+      for (let w = -12; w <= 0; w += 4) {
+        ctx.beginPath();
+        ctx.moveTo(w, -2.5);
+        ctx.lineTo(w + 3, 2.5);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(w + 3, -2.5);
+        ctx.lineTo(w, 2.5);
+        ctx.stroke();
+      }
+
+      // (C) 코등이/살점 결합부 (Fleshy Collar Guard)
+      ctx.fillStyle = '#450a0a';
+      ctx.strokeStyle = '#1c1917';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(3, -7.5);
+      ctx.lineTo(7, -6.5);
+      ctx.lineTo(7, 6.5);
+      ctx.lineTo(3, 7.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // 2. 하단 은빛 강철 외날 (Steel Blade Edge)
+      const bladeGrad = ctx.createLinearGradient(0, 0, 0, 7);
+      bladeGrad.addColorStop(0, '#f8fafc');
+      bladeGrad.addColorStop(0.35, '#cbd5e1');
+      bladeGrad.addColorStop(0.7, '#64748b');
+      bladeGrad.addColorStop(1, '#334155');
+
+      ctx.fillStyle = bladeGrad;
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(6, 0);
+      ctx.lineTo(62, 0);
+      ctx.lineTo(74, 1.5); // 칼날 팁
+      ctx.lineTo(64, 6.5);
+      ctx.lineTo(6, 6.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // 칼날 끝 깎인 단면 (Bevel Ridge)
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.0;
+      ctx.beginPath();
+      ctx.moveTo(7, 5.8);
+      ctx.lineTo(63, 5.8);
+      ctx.lineTo(73, 1.5);
+      ctx.stroke();
+
+      // 3. 상단 붉은 유기체 근육/살점 조직 (Fleshy Muscle Core)
+      const muscleGrad = ctx.createLinearGradient(6, -11, 6, 0);
+      if (isForced) {
+        muscleGrad.addColorStop(0, '#450a0a');
+        muscleGrad.addColorStop(0.5, '#7f1d1d');
+        muscleGrad.addColorStop(1, '#3f0c0c');
+      } else {
+        muscleGrad.addColorStop(0, '#450a0a');
+        muscleGrad.addColorStop(0.35, '#991b1b');
+        muscleGrad.addColorStop(0.7, '#dc2626');
+        muscleGrad.addColorStop(1, '#7f1d1d');
+      }
+
+      ctx.fillStyle = muscleGrad;
+      ctx.strokeStyle = '#1c1917';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(6, -5.5);
+      ctx.quadraticCurveTo(22, -10.5, 30, -10.5); // 눈동자 부근 볼록한 살점 융기
+      ctx.quadraticCurveTo(46, -10.5, 62, -4.5);
+      ctx.lineTo(74, 1.5); // 칼끝으로 연결
+      ctx.lineTo(62, 0);
+      ctx.lineTo(6, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // 근육 결 섬유 스트라이프 (Muscle Fiber Striations)
+      ctx.strokeStyle = isEgo ? '#f87171' : '#b91c1c';
+      ctx.lineWidth = 0.8;
+      for (let m = 0; m < 4; m++) {
+        const mx = 12 + m * 11;
+        ctx.beginPath();
+        ctx.moveTo(mx, -1);
+        ctx.quadraticCurveTo(mx + 3, -5, mx + 5, -8);
+        ctx.stroke();
+      }
+
+      // 4. 뼈 가시 3개 (3 Bone Spikes) - 아이보리 상아빛 뿔
+      const drawBoneSpike = (bx1, by1, tipX, tipY, bx2, by2) => {
+        const boneGrad = ctx.createLinearGradient(bx1, by1, tipX, tipY);
+        boneGrad.addColorStop(0, '#fef3c7');
+        boneGrad.addColorStop(0.65, '#d97706');
+        boneGrad.addColorStop(1, '#78350f');
+
+        ctx.fillStyle = boneGrad;
+        ctx.strokeStyle = '#451a03';
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.moveTo(bx1, by1);
+        ctx.quadraticCurveTo((bx1 + tipX) / 2 + 1, (by1 + tipY) / 2, tipX, tipY);
+        ctx.quadraticCurveTo((bx2 + tipX) / 2 - 1, (by2 + tipY) / 2, bx2, by2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(bx1 + 1, by1);
+        ctx.lineTo(tipX, tipY);
+        ctx.stroke();
+      };
+
+      // 가시 1 (손잡이 쪽 작은 뿔)
+      drawBoneSpike(15, -7.5, 13, -16.5, 20, -8.0);
+      // 가시 2 (눈동자 뒤 메인 거대 뿔)
+      drawBoneSpike(32, -9.5, 34, -22.5, 39, -9.0);
+      // 가시 3 (칼끝 쪽 전방을 향한 날카로운 뿔)
+      drawBoneSpike(48, -8.0, 56, -17.0, 54, -6.0);
+
+      // 5. 미미크리의 눈 (The Eye of Mimicry)
+      const eyeX = 27;
+      const eyeY = -3.5;
+
+      // 안와 (Eye Socket 살점 홈)
+      ctx.fillStyle = '#2b0707';
+      ctx.beginPath();
+      ctx.ellipse(eyeX, eyeY, 5.5, 4.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 안구 흰자위 (Sclera)
+      ctx.fillStyle = '#f8fafc';
+      ctx.beginPath();
+      ctx.ellipse(eyeX, eyeY, 4.2, 3.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 미세 혈관 (Capillaries)
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 0.6;
+      ctx.beginPath();
+      ctx.moveTo(eyeX - 3.5, eyeY);
+      ctx.lineTo(eyeX - 1.5, eyeY - 0.8);
+      ctx.moveTo(eyeX + 3.5, eyeY + 0.5);
+      ctx.lineTo(eyeX + 1.8, eyeY);
+      ctx.stroke();
+
+      // 홍채 (Iris)
+      if (isEgo) {
+        const irisGrad = ctx.createRadialGradient(eyeX, eyeY, 0.5, eyeX, eyeY, 2.6);
+        irisGrad.addColorStop(0, '#fef08a');
+        irisGrad.addColorStop(0.4, '#f59e0b');
+        irisGrad.addColorStop(0.85, '#dc2626');
+        irisGrad.addColorStop(1, '#7f1d1d');
+        ctx.fillStyle = irisGrad;
+      } else {
+        const irisGrad = ctx.createRadialGradient(eyeX, eyeY, 0.5, eyeX, eyeY, 2.6);
+        irisGrad.addColorStop(0, '#38bdf8');
+        irisGrad.addColorStop(0.7, '#0284c7');
+        irisGrad.addColorStop(1, '#0369a1');
+        ctx.fillStyle = irisGrad;
+      }
+      ctx.beginPath();
+      ctx.arc(eyeX, eyeY, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 세로로 찢어진 파충류형 동공 (Slit Pupil)
+      ctx.fillStyle = '#000000';
+      ctx.beginPath();
+      ctx.ellipse(eyeX, eyeY, 0.75, 2.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 안구 하이라이트
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(eyeX - 1.0, eyeY - 1.0, 0.7, 0, Math.PI * 2);
+      ctx.fill();
+
+      // E.G.O 개화 시 안광 잔상 (Eye flare trail)
+      if (isEgo) {
+        ctx.strokeStyle = isForced ? '#991b1b' : '#ef4444';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(eyeX, eyeY);
+        ctx.quadraticCurveTo(eyeX - 8, eyeY - 4, eyeX - 18, eyeY - 8);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#fee2e2';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(eyeX, eyeY);
+        ctx.lineTo(eyeX - 12, eyeY - 5);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    // [메인 근접 무기: Red Mist (미미크리)] 참격 궤적, 기합 파동, 돌진 잔상, 대절단 시네마틱 렌더링
+    function drawRedMistCombatEffects(ctx, ent) {
+      if (!ent || !ent.mainWeapon || ent.mainWeapon.id !== 'melee_red_mist') return;
+
+      const entScreenX = (ent.x + ent.width / 2) - camera.x;
+      const entScreenY = ent.y + ent.height * 0.58;
+      const groundY = canvas.height - GROUND_OFFSET;
+      const dir = ent.facing > 0 ? 1 : -1;
+      const isEgo = !!ent.isEgoActive;
+      const isForced = !!ent.isEgoForced;
+
+      // 1. 평타 3종 자세별 참격 궤적 (횡베기, 종베기, 찌르기)
+      if (ent.redMistAttackAnim && ent.redMistAttackAnim.timer > 0) {
+        const anim = ent.redMistAttackAnim;
+        const p = Math.min(1, Math.max(0, 1 - (anim.timer / anim.maxTimer)));
+        const alpha = Math.sin(p * Math.PI);
+        const slashRadius = isEgo ? 170 : 135;
+
+        ctx.save();
+        ctx.translate(entScreenX, entScreenY);
+        ctx.scale(dir, 1);
+
+        if (anim.type === 'horizontal') {
+          // [횡베기] 전방 180도 거대 초승달 붉은 참격파
+          const sweepAngle = -0.6 + p * 1.4;
+          const slashGrad = ctx.createRadialGradient(0, 0, slashRadius * 0.4, 0, 0, slashRadius);
+          slashGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+          slashGrad.addColorStop(0.5, isForced ? `rgba(185, 28, 28, ${alpha * 0.55})` : `rgba(239, 68, 68, ${alpha * 0.65})`);
+          slashGrad.addColorStop(0.85, isForced ? `rgba(127, 29, 29, ${alpha * 0.85})` : `rgba(220, 38, 38, ${alpha * 0.95})`);
+          slashGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+          ctx.fillStyle = slashGrad;
+          ctx.beginPath();
+          ctx.arc(0, 0, slashRadius, sweepAngle - 0.7, sweepAngle + 0.3);
+          ctx.arc(0, 0, slashRadius * 0.45, sweepAngle + 0.3, sweepAngle - 0.7, true);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.strokeStyle = isEgo ? '#ffffff' : '#fca5a5';
+          ctx.lineWidth = 2.5 * alpha;
+          ctx.beginPath();
+          ctx.arc(0, 0, slashRadius * 0.95, sweepAngle - 0.65, sweepAngle + 0.25);
+          ctx.stroke();
+
+        } else if (anim.type === 'vertical') {
+          // [종베기] 위에서 아래 지면으로 수직 낙하하는 묵직한 참격호 & 지면 충격파
+          const vAngle = -1.35 + p * 1.95;
+          ctx.strokeStyle = isForced ? `rgba(185, 28, 28, ${alpha})` : `rgba(239, 68, 68, ${alpha})`;
+          ctx.lineWidth = (isEgo ? 10 : 7) * alpha;
+          ctx.beginPath();
+          ctx.arc(0, 0, slashRadius, vAngle - 0.5, vAngle + 0.2);
+          ctx.stroke();
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2.5 * alpha;
+          ctx.beginPath();
+          ctx.arc(0, 0, slashRadius, vAngle - 0.4, vAngle + 0.15);
+          ctx.stroke();
+
+          if (p > 0.4) {
+            const impactX = slashRadius * 0.75;
+            ctx.fillStyle = `rgba(220, 38, 38, ${alpha * 0.6})`;
+            ctx.beginPath();
+            ctx.ellipse(impactX, groundY - entScreenY, 35 * p, 8 * p, 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+        } else if (anim.type === 'thrust') {
+          // [찌르기] 전방으로 뿜어지는 원뿔형 관통 붉은 충격파
+          const thrustLen = slashRadius * 1.25 * p;
+          const thrustWidth = 24 * (1 - p * 0.4);
+
+          const coneGrad = ctx.createLinearGradient(15, 0, thrustLen, 0);
+          coneGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+          coneGrad.addColorStop(0.3, isForced ? `rgba(185, 28, 28, ${alpha * 0.85})` : `rgba(239, 68, 68, ${alpha * 0.85})`);
+          coneGrad.addColorStop(0.8, isForced ? `rgba(127, 29, 29, ${alpha * 0.5})` : `rgba(220, 38, 38, ${alpha * 0.5})`);
+          coneGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+          ctx.fillStyle = coneGrad;
+          ctx.beginPath();
+          ctx.moveTo(15, -thrustWidth * 0.4);
+          ctx.lineTo(thrustLen, 0);
+          ctx.lineTo(15, thrustWidth * 0.4);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2.5 * alpha;
+          ctx.beginPath();
+          ctx.moveTo(10, 0);
+          ctx.lineTo(thrustLen, 0);
+          ctx.stroke();
+
+          for (let r = 1; r <= 2; r++) {
+            const rx = thrustLen * (r * 0.4);
+            ctx.strokeStyle = `rgba(254, 202, 202, ${alpha * 0.7})`;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.ellipse(rx, 0, 5, thrustWidth * 0.6 * (1 - r * 0.2), 0, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        }
+
+        ctx.restore();
+      }
+
+      // 2. 2스킬 [기합] 시전자 0.7초 포효 충격파
+      if (ent.redMistKihapStunSelfTimer > 0) {
+        const kTimer = ent.redMistKihapStunSelfTimer;
+        const kp = Math.min(1, Math.max(0, 1 - (kTimer / 0.7)));
+        const kAlpha = (1 - kp) * 0.85;
+        const kRadius = 40 + kp * 180;
+
+        ctx.save();
+        ctx.translate(entScreenX, entScreenY);
+        ctx.scale(dir, 1);
+
+        ctx.strokeStyle = isEgo ? `rgba(239, 68, 68, ${kAlpha})` : `rgba(249, 115, 22, ${kAlpha})`;
+        ctx.lineWidth = 4.5 * (1 - kp * 0.5);
+        ctx.beginPath();
+        ctx.arc(0, 0, kRadius, -0.7, 0.7);
+        ctx.stroke();
+
+        ctx.strokeStyle = `rgba(255, 255, 255, ${kAlpha * 0.9})`;
+        ctx.lineWidth = 2.0;
+        ctx.beginPath();
+        ctx.arc(0, 0, kRadius - 8, -0.65, 0.65);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      // 3. 2스킬 [돌진] 대시 붉은 잔상 & 궤적
+      if (ent.redMistDashing) {
+        ctx.save();
+        ctx.strokeStyle = isEgo ? 'rgba(239, 68, 68, 0.75)' : 'rgba(249, 115, 22, 0.75)';
+        ctx.lineWidth = 2.5;
+        for (let l = 0; l < 4; l++) {
+          const ly = entScreenY - ent.height * 0.3 + l * (ent.height * 0.2);
+          ctx.beginPath();
+          ctx.moveTo(entScreenX, ly);
+          ctx.lineTo(entScreenX - dir * 120, ly + (Math.random() - 0.5) * 6);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // 4. 특수스킬 [대절단 - 세로] & [대절단 - 가로] 시네마틱 렌더링
+      const sPhase = ent.redMistSpecialPhase || 'none';
+      if (sPhase === 'vertical_slashes') {
+        ctx.save();
+        const t = Date.now() * 0.01;
+        const sparkCount = 6;
+        for (let s = 0; s < sparkCount; s++) {
+          const ang = t + s * (Math.PI * 2 / sparkCount);
+          const dist = 25 + Math.sin(t * 3 + s) * 15;
+          ctx.strokeStyle = s % 2 === 0 ? '#ef4444' : '#fee2e2';
+          ctx.lineWidth = 2.0;
+          ctx.beginPath();
+          ctx.moveTo(entScreenX + dir * 60, entScreenY);
+          ctx.lineTo(entScreenX + dir * 60 + Math.cos(ang) * dist, entScreenY + Math.sin(ang) * dist);
+          ctx.stroke();
+        }
+        ctx.restore();
+      } else if (sPhase === 'vertical_finish') {
+        ctx.save();
+        const pillarX = entScreenX + dir * 75;
+        const fGrad = ctx.createLinearGradient(pillarX - 45, 0, pillarX + 45, 0);
+        fGrad.addColorStop(0, 'rgba(239, 68, 68, 0)');
+        fGrad.addColorStop(0.35, 'rgba(220, 38, 38, 0.7)');
+        fGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.95)');
+        fGrad.addColorStop(0.65, 'rgba(220, 38, 38, 0.7)');
+        fGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+
+        ctx.fillStyle = fGrad;
+        ctx.fillRect(pillarX - 45, 0, 90, canvas.height);
+        ctx.restore();
+      } else if (sPhase === 'horizontal_windup') {
+        ctx.save();
+        ctx.fillStyle = 'rgba(69, 10, 10, 0.45)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 3.0;
+        ctx.beginPath();
+        ctx.arc(entScreenX, entScreenY, 65, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      } else if (sPhase === 'horizontal_slash') {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.65)';
+        ctx.lineWidth = 22;
+        ctx.beginPath();
+        ctx.moveTo(0, entScreenY);
+        ctx.lineTo(canvas.width, entScreenY);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.moveTo(0, entScreenY);
+        ctx.lineTo(canvas.width, entScreenY);
+        ctx.stroke();
+
+        ctx.fillStyle = '#fca5a5';
+        for (let p = 0; p < 20; p++) {
+          const px = (p * (canvas.width / 20)) + (Math.random() - 0.5) * 30;
+          const py = entScreenY + (Math.random() - 0.5) * 40;
+          ctx.beginPath();
+          ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
     // 플레이어 전용 무기 캔버스 드로잉 함수 (종막의 디스트로이어 & 루거 P08 스타일 보조권총 & 아비 에슈흐 레일건)
     function drawPlayerWeapon(pScreenX, pScreenY, playerCenterX, playerCenterY, groundY, targetEntity = player) {
       const isMain = targetEntity.activeWeaponSlot === 'main';
@@ -276,12 +786,18 @@
       ctx.lineWidth = 1.4;
       ctx.strokeStyle = '#0f172a';
 
+      const isRedMist = (isMain && targetMain && targetMain.id === 'melee_red_mist');
       const isRG = (isMain && targetMain && targetMain.id === 'rg_supernova');
       const isSG = (isMain && targetMain && targetMain.id === 'sg_bloody_gunpowder');
       const isAR = (isMain && targetMain && targetMain.id === 'ar_white_fang');
       const isSMG = (isMain && targetMain && targetMain.id === 'smg_fox45');
 
-      if (isMain && !isRG && !isSG && !isAR && !isSMG) {
+      if (isRedMist) {
+        // ==========================================
+        // [메인 근접 무기: Red Mist (미미크리)]
+        // ==========================================
+        drawPlayerMimicryBlade(ctx, targetEntity);
+      } else if (isMain && !isRG && !isSG && !isAR && !isSMG) {
         // ==========================================
         // [메인 무기: 종막의 디스트로이어]
         // ==========================================
@@ -5257,19 +5773,105 @@
         ctx.restore();
       }
 
+      // [Red Mist (미미크리)] 특색 붉은안개 E.G.O 개화 핏빛 아우라
+      if (player.isEgoActive) {
+        ctx.save();
+        const t = Date.now() * 0.005;
+        const pulse = Math.sin(t * 3.5) * 5;
+        const isForced = player.isEgoForced;
+
+        // 1. 발밑 핏빛 균열 & 소용돌이 링
+        ctx.strokeStyle = isForced ? '#7f1d1d' : '#dc2626';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.ellipse(pScreenX + player.width / 2, groundY, (player.width + 26) / 2 + pulse, 9 + pulse * 0.35, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = isForced ? '#991b1b' : '#ef4444';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.ellipse(pScreenX + player.width / 2, groundY, (player.width + 44) / 2 - pulse * 0.5, 12, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 2. 몸체 주변을 휘감아 솟구치는 붉은안개(Red Mist) 오라 그라데이션
+        const auraGrad = ctx.createRadialGradient(
+          pScreenX + player.width / 2, pScreenY + player.height / 2, 6,
+          pScreenX + player.width / 2, pScreenY + player.height / 2, player.width + 36 + pulse
+        );
+        if (isForced) {
+          auraGrad.addColorStop(0, 'rgba(127, 29, 29, 0.65)');
+          auraGrad.addColorStop(0.5, 'rgba(88, 28, 28, 0.35)');
+          auraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        } else {
+          auraGrad.addColorStop(0, 'rgba(239, 68, 68, 0.55)');
+          auraGrad.addColorStop(0.4, 'rgba(220, 38, 38, 0.35)');
+          auraGrad.addColorStop(0.8, 'rgba(153, 27, 27, 0.15)');
+          auraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        }
+        ctx.fillStyle = auraGrad;
+        ctx.beginPath();
+        ctx.arc(pScreenX + player.width / 2, pScreenY + player.height / 2, player.width + 36 + pulse, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 3. 위로 솟구치는 핏빛 안개 스파크 및 미립자
+        for (let sp = 0; sp < 6; sp++) {
+          const sx = pScreenX + ((Math.sin(t * 2.8 + sp * 1.4) * 0.5 + 0.5) * player.width);
+          const sy = pScreenY + player.height - ((t * 45 + sp * 18) % (player.height + 30));
+          ctx.fillStyle = isForced ? '#991b1b' : (sp % 2 === 0 ? '#ef4444' : '#fca5a5');
+          ctx.beginPath();
+          ctx.arc(sx, sy, 2.0 + Math.sin(t * 3 + sp) * 0.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+
       // [시스템 : 아비 에슈흐] 기계식 비행 날개 파츠 (몸체 뒤에 렌더링)
       if (player.isAbiEshuhActive) {
         drawMechanicalWings(pScreenX, pScreenY, player);
       }
 
       // 플레이어 블록
-      const bodyColor = player.isColorActive ? '#334155' : (player.isImmortalActive ? '#7f1d1d' : player.color);
-      const strokeColor = player.isColorActive ? '#64748b' : (player.isImmortalActive ? '#ef4444' : (player.isDashing ? '#38bdf8' : '#ffffff'));
+      const bodyColor = player.isEgoActive ? (player.isEgoForced ? '#450a0a' : '#7f1d1d') : (player.isColorActive ? '#334155' : (player.isImmortalActive ? '#7f1d1d' : player.color));
+      const strokeColor = player.isEgoActive ? (player.isEgoForced ? '#ef4444' : '#f87171') : (player.isColorActive ? '#64748b' : (player.isImmortalActive ? '#ef4444' : (player.isDashing ? '#38bdf8' : '#ffffff')));
       ctx.fillStyle = bodyColor;
       ctx.fillRect(pScreenX, pScreenY, player.width, player.height);
       ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = (player.isColorActive || player.isImmortalActive || player.isDashing) ? 3 : 2;
+      ctx.lineWidth = (player.isEgoActive || player.isColorActive || player.isImmortalActive || player.isDashing) ? 3 : 2;
       ctx.strokeRect(pScreenX, pScreenY, player.width, player.height);
+
+      // [Red Mist: E.G.O 개화 & 탈진 & 기합 배지]
+      if (player.egoExhaustTimer > 0) {
+        ctx.save();
+        ctx.font = 'bold 11px monospace';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2.5;
+        const exText = `😵 [탈진 기절] (${player.egoExhaustTimer.toFixed(1)}s)`;
+        ctx.strokeText(exText, pScreenX - 35, pScreenY - 34);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillText(exText, pScreenX - 35, pScreenY - 34);
+        ctx.restore();
+      } else if (player.redMistKihapStunSelfTimer > 0) {
+        ctx.save();
+        ctx.font = 'bold 11px monospace';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2.5;
+        const khText = `⚡ [기합 경직] (${player.redMistKihapStunSelfTimer.toFixed(1)}s)`;
+        ctx.strokeText(khText, pScreenX - 30, pScreenY - 34);
+        ctx.fillStyle = '#f97316';
+        ctx.fillText(khText, pScreenX - 30, pScreenY - 34);
+        ctx.restore();
+      } else if (player.isEgoActive) {
+        ctx.save();
+        ctx.font = 'bold 11px monospace';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2.5;
+        const egoBadge = player.isEgoForced ? '🩸 [강제 개화 : 붉은안개]' : '🔴 [E.G.O 개화 : 붉은안개]';
+        ctx.strokeText(egoBadge, pScreenX - 40, pScreenY - 34);
+        ctx.fillStyle = player.isEgoForced ? '#ef4444' : '#f87171';
+        ctx.fillText(egoBadge, pScreenX - 40, pScreenY - 34);
+        ctx.restore();
+      }
 
       // [AR: 색채 & 침착한 호흡] 머리 위 배지 및 유예 타이머 표시
       if (player.isColorActive) {
@@ -6672,6 +7274,12 @@
 
       // 7-3. [WHITE FANG 465] 화력 지원 드론 렌더링
       drawWhiteFangDrones();
+
+      // 7-4. [Red Mist (미미크리)] 참격 궤적 & 스킬 이펙트 렌더링
+      drawRedMistCombatEffects(ctx, player);
+      if (remotePlayer && remotePlayer.isActive) {
+        drawRedMistCombatEffects(ctx, remotePlayer);
+      }
 
       // 8. 탄환 렌더링 (시인성을 위한 진한 검은색 테두리 및 진행 각도 회전)
       bullets.forEach(b => {

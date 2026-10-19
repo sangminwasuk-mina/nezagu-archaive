@@ -579,40 +579,40 @@
         },
         {
           id: 'melee_red_mist',
-          name: '[관통] Red Mist (미미크리)',
+          name: '[일반] Red Mist (미미크리)',
           tag: '메인 근접 무기',
           color: '#ef4444',
           role: '딜러',
           position: 'FRONT',
           armorType: ARMOR_TYPES.LIGHT, // 방어 장갑: 경장갑
-          attackType: ATTACK_TYPES.PIERCE, // 기본 공격: 관통
-          skill1AttackType: ATTACK_TYPES.PIERCE,
-          skill2AttackType: ATTACK_TYPES.PIERCE,
-          specialAttackType: ATTACK_TYPES.PIERCE,
+          attackType: ATTACK_TYPES.NORMAL, // 기본 공격: 일반
+          skill1AttackType: ATTACK_TYPES.NORMAL,
+          skill2AttackType: ATTACK_TYPES.NORMAL,
+          specialAttackType: ATTACK_TYPES.NORMAL,
           isMelee: true,
-          desc: '• 방어 장갑: 경장갑 | 공격: 관통 근접 대검 | 피해량: 1,550 | 딜레이: 0.3초 | 탄약/재장전: 불필요 (무제한) | 3종 자세 전환 & E.G.O 개화',
-          skillName: '[관통] 전환 (자세 순환)',
+          desc: '• 방어 장갑: 경장갑 | 공격: 일반 근접 대검 | 피해량: 1,550 | 딜레이: 0.3초 | 탄약/재장전: 불필요 (무제한) | 3종 자세 전환 & E.G.O 개화',
+          skillName: '[일반] 전환 (자세 순환)',
           skillDesc: '• 소모: <b>1 코스트 (개화 시 0C)</b> | 쿨타임 없음 | 횡베기 ⇋ 종베기 ⇋ 찌르기 순환 전환 & 다음 공격 +10%(개화 시 +35%)',
-          skill2Name: '[관통] 기합 / 돌진',
+          skill2Name: '[일반] 기합 / 돌진',
           skill2Desc: '• 횡/종베기 시 [기합] (4C, 2.2s 기절, 3회 피해 +300%) | 찌르기 시 [돌진] (5C, 820% 대시, 치명타 시 쿨초기화+0C+공격력 누적)',
-          specialSkillName: '[관통] 대절단 - 세로 / E.G.O 개화',
+          specialSkillName: '[일반] 대절단 - 세로 / E.G.O 개화',
           specialSkillDesc: '• 스택 100 미만: [대절단-세로] (12~8C, 450% 3연타 + 피니시 1250% + 2.5s 기절) | 스택 100: [E.G.O 개화] (특색 붉은안개 발현)',
           stats: { capacity: Infinity, dmg: 1550, reloadTime: 0, maxMags: Infinity, holdFire: true, fireDelay: 0.30, range: 140 },
           skillDetails: {
-            title: '[관통] 전환',
+            title: '[일반] 전환',
             keyLabel: '[K키 / Q키] 메인스킬 1',
             badgeColor: '#ef4444',
-            tags: ['공격: 관통', '소모: 1 코스트 (개화 시 0C)', '쿨타임: 없음 (0초)', '자세 순환 전환', '다음 피해 증폭'],
+            tags: ['공격: 일반', '소모: 1 코스트 (개화 시 0C)', '쿨타임: 없음 (0초)', '자세 순환 전환', '다음 피해 증폭'],
             sections: [
               { title: '스킬 개요', text: '대검의 공격 자세를 [횡베기] ➔ [종베기] ➔ [찌르기] ➔ [횡베기] 순서로 순환 교체합니다. 쿨타임이 없어 연속 사용이 가능합니다.' },
               { title: '피해량 증폭', text: '자세 전환 후 다음 1회 공격의 피해량이 +10% 증가합니다. (E.G.O 개화 중에는 +35%로 강화되며, 연속 사용 시 수치는 중첩되지 않고 갱신됩니다.)' }
             ]
           },
           skill2Details: {
-            title: '[관통] 기합 / 돌진',
+            title: '[일반] 기합 / 돌진',
             keyLabel: '[L키 / E키] 메인스킬 2',
             badgeColor: '#f97316',
-            tags: ['공격: 관통', '자세 연동 분기', '기합: 광역 기절 + 3회 피해 300% 증가', '돌진: 820% 대시 + 치명타 무한 리셋'],
+            tags: ['공격: 일반', '자세 연동 분기', '기합: 광역 기절 + 3회 피해 300% 증가', '돌진: 820% 대시 + 치명타 무한 리셋'],
             sections: [
               { title: '자세 연동 발동', text: '현재 일반공격 자세에 따라 자동으로 발동 스킬이 분기됩니다.\n• [횡베기 / 종베기 자세]: [기합] 발동\n• [찌르기 자세]: [돌진] 발동' },
               { title: '[기합] 효과 (4 코스트, 쿨타임 5초)', text: '전방으로 붉은 기운을 내뿜어 범위 내 적들에게 2.2초 기절을 부여합니다. (시전 후 0.7초 이동 불가, 이후 3회 공격 피해량 +300% 증가 / 개화 시: 6코스트, 기절 3.5초, 피해량 +650% 폭증)' },
@@ -620,10 +620,10 @@
             ]
           },
           specialSkillDetails: {
-            title: '[관통] 대절단 - 세로 / E.G.O 개화',
+            title: '[일반] 대절단 - 세로 / E.G.O 개화',
             keyLabel: '[S키] 특수스킬',
             badgeColor: '#dc2626',
-            tags: ['공격: 관통', '스택 100 미만: 대절단-세로', '스택 100: E.G.O 개화', '개화 중: 대절단-가로/세로 분기', '치명타 미발동'],
+            tags: ['공격: 일반', '스택 100 미만: 대절단-세로', '스택 100: E.G.O 개화', '개화 중: 대절단-가로/세로 분기', '치명타 미발동'],
             sections: [
               { title: '스택 100 미만: [대절단 - 세로]', text: '스택에 따라 12~8 코스트 소모. 전방 대시 후 종베기로 적을 내리꽂고 수평 고정. 0.7초 간격 450% 3연타(총 1,350%) 후 1,250% 피니시 방출 + 2.5초 기절 (치명타 미발동).' },
               { title: '스택 100 달성: [E.G.O 개화]', text: '특색 붉은안개 발현! 이동속도 +50%, 일반 공격력 +20%, 범위 +35% 증가. 모든 스킬이 극도로 강화되며 스택이 소진될 때까지 유지됩니다.' },
