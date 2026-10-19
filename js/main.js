@@ -1232,8 +1232,8 @@
         player.redMistThrustSlideSpeed = 240;
       }
 
-      // 3. 기본 데미지 (1,550) 및 버프 연산
-      let baseDmg = 1550;
+      // 3. 기본 데미지 (3,560) 및 버프 연산
+      let baseDmg = (player.mainWeapon && player.mainWeapon.stats && player.mainWeapon.stats.dmg) ? player.mainWeapon.stats.dmg : 3560;
 
       // E.G.O 개화 상태 피해량 증감
       if (player.isEgoActive) {
@@ -1342,7 +1342,7 @@
       const groundY = canvas.height - GROUND_OFFSET;
 
       // 기본 820% 피해
-      let baseDmg = 1550 * 8.20;
+      let baseDmg = ((player.mainWeapon && player.mainWeapon.stats && player.mainWeapon.stats.dmg) ? player.mainWeapon.stats.dmg : 3560) * 8.20;
       if (player.redMistThrustBonusDmgRatio > 0) {
         baseDmg *= (1 + player.redMistThrustBonusDmgRatio);
       }
@@ -5172,7 +5172,7 @@
             const isEnh = player.redMistSpecialIsEnhanced;
             const finishRatio = isEnh ? 32.50 : 26.00; // 피니시 계수 2,600% ~ 3,250%
             const stunDur = isEnh ? 4.0 : 2.5;
-            let dmg = 1550 * finishRatio;
+            let dmg = ((player.mainWeapon && player.mainWeapon.stats && player.mainWeapon.stats.dmg) ? player.mainWeapon.stats.dmg : 3560) * finishRatio;
             dmg = calcPlayerAttackDamage(dmg);
             const finalDmg = Math.round(dmg);
 
@@ -5272,7 +5272,7 @@
 
           if (player.redMistSpecialTimer <= 0) {
             // 0.7초 종료: 붉은 화면 해제 및 범위 내 모든 적에게 일괄 광역 피해 적용!
-            let dmg = 1550 * 21.50; // 2,150% 공격력 광역 피해
+            let dmg = ((player.mainWeapon && player.mainWeapon.stats && player.mainWeapon.stats.dmg) ? player.mainWeapon.stats.dmg : 3560) * 21.50; // 2,150% 공격력 광역 피해
             dmg = calcPlayerAttackDamage(dmg);
             const finalDmg = Math.round(dmg);
 
