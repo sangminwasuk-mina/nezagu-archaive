@@ -1209,23 +1209,27 @@
         if (curW.id === 'melee_red_mist') {
           if (redMistStackEl.classList.contains('hidden')) redMistStackEl.classList.remove('hidden');
           const stanceKorean = player.redMistStance === 'vertical' ? '종베기' : (player.redMistStance === 'thrust' ? '찌르기' : '횡베기');
+          const streakText = (player.redMistConsecutiveBonusRatio > 0)
+            ? ` | 🎯연속+${Math.round(player.redMistConsecutiveBonusRatio * 100)}%(${player.redMistTargetStreak}타)`
+            : (player.redMistTargetStreak > 0 ? ` | 🎯연속 ${player.redMistTargetStreak}/3타` : '');
+
           if (player.egoExhaustTimer > 0) {
             setTextIfChanged(redMistStackEl, `😵 탈진 기절 [${player.egoExhaustTimer.toFixed(1)}s]`);
             redMistStackEl.style.color = '#94a3b8';
             redMistStackEl.style.borderColor = 'rgba(148, 163, 184, 0.4)';
             redMistStackEl.style.boxShadow = 'none';
           } else if (player.isEgoActive) {
-            setTextIfChanged(redMistStackEl, `🔴 E.G.O 개화 [${(player.redMistStack || 0).toFixed(1)}] | ${stanceKorean}`);
+            setTextIfChanged(redMistStackEl, `🔴 E.G.O 개화 [${(player.redMistStack || 0).toFixed(1)}] | ${stanceKorean}${streakText}`);
             redMistStackEl.style.color = '#f87171';
             redMistStackEl.style.borderColor = 'rgba(239, 68, 68, 0.8)';
             redMistStackEl.style.boxShadow = '0 0 10px rgba(239, 68, 68, 0.5)';
           } else if (player.egoPassiveSpeedBuff) {
-            setTextIfChanged(redMistStackEl, `🩸 탈진 패시브 (이속+5%, 코스트10%) | ${stanceKorean}`);
+            setTextIfChanged(redMistStackEl, `🩸 탈진 패시브 (이속+5%, 코스트10%) | ${stanceKorean}${streakText}`);
             redMistStackEl.style.color = '#fbbf24';
             redMistStackEl.style.borderColor = 'rgba(251, 191, 36, 0.5)';
             redMistStackEl.style.boxShadow = 'none';
           } else {
-            setTextIfChanged(redMistStackEl, `🩸 붉은안개 [${(player.redMistStack || 0).toFixed(1)}/100] | ${stanceKorean}`);
+            setTextIfChanged(redMistStackEl, `🩸 붉은안개 [${(player.redMistStack || 0).toFixed(1)}/100] | ${stanceKorean}${streakText}`);
             redMistStackEl.style.color = '#f87171';
             redMistStackEl.style.borderColor = 'rgba(239, 68, 68, 0.45)';
             redMistStackEl.style.boxShadow = '0 0 6px rgba(220, 38, 38, 0.3)';

@@ -254,7 +254,7 @@
       if (player.egoExhausted) return; // 탈진 후에는 더 이상 스택이 채워지지 않음
       if (player.isEgoActive) return; // 개화 중에는 스택이 소모만 됨
       const prev = player.redMistStack || 0;
-      player.redMistStack = Math.min(100, Math.round((prev + amount) * 10) / 10);
+      player.redMistStack = Math.min(100, prev + amount);
       if (player.redMistStack >= 100 && prev < 100) {
         addDamageText(player.x, player.y - 35, '🔴 [붉은안개 100 달성!] E.G.O 개화 가능! (S키)', '#ef4444');
       }
@@ -263,8 +263,9 @@
 
     function consumeRedMistStack(amount) {
       if (!player.isEgoActive) return;
-      player.redMistStack = Math.max(0, Math.round(((player.redMistStack || 0) - amount) * 10) / 10);
+      player.redMistStack = Math.max(0, (player.redMistStack || 0) - amount);
       if (player.redMistStack <= 0) {
+        player.redMistStack = 0;
         triggerEgoExhaustion();
       }
       updateWeaponHUD();
@@ -407,6 +408,9 @@
       player.redMistStanceNextDmgBuff = 0;
       player.redMistSpecialPhase = 'none';
       player.redMistSpecialTimer = 0;
+      player.redMistTargetStreak = 0;
+      player.redMistLastTargetId = null;
+      player.redMistConsecutiveBonusRatio = 0;
 
       // 선택한 보조 무기 스탯 적용 (HG 루거 P08 vs HG 상식적 수단)
       const selectedSub = (playerLoadout && playerLoadout.slot7) || EQUIPMENT_DATABASE.slot7[0];
@@ -727,6 +731,9 @@
       player.redMistSpecialHitEnemies = [];
       player.redMistSpecialTicksDone = 0;
       player.redMistAttackAnim = null;
+      player.redMistTargetStreak = 0;
+      player.redMistLastTargetId = null;
+      player.redMistConsecutiveBonusRatio = 0;
 
       // [서포터 초기화 제거]
 
@@ -1340,6 +1347,83 @@
         player.redMistKihapBuffCount--;
       }
 
+      // 4. 대검 검신 밀착형 타격 범위 판정 (종/횡베기: 실제 검날 길이 ~85px, 찌르기: 검신+돌풍파 ~150px)
+      let baseReach = (player.redMistStance === 'thrust') ? 150 : 85;
+      if (isThirdEmpowered) {
+        baseReach *= 1.25; // 3타 강화: 공격범위 125%
+      }
+      const hitRange = player.isEgoActive ? (baseReach * 1.35) : baseReach;
+      const groundY = canvas.height - GROUND_OFFSET;
+
+      // 피격 대상 수집
+      const hitEnemies = [];
+
+      // (A) 카이텐저 5인 판정
+      kaitenzers.forEach(k => {
+        if (!k.isSpawned || k.isDead) return;
+        const enemyCenterX = k.x + k.size / 2;
+        const enemyCenterY = groundY - k.size / 2;
+        const dx = (enemyCenterX - (player.x + player.width / 2)) * player.facing;
+        const dy = Math.abs(enemyCenterY - (player.y + player.height / 2));
+
+        if (dx >= -20 && dx <= hitRange + k.size / 2 && dy <= 120) {
+          hitEnemies.push({ id: k.id, enemy: k, isBoss: false });
+        }
+      });
+
+      // (B) 2페이즈 카이텐 FX Mk.0 (보스) 판정
+      const targetBoss = (typeof kaitenFx !== 'undefined' && kaitenFx.isSpawned && !kaitenFx.isDead && kaitenFx.introState !== 'none') ? kaitenFx : ((typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead) ? boss : null);
+      if (targetBoss) {
+        const bossCenterX = targetBoss.x + targetBoss.width / 2;
+        const dx = (bossCenterX - (player.x + player.width / 2)) * player.facing;
+        const bBottom = groundY;
+        const bTop = groundY - targetBoss.height;
+        const pY = player.y + player.height / 2;
+        const inYRange = (pY >= bTop - 80 && pY <= bBottom + 80);
+        if (dx >= -60 && dx <= hitRange + targetBoss.width / 2 && inYRange) {
+          hitEnemies.push({ id: 'kaiten_fx', enemy: targetBoss, isBoss: true });
+        }
+      }
+
+      // [레드 머스크 고유 패시브: 단일 대상 연속 타격 (4타부터 +5%씩, 최대 +200%)]
+      if (hitEnemies.length > 1) {
+        // 복수 대상이 동시 타격(광역 포함)된 경우 즉시 연속 타격 초기화
+        if ((player.redMistTargetStreak || 0) > 0) {
+          addDamageText(player.x, player.y - 45, '⚠️ [단일 연속 타격 끊김!] (복수 대상 동시 피격)', '#94a3b8');
+        }
+        player.redMistTargetStreak = 0;
+        player.redMistLastTargetId = null;
+        player.redMistConsecutiveBonusRatio = 0;
+      } else if (hitEnemies.length === 1) {
+        const target = hitEnemies[0];
+        if (player.redMistLastTargetId === target.id) {
+          // 동일 대상 연속 타격 성공
+          player.redMistTargetStreak = (player.redMistTargetStreak || 0) + 1;
+        } else {
+          // 대상이 바뀐 경우 기존 연속 타격 초기화 후 새로 1타 시작
+          if ((player.redMistTargetStreak || 0) > 0) {
+            addDamageText(player.x, player.y - 45, '⚠️ [연속 타격 대상 변경!] 초기화', '#94a3b8');
+          }
+          player.redMistTargetStreak = 1;
+          player.redMistLastTargetId = target.id;
+        }
+
+        // 4타째부터 +5%씩 가산 (최대 +200%)
+        if (player.redMistTargetStreak >= 4) {
+          player.redMistConsecutiveBonusRatio = Math.min(2.0, (player.redMistTargetStreak - 3) * 0.05);
+          const bonusPct = Math.round(player.redMistConsecutiveBonusRatio * 100);
+          addDamageText(player.x, player.y - 45, `🎯 연속 타격 ${player.redMistTargetStreak}타! (+${bonusPct}%)`, '#f87171');
+        } else {
+          player.redMistConsecutiveBonusRatio = 0;
+          addDamageText(player.x, player.y - 45, `🎯 단일 타격 ${player.redMistTargetStreak}/3타`, '#fb923c');
+        }
+      }
+
+      // 단일 연속 타격 일반 공격력 버프 적용
+      if (player.redMistConsecutiveBonusRatio > 0) {
+        baseDmg *= (1.0 + player.redMistConsecutiveBonusRatio);
+      }
+
       // 소속 패시브 및 보조스킬 공격력 보정
       baseDmg = calcPlayerAttackDamage(baseDmg);
 
@@ -1354,25 +1438,14 @@
         finalDmg = Math.round(baseDmg);
       }
 
-      // 4. 대검 검신 밀착형 타격 범위 판정 (종/횡베기: 실제 검날 길이 ~85px, 찌르기: 검신+돌풍파 ~150px)
-      let baseReach = (player.redMistStance === 'thrust') ? 150 : 85;
-      if (isThirdEmpowered) {
-        baseReach *= 1.25; // 3타 강화: 공격범위 125%
-      }
-      const hitRange = player.isEgoActive ? (baseReach * 1.35) : baseReach;
-      const groundY = canvas.height - GROUND_OFFSET;
-      let hitAnyEnemy = false;
-
-      // (A) 카이텐저 5인 판정
-      kaitenzers.forEach(k => {
-        if (!k.isSpawned || k.isDead) return;
-        const enemyCenterX = k.x + k.size / 2;
-        const enemyCenterY = groundY - k.size / 2;
-        const dx = (enemyCenterX - (player.x + player.width / 2)) * player.facing;
-        const dy = Math.abs(enemyCenterY - (player.y + player.height / 2));
-
-        if (dx >= -20 && dx <= hitRange + k.size / 2 && dy <= 120) {
-          hitAnyEnemy = true;
+      // 실제 데미지 적용
+      hitEnemies.forEach(target => {
+        if (target.isBoss) {
+          let actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, target.enemy.armorType || ARMOR_TYPES.LIGHT));
+          actualDmg = damageKaitenFx(actualDmg, ATTACK_TYPES.NORMAL, isCrit);
+          addDamageText(target.enemy.x + target.enemy.width / 2, groundY - 140, `${actualDmg}`, isCrit ? '#facc15' : '#ef4444', isCrit);
+        } else {
+          const k = target.enemy;
           const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, k.armorType || ARMOR_TYPES.NORMAL));
           k.hp -= actualDmg;
           addDamageText(k.x + k.size / 2, groundY - k.size - 15, `${actualDmg}`, isCrit ? '#facc15' : '#ef4444', isCrit);
@@ -1383,22 +1456,7 @@
         }
       });
 
-      // (B) 2페이즈 카이텐 FX Mk.0 (보스) 판정
-      const targetBoss = (typeof kaitenFx !== 'undefined' && kaitenFx.isSpawned && !kaitenFx.isDead && kaitenFx.introState !== 'none') ? kaitenFx : ((typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead) ? boss : null);
-      if (targetBoss) {
-        const bossCenterX = targetBoss.x + targetBoss.width / 2;
-        const dx = (bossCenterX - (player.x + player.width / 2)) * player.facing;
-        const bBottom = groundY;
-        const bTop = groundY - targetBoss.height;
-        const pY = player.y + player.height / 2;
-        const inYRange = (pY >= bTop - 80 && pY <= bBottom + 80);
-        if (dx >= -60 && dx <= hitRange + targetBoss.width / 2 && inYRange) {
-          hitAnyEnemy = true;
-          let actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, targetBoss.armorType || ARMOR_TYPES.LIGHT));
-          actualDmg = damageKaitenFx(actualDmg, ATTACK_TYPES.NORMAL, isCrit);
-          addDamageText(targetBoss.x + targetBoss.width / 2, groundY - 140, `${actualDmg}`, isCrit ? '#facc15' : '#ef4444', isCrit);
-        }
-      }
+      const hitAnyEnemy = hitEnemies.length > 0;
 
       // 5. 붉은안개 스택 누적 / 소모 처리
       if (!player.isEgoActive) {
