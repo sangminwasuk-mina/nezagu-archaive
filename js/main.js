@@ -249,13 +249,56 @@
       }
     }
 
+    // [Red Mist (미미크리)] 붉은안개 스택 축적 / 소모 / 탈진 / 강제개화 제어기
+    function gainRedMistStack(amount) {
+      if (player.egoExhausted) return; // 탈진 후에는 더 이상 스택이 채워지지 않음
+      if (player.isEgoActive) return; // 개화 중에는 스택이 소모만 됨
+      const prev = player.redMistStack || 0;
+      player.redMistStack = Math.min(100, Math.round((prev + amount) * 10) / 10);
+      if (player.redMistStack >= 100 && prev < 100) {
+        addDamageText(player.x, player.y - 35, '🔴 [붉은안개 100 달성!] E.G.O 개화 가능! (S키)', '#ef4444');
+      }
+      updateWeaponHUD();
+    }
+
+    function consumeRedMistStack(amount) {
+      if (!player.isEgoActive) return;
+      player.redMistStack = Math.max(0, Math.round(((player.redMistStack || 0) - amount) * 10) / 10);
+      if (player.redMistStack <= 0) {
+        triggerEgoExhaustion();
+      }
+      updateWeaponHUD();
+    }
+
+    function triggerEgoExhaustion() {
+      player.isEgoActive = false;
+      player.isEgoForced = false;
+      player.redMistStack = 0;
+      player.egoExhausted = true;
+      player.egoExhaustTimer = 8.0;
+      player.stunTimer = Math.max(player.stunTimer || 0, 8.0);
+      player.egoPassiveSpeedBuff = true; // 이동속도 5% 영구 증가
+      player.egoPassiveCostBuff = true;  // 코스트 회복속도 10% 영구 단축
+      addDamageText(player.x, player.y - 35, '😵 [E.G.O 개화 해제] 8초 탈진 기절! (영구 패시브: 이속 +5%, 코스트 +10% 획득)', '#ef4444');
+      updateWeaponHUD();
+    }
+
+    function triggerForcedEgoTransformation() {
+      if (player.isEgoActive || player.egoExhausted) return;
+      player.isEgoActive = true;
+      player.isEgoForced = true;
+      player.redMistStack = 100;
+      addDamageText(player.x, player.y - 45, '🩸 [위기!] 체력 10% 이하 강제 E.G.O 개화! (공격력 -40% 페널티, 치명타 봉인)', '#ef4444');
+      updateWeaponHUD();
+    }
+
     // [서포터 시스템 제거 완료 - 2P 스트라이커 전용]
 
     // 대시 발동 함수
     function triggerDash(dir) {
       if ((window.phase1Cutscene && window.phase1Cutscene.active) || (window.phase2Cutscene && window.phase2Cutscene.active)) return;
       if (player.dashTimer > 0) return; // 쿨타임 중
-      if (player.abiStunTimer > 0) return; // 기절 중 불가
+      if (player.abiStunTimer > 0 || player.stunTimer > 0 || player.egoExhaustTimer > 0 || player.redMistKihapStunSelfTimer > 0) return; // 기절 중 불가
       if (player.abiFinalPhase && player.abiFinalPhase !== 'none') return; // 피니셔 중 불가
       if (player.rgAwakeCharging || player.rgAwakeFiring) return; // RG 레이저 집중 중 불가
       if (player.mgStanceTransitioning || player.mgStanceActive || player.isFiringSpecial) return; // MG 거치 중 불가
@@ -1153,18 +1196,225 @@
 
     // 탄환, 폭발, 파티클 배열
 
-    // 일반 사격 함수 (MG 및 HG, RG, SG)
+    // [메인 근접 무기: Red Mist (미미크리)] 일반 공격 (횡베기, 종베기, 찌르기) 판정
+    function tryFireRedMistMelee() {
+      const cur = player.mainWeapon;
+      if (cur.fireTimer < cur.fireDelay) return;
+      cur.fireTimer = 0;
+
+      // 1. 공격 애니메이션 트리거 (0.30s 딜레이)
+      player.redMistAttackAnim = {
+        type: player.redMistStance || 'horizontal',
+        timer: 0.30,
+        maxTimer: 0.30
+      };
+
+      // 2. 찌르기(thrust) 시 전방 살짝 대시 (20px)
+      if (player.redMistStance === 'thrust') {
+        const step = player.facing * 20;
+        player.x = Math.max(60, Math.min(2340, player.x + step));
+      }
+
+      // 3. 기본 데미지 (1,550) 및 버프 연산
+      let baseDmg = 1550;
+
+      // E.G.O 개화 상태 피해량 증감
+      if (player.isEgoActive) {
+        if (player.isEgoForced) {
+          baseDmg *= 0.60; // 강제 개화: 40% 감소 (20% 증가는 받지 않음)
+        } else {
+          baseDmg *= 1.20; // 정상 개화: 20% 증가
+        }
+      }
+
+      // 1스킬 자세 전환 버프 (+10% / 개화 시 +35%)
+      let usedStanceBuff = false;
+      if (player.redMistStanceDmgBuff) {
+        const buffMult = player.isEgoActive ? 1.35 : 1.10;
+        baseDmg *= buffMult;
+        usedStanceBuff = true;
+        player.redMistStanceDmgBuff = false; // 1회 적용 후 소모
+      }
+
+      // 2스킬 기합 버프 (+300% / 개화 시 +650%, 3회)
+      let usedKihapBuff = false;
+      if (player.redMistKihapBuffCount > 0) {
+        const kMult = 1.0 + (player.redMistKihapBuffMult || 3.0);
+        baseDmg *= kMult;
+        usedKihapBuff = true;
+        player.redMistKihapBuffCount--;
+      }
+
+      // 소속 패시브 및 보조스킬 공격력 보정
+      baseDmg = calcPlayerAttackDamage(baseDmg);
+
+      // 치명타 판정
+      let isCrit = false;
+      let finalDmg = baseDmg;
+      if (!player.isEgoForced) {
+        isCrit = checkCritSuccess(player.crit, 100, 0);
+        const critMult = calculateCritDamageMultiplier(player.critDmg, 50, 0);
+        finalDmg = isCrit ? Math.round(baseDmg * critMult) : Math.round(baseDmg);
+      } else {
+        finalDmg = Math.round(baseDmg);
+      }
+
+      // 4. 근접 관통 범위 판정 (사거리 140, 개화 시 +35% -> 189)
+      const hitRange = player.isEgoActive ? (140 * 1.35) : 140;
+      const groundY = canvas.height - GROUND_OFFSET;
+      let hitAnyEnemy = false;
+
+      // (A) 카이텐저 5인 판정
+      kaitenzers.forEach(k => {
+        if (!k.isSpawned || k.isDead || !k.isActive) return;
+        const enemyCenterX = k.x + k.size / 2;
+        const enemyCenterY = groundY - k.size / 2;
+        const dx = (enemyCenterX - (player.x + player.width / 2)) * player.facing;
+        const dy = Math.abs(enemyCenterY - (player.y + player.height / 2));
+
+        if (dx >= -20 && dx <= hitRange + k.size / 2 && dy <= 120) {
+          hitAnyEnemy = true;
+          const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, k.armorType || ARMOR_TYPES.NORMAL));
+          k.hp -= actualDmg;
+          addDamageText(k.x + k.size / 2, groundY - k.size - 15, `${actualDmg}`, isCrit ? '#facc15' : '#ef4444', isCrit);
+          if (typeof applyKaitenzerSharedDamage === 'function') {
+            applyKaitenzerSharedDamage(actualDmg);
+          }
+          k.x += player.facing * 8;
+        }
+      });
+
+      // (B) 2페이즈 카이텐 FX Mk.0 (보스) 판정
+      if (typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead && boss.isActive) {
+        const bossCenterX = boss.x + boss.width / 2;
+        const dx = (bossCenterX - (player.x + player.width / 2)) * player.facing;
+        const dy = Math.abs((boss.y + boss.height / 2) - (player.y + player.height / 2));
+        if (dx >= -40 && dx <= hitRange + boss.width / 2 && dy <= 180) {
+          hitAnyEnemy = true;
+          const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, boss.armorType || ARMOR_TYPES.HEAVY));
+          if (typeof damageBoss === 'function') {
+            damageBoss(actualDmg, ATTACK_TYPES.NORMAL, isCrit);
+          } else {
+            boss.hp -= actualDmg;
+          }
+          addDamageText(boss.x + boss.width / 2, boss.y - 20, `${actualDmg}`, isCrit ? '#facc15' : '#ef4444', isCrit);
+        }
+      }
+
+      // 5. 붉은안개 스택 누적 / 소모 처리
+      if (!player.isEgoActive) {
+        if (hitAnyEnemy) {
+          let stackGain = 0.3;
+          if (isCrit) stackGain += 0.1;
+          if (usedStanceBuff) stackGain += 0.2;
+          if (usedKihapBuff) stackGain += 0.7;
+          gainRedMistStack(stackGain);
+        }
+      } else {
+        consumeRedMistStack(0.5);
+      }
+
+      updateWeaponHUD();
+    }
+
+    // [메인 근접 무기: Red Mist (미미크리)] 2스킬: [돌진] 대시 경로 적 관통 타격
+    function executeRedMistDashDamage(startX, targetX) {
+      const minX = Math.min(startX, targetX) - 20;
+      const maxX = Math.max(startX, targetX) + 60;
+      const groundY = canvas.height - GROUND_OFFSET;
+
+      // 기본 820% 피해
+      let baseDmg = 1550 * 8.20;
+      if (player.redMistThrustBonusDmgRatio > 0) {
+        baseDmg *= (1 + player.redMistThrustBonusDmgRatio);
+      }
+      baseDmg = calcPlayerAttackDamage(baseDmg);
+
+      let isCrit = false;
+      if (!player.isEgoForced) {
+        const bonusCrit = player.isEgoActive ? 0.10 : 0.0;
+        isCrit = checkCritSuccess(player.crit, 100, bonusCrit);
+      }
+
+      const finalDmg = Math.round(baseDmg); // 치명타 피해량 배율은 기본과 동일
+
+      // (A) 카이텐저 5인 판정
+      kaitenzers.forEach(k => {
+        if (!k.isSpawned || k.isDead || !k.isActive) return;
+        const kCenterX = k.x + k.size / 2;
+        if (kCenterX >= minX && kCenterX <= maxX) {
+          const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, k.armorType || ARMOR_TYPES.NORMAL));
+          k.hp -= actualDmg;
+          addDamageText(k.x + k.size / 2, groundY - k.size - 25, `${actualDmg}`, isCrit ? '#facc15' : '#f97316', isCrit);
+          if (typeof applyKaitenzerSharedDamage === 'function') {
+            applyKaitenzerSharedDamage(actualDmg);
+          }
+          k.x += player.facing * 20;
+        }
+      });
+
+      // (B) 카이텐 FX Mk.0 (보스) 판정
+      if (typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead && boss.isActive) {
+        const bCenterX = boss.x + boss.width / 2;
+        if (bCenterX >= minX && bCenterX <= maxX) {
+          const actualDmg = Math.round(calculateFinalDamage(finalDmg, ATTACK_TYPES.NORMAL, boss.armorType || ARMOR_TYPES.HEAVY));
+          if (typeof damageBoss === 'function') {
+            damageBoss(actualDmg, ATTACK_TYPES.NORMAL, isCrit);
+          } else {
+            boss.hp -= actualDmg;
+          }
+          addDamageText(boss.x + boss.width / 2, boss.y - 25, `${actualDmg}`, isCrit ? '#facc15' : '#f97316', isCrit);
+        }
+      }
+
+      // 치명타 판정 성공 시 리셋 기믹!
+      if (isCrit) {
+        player.redMistSkill2Cooldown = 0;
+        player.redMistThrustFreeCost = true;
+        const addBonus = player.isEgoActive ? 1.35 : 0.55;
+        player.redMistThrustBonusDmgRatio = (player.redMistThrustBonusDmgRatio || 0) + addBonus;
+
+        if (!player.isEgoActive) {
+          const resetCount = Math.round(player.redMistThrustBonusDmgRatio / addBonus);
+          gainRedMistStack(2.0 + (resetCount - 1) * 1.5);
+        } else {
+          consumeRedMistStack(2.0);
+        }
+
+        addDamageText(player.x, player.y - 45, `⚡ [돌진 치명타 리셋!] 쿨초기화 & 0코스트 & 피해량 +${Math.round(player.redMistThrustBonusDmgRatio * 100)}%!`, '#facc15');
+      } else {
+        player.redMistThrustBonusDmgRatio = 0;
+        player.redMistThrustFreeCost = false;
+
+        if (!player.isEgoActive) {
+          gainRedMistStack(2.0);
+        } else {
+          consumeRedMistStack(3.0);
+        }
+      }
+
+      updateWeaponHUD();
+    }
+
+    // 일반 사격 함수 (MG 및 HG, RG, SG, 미미크리)
     function tryFireWeapon() {
       // 컷신 진행 중에는 사격 불가
       if ((window.phase1Cutscene && window.phase1Cutscene.active) || (window.phase2Cutscene && window.phase2Cutscene.active)) return;
 
       // 기절(Stun) 상태 시 일반 사격 불가
-      if (player.stunTimer > 0) return;
+      if (player.stunTimer > 0 || player.egoExhaustTimer > 0 || player.redMistKihapStunSelfTimer > 0) return;
 
-      // 스킬 시전 및 차징 중에는 일반 사격 불가 (스킬과 평타가 겹쳐서 데미지가 뻥튀기되는 현상 방지!)
-      if (player.isFiringSkill || player.isChargingSkill || player.sgTorrentCharging || player.sgTorrentFiring || player.rgAwakeCharging || player.rgAwakeFiring || player.mgStanceTransitioning || player.mgStanceActive || player.isFiringSpecial) return;
+      // 스킬 시전 및 차징 중에는 일반 사격 불가
+      if (player.isFiringSkill || player.isChargingSkill || player.sgTorrentCharging || player.sgTorrentFiring || player.rgAwakeCharging || player.rgAwakeFiring || player.mgStanceTransitioning || player.mgStanceActive || player.isFiringSpecial || player.redMistSpecialPhase !== 'none' || player.redMistDashing) return;
 
       const cur = player.activeWeaponSlot === 'main' ? player.mainWeapon : player.subWeapon;
+      const isRedMist = (player.activeWeaponSlot === 'main' && player.mainWeapon.id === 'melee_red_mist');
+
+      if (isRedMist) {
+        tryFireRedMistMelee();
+        return;
+      }
+
       const isRG = (player.activeWeaponSlot === 'main' && player.mainWeapon.id === 'rg_supernova');
       const isSG = (player.activeWeaponSlot === 'main' && player.mainWeapon.id === 'sg_bloody_gunpowder');
       const isAR = (player.activeWeaponSlot === 'main' && player.mainWeapon.id === 'ar_white_fang');
@@ -1528,6 +1778,35 @@
         return;
       }
 
+      // [Red Mist (미미크리)] 1스킬: [전환] (자세 순환 전환 & 다음 피해 증폭)
+      if (player.mainWeapon.id === 'melee_red_mist') {
+        if (player.egoExhaustTimer > 0 || player.redMistKihapStunSelfTimer > 0 || player.redMistSpecialPhase !== 'none' || player.redMistDashing) {
+          return;
+        }
+        const reqCost = player.isEgoActive ? 0 : 1;
+        if (reqCost > 0 && player.cost < reqCost) {
+          addDamageText(player.x, player.y - 20, '코스트 부족! (1 필요)', '#ef4444');
+          return;
+        }
+        if (reqCost > 0) {
+          spendPlayerCost(reqCost);
+        }
+
+        // 자세 순환 교체: 횡베기 -> 종베기 -> 찌르기 -> 횡베기
+        const prevStance = player.redMistStance || 'horizontal';
+        if (prevStance === 'horizontal') player.redMistStance = 'vertical';
+        else if (prevStance === 'vertical') player.redMistStance = 'thrust';
+        else player.redMistStance = 'horizontal';
+
+        player.redMistStanceDmgBuff = true; // 전환 후 다음 1회 공격 피해량 증가
+
+        const stanceKorean = player.redMistStance === 'vertical' ? '종베기' : (player.redMistStance === 'thrust' ? '찌르기' : '횡베기');
+        const buffPct = player.isEgoActive ? 35 : 10;
+        addDamageText(player.x, player.y - 30, `⚔️ [전환] ${stanceKorean}! 다음 피해 +${buffPct}%`, '#ef4444');
+        updateWeaponHUD();
+        return;
+      }
+
       // [시스템 : 아비 에슈흐] 1스킬: 용기의 마법 (유도 미사일 4발)
       if (player.isAbiEshuhActive) {
         if (player.abiFinalCanTrigger) {
@@ -1770,6 +2049,93 @@
       if (player.activeWeaponSlot !== 'main') {
         addDamageText(player.x, player.y - 20, '메인 무기만 사용 가능!', '#ef4444');
         return;
+      }
+
+      // [Red Mist (미미크리)] 2스킬: [기합 / 돌진] (자세별 자동 분기)
+      if (player.mainWeapon.id === 'melee_red_mist') {
+        if (player.egoExhaustTimer > 0 || player.redMistKihapStunSelfTimer > 0 || player.redMistSpecialPhase !== 'none' || player.redMistDashing) {
+          return;
+        }
+        if (player.redMistSkill2Cooldown > 0) {
+          addDamageText(player.x, player.y - 20, `스킬 쿨타임 중! (${player.redMistSkill2Cooldown.toFixed(1)}s)`, '#94a3b8');
+          return;
+        }
+
+        const isThrust = (player.redMistStance === 'thrust');
+        if (isThrust) {
+          // [돌진]
+          const isFree = !!player.redMistThrustFreeCost;
+          const reqCost = isFree ? 0 : (player.isEgoActive ? 7 : 5);
+          if (player.cost < reqCost) {
+            addDamageText(player.x, player.y - 20, `코스트 부족! (${reqCost} 필요)`, '#ef4444');
+            return;
+          }
+          if (reqCost > 0) spendPlayerCost(reqCost);
+
+          const cd = player.isEgoActive ? 8.0 : 5.0;
+          player.redMistSkill2Cooldown = cd;
+          player.redMistSkill2CooldownMax = cd;
+
+          // 대시 거리 연산 (개화 시 20% 증가: 250 -> 300)
+          const dashDist = player.isEgoActive ? 300 : 250;
+          const startX = player.x;
+          const targetX = Math.max(60, Math.min(2340, player.x + player.facing * dashDist));
+
+          player.redMistDashing = true;
+          player.redMistDashTimer = 0.20;
+          player.redMistDashStartX = startX;
+          player.redMistDashTargetX = targetX;
+
+          executeRedMistDashDamage(startX, targetX);
+          return;
+        } else {
+          // [기합]
+          const reqCost = player.isEgoActive ? 6 : 4;
+          if (player.cost < reqCost) {
+            addDamageText(player.x, player.y - 20, `코스트 부족! (${reqCost} 필요)`, '#ef4444');
+            return;
+          }
+          spendPlayerCost(reqCost);
+
+          player.redMistSkill2Cooldown = 5.0;
+          player.redMistSkill2CooldownMax = 5.0;
+          player.redMistKihapStunSelfTimer = 0.7; // 0.7초 이동 불가
+
+          // 버프 부여 (다음 3회 피해량 증가: 기본 300% / 개화 시 650%)
+          player.redMistKihapBuffCount = 3;
+          player.redMistKihapBuffMult = player.isEgoActive ? 6.5 : 3.0;
+
+          // 범위 내 적 기절 (기본 2.2초 / 개화 시 3.5초)
+          const stunDur = player.isEgoActive ? 3.5 : 2.2;
+          const kihapRange = player.isEgoActive ? 240 : 200;
+          const groundY = canvas.height - GROUND_OFFSET;
+
+          kaitenzers.forEach(k => {
+            if (!k.isSpawned || k.isDead || !k.isActive) return;
+            const dx = (k.x + k.size / 2 - (player.x + player.width / 2)) * player.facing;
+            if (dx >= -30 && dx <= kihapRange) {
+              k.stunTimer = Math.max(k.stunTimer || 0, stunDur);
+              addDamageText(k.x + k.size / 2, groundY - k.size - 10, `기절 ${stunDur}s!`, '#fbbf24');
+            }
+          });
+
+          if (typeof boss !== 'undefined' && boss && boss.isSpawned && !boss.isDead && boss.isActive) {
+            const dx = (boss.x + boss.width / 2 - (player.x + player.width / 2)) * player.facing;
+            if (dx >= -50 && dx <= kihapRange + boss.width / 2) {
+              boss.stunTimer = Math.max(boss.stunTimer || 0, stunDur);
+              addDamageText(boss.x + boss.width / 2, boss.y - 10, `기절 ${stunDur}s!`, '#fbbf24');
+            }
+          }
+
+          if (player.isEgoActive) {
+            consumeRedMistStack(1.0);
+          }
+
+          const buffPct = player.isEgoActive ? 650 : 300;
+          addDamageText(player.x, player.y - 35, `🔥 [기합] 전방 ${stunDur}s 기절 & 다음 3회 피해 +${buffPct}%!`, '#f97316');
+          updateWeaponHUD();
+          return;
+        }
       }
 
       // [시스템 : 아비 에슈흐] 2스킬: 빛의 난사 (3초간 50도 부채꼴 4:1 난사)
@@ -4136,6 +4502,9 @@
         if (activePassives.includes('disciplined_stamina')) {
           costRegenInterval *= 0.80; // 20% 단축
         }
+        if (player.egoPassiveCostBuff) {
+          costRegenInterval *= 0.90; // 탈진 후 영구 10% 단축 (회복 가속)
+        }
         player.costTimer += dt;
         if (player.costTimer >= costRegenInterval) {
           player.costTimer = 0;
@@ -4538,6 +4907,44 @@
       if (player.foxSkill2Cooldown > 0) {
         player.foxSkill2Cooldown -= dt;
         if (player.foxSkill2Cooldown < 0) player.foxSkill2Cooldown = 0;
+      }
+
+      // [Red Mist (미미크리)] 쿨타임 및 타이머 업데이트
+      if (player.redMistSkill2Cooldown > 0) {
+        player.redMistSkill2Cooldown -= dt;
+        if (player.redMistSkill2Cooldown < 0) player.redMistSkill2Cooldown = 0;
+      }
+      if (player.redMistKihapStunSelfTimer > 0) {
+        player.redMistKihapStunSelfTimer -= dt;
+        if (player.redMistKihapStunSelfTimer < 0) player.redMistKihapStunSelfTimer = 0;
+      }
+      if (player.egoExhaustTimer > 0) {
+        player.egoExhaustTimer -= dt;
+        if (player.egoExhaustTimer < 0) player.egoExhaustTimer = 0;
+      }
+      if (player.redMistAttackAnim && player.redMistAttackAnim.timer > 0) {
+        player.redMistAttackAnim.timer -= dt;
+      }
+      if (player.redMistDashing) {
+        player.redMistDashTimer -= dt;
+        const prog = Math.min(1, Math.max(0, 1 - (player.redMistDashTimer / 0.20)));
+        player.x = player.redMistDashStartX + (player.redMistDashTargetX - player.redMistDashStartX) * prog;
+        if (player.redMistDashTimer <= 0) {
+          player.redMistDashing = false;
+          player.x = player.redMistDashTargetX;
+        }
+      }
+
+      // [Red Mist (미미크리)] E.G.O 개화 자연 스택 감소 (초당 0.1 ~ 0.5, 평균 0.3)
+      if (player.isEgoActive) {
+        consumeRedMistStack(0.30 * dt);
+      }
+
+      // [Red Mist (미미크리)] 체력 10% 이하 시 강제 E.G.O 개화 발동 검사
+      if (player.mainWeapon && player.mainWeapon.id === 'melee_red_mist') {
+        if (!player.isEgoActive && !player.egoExhausted && (player.hp / player.maxHp) <= 0.10) {
+          triggerForcedEgoTransformation();
+        }
       }
 
       // [FOX 45식: 전술 보호막 유지 및 종료 시 50% 체력 회복]
@@ -5194,8 +5601,14 @@
           if (player.x > WORLD_WIDTH - 100) player.x = WORLD_WIDTH - 100;
         } else {
           // [일반 지상 이동]
-          const moveSpeed = player.isRunning ? player.baseSpeed * 1.5 : player.baseSpeed;
-          if (isCutsceneRunning) {
+          let moveSpeed = player.isRunning ? player.baseSpeed * 1.5 : player.baseSpeed;
+          if (player.isEgoActive) {
+            moveSpeed *= 1.50; // 특색 붉은안개 이속 50% 증가
+          } else if (player.egoPassiveSpeedBuff) {
+            moveSpeed *= 1.05; // 탈진 후 영구 이속 5% 증가
+          }
+
+          if (isCutsceneRunning || player.stunTimer > 0 || player.redMistKihapStunSelfTimer > 0 || player.egoExhaustTimer > 0) {
             player.vx = 0;
           } else if (keys.left) {
             player.vx = -moveSpeed;
@@ -5205,8 +5618,8 @@
             player.vx = 0;
           }
 
-          // 점프 (컷신 중엔 점프 불가)
-          if (!isCutsceneRunning && keys.jump && player.isGrounded) {
+          // 점프 (컷신 중엔 점프 불가, 기절 중 불가)
+          if (!isCutsceneRunning && player.stunTimer <= 0 && player.redMistKihapStunSelfTimer <= 0 && player.egoExhaustTimer <= 0 && keys.jump && player.isGrounded) {
             player.vy = -16;
             player.isGrounded = false;
           }

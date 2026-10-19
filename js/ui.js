@@ -1147,6 +1147,11 @@
         skill1: { name: '[폭발] 철벽의 방어', cost: 3 },
         skill2: { name: '[폭발] 공세 전환', cost: 2 },
         special: { name: '[폭발] 전술 방패 전개', cost: 4, isSpecial: true, canUse: p => (p.foxShieldCooldown <= 0) && (p.cost >= 4) }
+      },
+      melee_red_mist: {
+        skill1: { name: '[일반] 전환', cost: 1 },
+        skill2: { name: '[일반] 기합 / 돌진', cost: 4 },
+        special: { name: '[일반] 대절단 - 세로 / E.G.O 개화', cost: 12, isSpecial: true, canUse: p => true }
       }
     };
 
@@ -1263,12 +1268,45 @@
           s2Name = '[폭발] 이스보셋 사격';
           s2Cost = 0;
         }
+      } else if (curW.id === 'melee_red_mist') {
+        const stanceKorean = player.redMistStance === 'vertical' ? '종베기' : (player.redMistStance === 'thrust' ? '찌르기' : '횡베기');
+        s1Name = `[일반] 전환 (${stanceKorean})`;
+        s1Cost = player.isEgoActive ? 0 : 1;
+
+        if (player.redMistStance === 'thrust') {
+          s2Name = '[일반] 돌진';
+          s2Cost = player.redMistThrustFreeCost ? 0 : (player.isEgoActive ? 7 : 5);
+        } else {
+          s2Name = '[일반] 기합';
+          s2Cost = player.isEgoActive ? 6 : 4;
+        }
+
+        if (!player.isEgoActive) {
+          if (player.redMistStack >= 100) {
+            specName = '[일반] E.G.O 개화';
+            specCost = 0;
+            specCan = true;
+          } else {
+            specName = `[일반] 대절단-세로 (${(player.redMistStack || 0).toFixed(1)}/100)`;
+            specCost = Math.max(8, 12 - Math.floor((player.redMistStack || 0) / 20));
+            specCan = (player.cost >= specCost);
+          }
+        } else {
+          if (player.redMistStance === 'thrust') {
+            specName = `[일반] 대절단-세로 (스택 ${(player.redMistStack || 0).toFixed(1)})`;
+            specCost = 8;
+          } else {
+            specName = `[일반] 대절단-가로 (스택 ${(player.redMistStack || 0).toFixed(1)})`;
+            specCost = 12;
+          }
+          specCan = (player.cost >= specCost);
+        }
       }
 
-      const isStunned = (player.stunTimer > 0) || (player.abiStunTimer > 0);
+      const isStunned = (player.stunTimer > 0) || (player.abiStunTimer > 0) || (player.egoExhaustTimer > 0) || (player.redMistKihapStunSelfTimer > 0);
 
       // 카드 1: 메인스킬 1 (K)
-      let s1Cooldown = player.skillCooldown || 0;
+      let s1Cooldown = curW.id === 'melee_red_mist' ? 0 : (player.skillCooldown || 0);
       let s1CanUse = !isStunned && (player.cost >= s1Cost);
       if (curW.id === 'ar_white_fang' && player.isColorActive) {
         const hasColorDrone = window.whiteFangDrones && window.whiteFangDrones.some(d => d.isColorDrone);
@@ -1282,8 +1320,12 @@
       });
 
       // 카드 2: 메인스킬 2 (L)
+      let s2Cooldown = player.arSkill2Cooldown || player.foxSkill2Cooldown || 0;
+      if (curW.id === 'melee_red_mist') {
+        s2Cooldown = player.redMistSkill2Cooldown || 0;
+      }
       updateDeckSkillCard(2, s2Name, s2Cost, {
-        cooldown: player.arSkill2Cooldown || player.foxSkill2Cooldown || 0,
+        cooldown: s2Cooldown,
         canUse: !isStunned && (player.cost >= s2Cost)
       });
 
