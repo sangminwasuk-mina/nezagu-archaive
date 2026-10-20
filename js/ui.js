@@ -14,13 +14,22 @@
       if (el && el.innerHTML !== html) el.innerHTML = html;
     }
     function setWidthIfChanged(el, widthStr) {
-      if (el && el.style.width !== widthStr) el.style.width = widthStr;
+      if (el && el.dataset.w !== widthStr) {
+        el.dataset.w = widthStr;
+        el.style.width = widthStr;
+      }
     }
     function setBgIfChanged(el, bgStr) {
-      if (el && el.style.background !== bgStr) el.style.background = bgStr;
+      if (el && el.dataset.bg !== bgStr) {
+        el.dataset.bg = bgStr;
+        el.style.background = bgStr;
+      }
     }
     function setColorIfChanged(el, colorStr) {
-      if (el && el.style.color !== colorStr) el.style.color = colorStr;
+      if (el && el.dataset.c !== colorStr) {
+        el.dataset.c = colorStr;
+        el.style.color = colorStr;
+      }
     }
     function setClassIfChanged(el, className) {
       if (el && el.className !== className) el.className = className;
@@ -1586,17 +1595,17 @@
         }
         if (hpUnderlayEl) {
           setBgIfChanged(hpUnderlayEl, nextColor);
-          const shouldShowUnderlay = (currentLine > 1 && linePct < 99.8);
-          if (hpUnderlayEl.style.display !== (shouldShowUnderlay ? 'block' : 'none')) {
-            hpUnderlayEl.style.display = shouldShowUnderlay ? 'block' : 'none';
+          if (currentLine <= 1) {
+            setWidthIfChanged(hpUnderlayEl, '0%');
+          } else {
+            setWidthIfChanged(hpUnderlayEl, '100%');
           }
         }
         if (hpDamageEl) {
-          setWidthIfChanged(hpDamageEl, `${window._smoothDamagePct.toFixed(1)}%`);
-          const shouldShowDamage = (window._smoothDamagePct > linePct + 0.1);
-          if (hpDamageEl.style.display !== (shouldShowDamage ? 'block' : 'none')) {
-            hpDamageEl.style.display = shouldShowDamage ? 'block' : 'none';
-          }
+          // display 토글(block/none)에 의한 깜빡임 및 레이아웃 재연산을 완벽히 제거:
+          // 잔상 너비가 현재 체력 비율(linePct)보다 클 때만 노출되고, 같아지면 체력바 뒤로 자연스럽게 가려짐
+          const dmgWidth = Math.max(linePct, window._smoothDamagePct);
+          setWidthIfChanged(hpDamageEl, `${dmgWidth.toFixed(1)}%`);
         }
 
         // 3. 우측 하단 3칸 사선 ATG 게이지 블록 (2페이즈에만 실시간 연속 충전)

@@ -248,11 +248,14 @@
       left: 0;
       height: 100%;
       border-radius: 2px;
+      pointer-events: none;
+      will-change: width;
     }
     .ba-hp-layer.underlay {
       z-index: 1;
       width: 100%;
-      background: #dc2626;
+      background: #1e293b;
+      opacity: 0.85; /* 다음 줄 체력바가 눈부시게 튀지 않고 자연스럽게 바닥 레이어로 안착 */
     }
     .ba-hp-layer.damage-trail {
       z-index: 2;
