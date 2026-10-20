@@ -1558,8 +1558,11 @@
         if (typeof window._smoothDamagePct === 'undefined') window._smoothDamagePct = 100;
         if (window._smoothDamagePct < linePct) {
           window._smoothDamagePct = linePct;
-        } else {
+        } else if (window._smoothDamagePct > linePct) {
           window._smoothDamagePct += (linePct - window._smoothDamagePct) * 0.14;
+          if (Math.abs(window._smoothDamagePct - linePct) < 0.1) {
+            window._smoothDamagePct = linePct;
+          }
         }
 
         const hpNumEl = getCachedEl('ba-hp-num');
@@ -1583,9 +1586,17 @@
         }
         if (hpUnderlayEl) {
           setBgIfChanged(hpUnderlayEl, nextColor);
+          const shouldShowUnderlay = (currentLine > 1 && linePct < 99.8);
+          if (hpUnderlayEl.style.display !== (shouldShowUnderlay ? 'block' : 'none')) {
+            hpUnderlayEl.style.display = shouldShowUnderlay ? 'block' : 'none';
+          }
         }
         if (hpDamageEl) {
           setWidthIfChanged(hpDamageEl, `${window._smoothDamagePct.toFixed(1)}%`);
+          const shouldShowDamage = (window._smoothDamagePct > linePct + 0.1);
+          if (hpDamageEl.style.display !== (shouldShowDamage ? 'block' : 'none')) {
+            hpDamageEl.style.display = shouldShowDamage ? 'block' : 'none';
+          }
         }
 
         // 3. 우측 하단 3칸 사선 ATG 게이지 블록 (2페이즈에만 실시간 연속 충전)
