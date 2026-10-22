@@ -8238,6 +8238,11 @@
     }
 
 
+    // 60 FPS 제한용 타이머 변수 (120Hz/144Hz/240Hz 고주사율 모니터 60fps 고정)
+    const TARGET_FPS = 60;
+    const FRAME_INTERVAL = 1000 / TARGET_FPS; // 약 16.6667ms
+    let lastFrameTime = performance.now();
+
     let fpsFrames = 0;
     let fpsLastSampleTime = performance.now();
     let currentFps = 60;
@@ -8245,6 +8250,20 @@
     let fpsDotEl = null;
 
     function loop(now) {
+      requestAnimationFrame(loop);
+
+      const elapsed = now - lastFrameTime;
+      // 120Hz(8.33ms), 144Hz(13.89ms)의 불필요한 중간 틱 스킵 (2.0ms 오차 허용으로 60Hz 모니터에서도 프레임 드랍 없이 60fps 유지)
+      if (elapsed < FRAME_INTERVAL - 2.0) {
+        return;
+      }
+
+      if (elapsed > 200) {
+        lastFrameTime = now;
+      } else {
+        lastFrameTime = now - (elapsed % FRAME_INTERVAL);
+      }
+
       const dt = (now - lastTime) / 1000;
       lastTime = now;
 
@@ -8290,12 +8309,11 @@
       } catch (err) {
         console.error('Game loop error:', err);
       }
-
-      requestAnimationFrame(loop);
     }
 
     requestAnimationFrame((now) => {
       lastTime = now;
+      lastFrameTime = now;
       loop(now);
     });
 
