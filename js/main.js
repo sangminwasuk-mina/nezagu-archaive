@@ -8252,16 +8252,16 @@
     function loop(now) {
       requestAnimationFrame(loop);
 
-      const elapsed = now - lastFrameTime;
-      // 120Hz(8.33ms), 144Hz(13.89ms)의 불필요한 중간 틱 스킵 (2.0ms 오차 허용으로 60Hz 모니터에서도 프레임 드랍 없이 60fps 유지)
-      if (elapsed < FRAME_INTERVAL - 2.0) {
+      // 120Hz(8.33ms), 144Hz(13.89ms) 등 고주사율 모니터의 중간 틱 스킵 (오차 허용 4.0ms)
+      if (now - lastFrameTime < FRAME_INTERVAL - 4.0) {
         return;
       }
 
-      if (elapsed > 200) {
+      // 프레임 타임스탬프 누적 갱신 (백그라운드 탭 전환 시 즉시 현재 시각으로 동기화)
+      if (now - lastFrameTime > 100) {
         lastFrameTime = now;
       } else {
-        lastFrameTime = now - (elapsed % FRAME_INTERVAL);
+        lastFrameTime += FRAME_INTERVAL;
       }
 
       const dt = (now - lastTime) / 1000;
