@@ -221,6 +221,15 @@
           if (modal) modal.classList.add('hidden');
         });
       }
+
+      const bossListModal = document.getElementById('boss-list-modal');
+      if (bossListModal) {
+        bossListModal.addEventListener('click', (e) => {
+          if (e.target === bossListModal) {
+            bossListModal.classList.add('hidden');
+          }
+        });
+      }
     }
 
     function setScreenState(state) {
