@@ -378,11 +378,16 @@ function handleNetworkMessage(data) {
     updateHostRoomStatusUI();
     addDamageText(canvas.width / 2, 100, '👋 2P 스트라이커 대원이 작전실에 접속했습니다!', '#ef4444');
 
-    // 1P 호스트 장비 세팅을 2P에게 전송
+    // 1P 호스트 장비 세팅 및 토벌 보스를 2P에게 전송
     sendNetPacket({
       type: 'LOADOUT_UPDATE',
       role: 'striker',
       loadout: playerLoadout
+    });
+    const curBoss = (typeof BOSS_DATABASE !== 'undefined' && BOSS_DATABASE[selectedBossIndex]) ? BOSS_DATABASE[selectedBossIndex] : { id: 'kaiten' };
+    sendNetPacket({
+      type: 'BOSS_SYNC',
+      bossId: curBoss.id
     });
   }
 
@@ -416,8 +421,63 @@ function handleNetworkMessage(data) {
       remotePlayer.subWeapon.id = data.loadout.slot7.id;
       remotePlayer.subWeapon.name = data.loadout.slot7.name;
     }
+    // 1P 호스트가 설정한 난이도를 2P 게스트에게 실시간 동기화
+    if (data.role === 'striker' && data.loadout && data.loadout.difficulty) {
+      playerLoadout.difficulty = data.loadout.difficulty;
+      const diffEl = document.getElementById('slot-diff-name');
+      if (diffEl) {
+        diffEl.innerText = data.loadout.difficulty.name;
+        diffEl.style.color = data.loadout.difficulty.color || '#facc15';
+      }
+      const badgeEl = document.getElementById('slot-diff-badge');
+      if (badgeEl) {
+        badgeEl.innerText = data.loadout.difficulty.badge || data.loadout.difficulty.name.toUpperCase();
+        badgeEl.style.color = data.loadout.difficulty.color || '#facc15';
+        badgeEl.style.borderColor = data.loadout.difficulty.color || '#facc15';
+      }
+      const descEl = document.getElementById('slot-diff-desc');
+      if (descEl) {
+        descEl.innerHTML = data.loadout.difficulty.desc ? `<div>${data.loadout.difficulty.desc.split('|').join('</div><div>')}</div>` : '총력전 난이도를 설정합니다.';
+      }
+    }
     if (typeof updatePeerStatusModalUI === 'function') {
       updatePeerStatusModalUI();
+    }
+  }
+
+  // [6-1] 1P 호스트의 난이도 변경 단독 패킷 수신 동기화
+  else if (data.type === 'DIFFICULTY_SYNC') {
+    if (typeof EQUIPMENT_DATABASE !== 'undefined' && EQUIPMENT_DATABASE.difficulty) {
+      const diffItem = EQUIPMENT_DATABASE.difficulty.find(d => d.id === data.difficultyId);
+      if (diffItem) {
+        playerLoadout.difficulty = diffItem;
+        const diffEl = document.getElementById('slot-diff-name');
+        if (diffEl) {
+          diffEl.innerText = diffItem.name;
+          diffEl.style.color = diffItem.color || '#facc15';
+        }
+        const badgeEl = document.getElementById('slot-diff-badge');
+        if (badgeEl) {
+          badgeEl.innerText = diffItem.badge || diffItem.name.toUpperCase();
+          badgeEl.style.color = diffItem.color || '#facc15';
+          badgeEl.style.borderColor = diffItem.color || '#facc15';
+        }
+        const descEl = document.getElementById('slot-diff-desc');
+        if (descEl) {
+          descEl.innerHTML = diffItem.desc ? `<div>${diffItem.desc.split('|').join('</div><div>')}</div>` : '총력전 난이도를 설정합니다.';
+        }
+      }
+    }
+  }
+
+  // [6-2] 1P 호스트의 토벌 보스 선택 동기화
+  else if (data.type === 'BOSS_SYNC') {
+    if (typeof BOSS_DATABASE !== 'undefined') {
+      const bIdx = BOSS_DATABASE.findIndex(b => b.id === data.bossId);
+      if (bIdx !== -1) {
+        selectedBossIndex = bIdx;
+        if (typeof renderBossSelectionUI === 'function') renderBossSelectionUI();
+      }
     }
   }
 

@@ -39,6 +39,190 @@
       return;
     }
 
+    // [멀티플레이 난이도 권한 잠금 UI] 2P 게스트는 난이도 변경 불가
+    function updateDifficultyLockUI() {
+      const slotCardDiff = document.getElementById('slot-card-diff');
+      if (!slotCardDiff) return;
+      const isGuest = (currentMode === 'duo' && myRole !== 'striker');
+      let lockBadge = slotCardDiff.querySelector('.diff-guest-lock-badge');
+      if (isGuest) {
+        slotCardDiff.classList.add('guest-locked');
+        slotCardDiff.title = '🔒 난이도는 1P 방장(호스트)만 변경할 수 있습니다.';
+        if (!lockBadge) {
+          lockBadge = document.createElement('span');
+          lockBadge.className = 'diff-guest-lock-badge';
+          lockBadge.innerHTML = '🔒 방장 전용';
+          const topEl = slotCardDiff.querySelector('.status-title') || slotCardDiff.firstElementChild;
+          if (topEl) topEl.appendChild(lockBadge);
+        }
+      } else {
+        slotCardDiff.classList.remove('guest-locked');
+        slotCardDiff.title = '';
+        if (lockBadge) lockBadge.remove();
+      }
+    }
+
+    // [총력전 보스 선택 UI 갱신 함수 (솔로 화면 & 2인 로비 동시 지원)]
+    function renderBossSelectionUI() {
+      if (typeof BOSS_DATABASE === 'undefined' || !BOSS_DATABASE.length) return;
+      const curBoss = BOSS_DATABASE[selectedBossIndex] || BOSS_DATABASE[0];
+
+      // 1. 1인 솔로 보스 선택 화면 요소
+      const sIcon = document.getElementById('solo-boss-icon');
+      const sName = document.getElementById('solo-boss-name');
+      const sPill = document.getElementById('solo-boss-pill');
+      const sAvIcon = document.getElementById('solo-boss-avatar-icon');
+      const sMetaName = document.getElementById('solo-boss-meta-name');
+      const sMetaSub = document.getElementById('solo-boss-meta-sub');
+      const sArmor = document.getElementById('solo-boss-armor-badge');
+      const sPhases = document.getElementById('solo-boss-phases-badge');
+      const sDesc = document.getElementById('solo-boss-desc');
+      const sDeployBtn = document.getElementById('btn-boss-select-deploy');
+
+      if (sIcon) setTextIfChanged(sIcon, curBoss.icon);
+      if (sName) {
+        setTextIfChanged(sName, curBoss.name);
+        setColorIfChanged(sName, curBoss.color || '#fff');
+      }
+      if (sPill) {
+        setTextIfChanged(sPill, curBoss.tag);
+        setClassIfChanged(sPill, `boss-status-pill ${curBoss.isAvailable ? 'available' : 'preparing'}`);
+      }
+      if (sAvIcon) setTextIfChanged(sAvIcon, curBoss.icon);
+      if (sMetaName) setTextIfChanged(sMetaName, curBoss.name);
+      if (sMetaSub) setTextIfChanged(sMetaSub, curBoss.subName);
+      if (sArmor) {
+        setTextIfChanged(sArmor, `🛡️ 방어 장갑: ${curBoss.armorType}`);
+        setClassIfChanged(sArmor, `boss-badge ${curBoss.id === 'kaiten' ? 'armor-light' : 'armor-special'}`);
+      }
+      if (sPhases) setTextIfChanged(sPhases, `⚡ ${curBoss.phases}`);
+      if (sDesc) setTextIfChanged(sDesc, curBoss.desc);
+
+      if (sDeployBtn) {
+        if (!curBoss.isAvailable) {
+          sDeployBtn.innerText = '🔒 준비 중인 보스입니다';
+          sDeployBtn.style.opacity = '0.5';
+          sDeployBtn.style.cursor = 'not-allowed';
+          sDeployBtn.style.background = '#475569';
+        } else {
+          sDeployBtn.innerText = '🚀 출격 정비실 입장';
+          sDeployBtn.style.opacity = '1';
+          sDeployBtn.style.cursor = 'pointer';
+          sDeployBtn.style.background = 'linear-gradient(135deg, #0284c7, #0369a1)';
+        }
+      }
+
+      // 2. 2인 로비 내 컴팩트 보스 선택 바 (방 만들기 섹션 내부)
+      const dIcon = document.getElementById('duo-boss-icon');
+      const dName = document.getElementById('duo-boss-name');
+      const dPill = document.getElementById('duo-boss-pill');
+
+      if (dIcon) setTextIfChanged(dIcon, curBoss.icon);
+      if (dName) {
+        setTextIfChanged(dName, curBoss.name);
+        setColorIfChanged(dName, curBoss.color || '#fff');
+      }
+      if (dPill) {
+        setTextIfChanged(dPill, curBoss.isAvailable ? '출격가능' : '준비중🔒');
+        setClassIfChanged(dPill, `boss-status-pill ${curBoss.isAvailable ? 'available' : 'preparing'}`);
+      }
+    }
+
+    // [총력전 보스 전체 목록 팝업 모달 열기]
+    function openBossListModal() {
+      const modal = document.getElementById('boss-list-modal');
+      const grid = document.getElementById('boss-modal-grid');
+      if (!modal || !grid || typeof BOSS_DATABASE === 'undefined') return;
+
+      grid.innerHTML = '';
+      BOSS_DATABASE.forEach((b, idx) => {
+        const card = document.createElement('div');
+        const isSelected = (idx === selectedBossIndex);
+        card.className = `boss-modal-card ${isSelected ? 'selected' : ''} ${b.isAvailable ? 'available' : 'preparing'}`;
+        card.innerHTML = `
+          <div class="boss-card-top-row">
+            <div class="boss-card-icon-box">${b.icon}</div>
+            <div class="boss-card-headings">
+              <div class="boss-card-name" style="color: ${b.color || '#fff'};">${b.name}</div>
+              <div class="boss-card-subtext">${b.subName}</div>
+            </div>
+            <span class="boss-status-pill ${b.isAvailable ? 'available' : 'preparing'}">${b.tag}</span>
+          </div>
+          <div style="font-size: 11.5px; color: #94a3b8; display: flex; gap: 8px;">
+            <span>🛡️ ${b.armorType}</span>
+            <span>•</span>
+            <span>⚡ ${b.phases}</span>
+          </div>
+          <div style="font-size: 12px; color: #cbd5e1; line-height: 1.4;">${b.desc}</div>
+        `;
+        card.addEventListener('click', () => {
+          selectedBossIndex = idx;
+          renderBossSelectionUI();
+          modal.classList.add('hidden');
+        });
+        grid.appendChild(card);
+      });
+
+      modal.classList.remove('hidden');
+    }
+
+    // [보스 선택 화면 이벤트 리스너 등록]
+    function setupBossSelectionListeners() {
+      const prevBoss = (e) => {
+        if (e) e.stopPropagation();
+        selectedBossIndex = (selectedBossIndex - 1 + BOSS_DATABASE.length) % BOSS_DATABASE.length;
+        renderBossSelectionUI();
+      };
+      const nextBoss = (e) => {
+        if (e) e.stopPropagation();
+        selectedBossIndex = (selectedBossIndex + 1) % BOSS_DATABASE.length;
+        renderBossSelectionUI();
+      };
+
+      // 1. 솔로 보스 선택 화면 컨트롤
+      const btnSoloPrev = document.getElementById('btn-solo-boss-prev');
+      const btnSoloNext = document.getElementById('btn-solo-boss-next');
+      const btnSoloList = document.getElementById('btn-solo-boss-list');
+      const btnDeploy = document.getElementById('btn-boss-select-deploy');
+      const btnBack = document.getElementById('btn-boss-select-back');
+
+      if (btnSoloPrev) btnSoloPrev.addEventListener('click', prevBoss);
+      if (btnSoloNext) btnSoloNext.addEventListener('click', nextBoss);
+      if (btnSoloList) btnSoloList.addEventListener('click', (e) => { e.stopPropagation(); openBossListModal(); });
+      if (btnBack) btnBack.addEventListener('click', (e) => { e.stopPropagation(); setScreenState('main'); });
+
+      if (btnDeploy) {
+        btnDeploy.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const curBoss = BOSS_DATABASE[selectedBossIndex] || BOSS_DATABASE[0];
+          if (!curBoss.isAvailable) {
+            alert(`[${curBoss.name}]는 현재 준비 중인 총력전 보스입니다.\n현재는 KAITEN FX Mk.0 작전에 출격하실 수 있습니다.`);
+            return;
+          }
+          setScreenState('maintenance');
+        });
+      }
+
+      // 2. 2인 로비 화면 컨트롤 (방 만들기 카드 내부)
+      const btnDuoPrev = document.getElementById('btn-duo-boss-prev');
+      const btnDuoNext = document.getElementById('btn-duo-boss-next');
+      const btnDuoList = document.getElementById('btn-duo-boss-list');
+
+      if (btnDuoPrev) btnDuoPrev.addEventListener('click', prevBoss);
+      if (btnDuoNext) btnDuoNext.addEventListener('click', nextBoss);
+      if (btnDuoList) btnDuoList.addEventListener('click', (e) => { e.stopPropagation(); openBossListModal(); });
+
+      // 전체 목록 모달 닫기
+      const btnCloseList = document.getElementById('btn-boss-list-close');
+      if (btnCloseList) {
+        btnCloseList.addEventListener('click', (e) => {
+          if (e) e.stopPropagation();
+          const modal = document.getElementById('boss-list-modal');
+          if (modal) modal.classList.add('hidden');
+        });
+      }
+    }
+
     function setScreenState(state) {
       currentGameState = state;
       mainScreen.classList.add('hidden');
@@ -59,13 +243,22 @@
       if (sModal) sModal.classList.add('hidden');
       const selModal = document.getElementById('selection-modal');
       if (selModal) selModal.classList.add('hidden');
+      const bSelScreen = document.getElementById('boss-select-screen');
+      if (bSelScreen) bSelScreen.classList.add('hidden');
+      const bListModal = document.getElementById('boss-list-modal');
+      if (bListModal) bListModal.classList.add('hidden');
 
       if (state === 'main') {
         mainScreen.classList.remove('hidden');
+      } else if (state === 'boss_select') {
+        if (bSelScreen) bSelScreen.classList.remove('hidden');
+        renderBossSelectionUI();
       } else if (state === 'duo_lobby') {
         duoLobbyModal.classList.remove('hidden');
+        renderBossSelectionUI();
       } else if (state === 'maintenance') {
         maintenanceScreen.classList.remove('hidden');
+        updateDifficultyLockUI();
 
         if (myRole === 'guest_striker') {
           // [2P 게스트 스트라이커 출격 정비실]
@@ -186,13 +379,13 @@
       }
     }
 
-    // 1인 클 클릭 -> 스트라이커 솔로 정비실 이동
+    // 1인 클 클릭 -> 총력전 토벌 보스 선택 화면으로 이동
     btnSolo.addEventListener('click', () => {
       currentMode = 'solo';
       myRole = 'striker';
       isSupporterConnected = false;
       isSupporterReady = false;
-      setScreenState('maintenance');
+      setScreenState('boss_select');
     });
 
     // 2인 클 클릭 -> 2인 로비(호스팅/참여 선택) 모달 표시
@@ -207,7 +400,7 @@
       setScreenState('main');
     });
 
-    // 로비: 호스팅 (호스트 = 스트라이커, 원하는 방 코드 직접 지정)
+    // 로비: 호스팅 (호스트 = 스트라이커, 원하는 방 코드 직접 지정 및 선택된 보스 검증)
     btnDuoHost.addEventListener('click', (e) => {
       e.stopPropagation();
       const codeVal = (inputHostCode.value || '').trim();
@@ -216,6 +409,14 @@
         inputHostCode.focus();
         return;
       }
+
+      // 방장이 선택한 보스가 플레이 가능한 상태인지 검증
+      const curBoss = (typeof BOSS_DATABASE !== 'undefined' && BOSS_DATABASE[selectedBossIndex]) ? BOSS_DATABASE[selectedBossIndex] : { isAvailable: true, name: 'KAITEN FX Mk.0' };
+      if (!curBoss.isAvailable) {
+        alert(`[${curBoss.name}]는 현재 준비 중인 총력전 보스입니다.\n현재는 KAITEN FX Mk.0 작전실을 개설하실 수 있습니다.`);
+        return;
+      }
+
       roomCode = codeVal;
       currentMode = 'duo';
       myRole = 'striker';
@@ -225,15 +426,19 @@
       // 1P 호스트 2인 정비실 화면으로 즉시 전환!
       setScreenState('maintenance');
 
-      // P2P 방 생성 패킷 전송
+      // P2P 방 생성 패킷 전송 (선택된 보스 ID 포함)
       if (typeof initNetworkSocket === 'function') {
         initNetworkSocket();
         sendNetPacket({
           type: 'CREATE_ROOM',
-          roomCode: roomCode
+          roomCode: roomCode,
+          bossId: curBoss.id
         });
       }
     });
+
+    // 보스 선택 리스너 초기 바인딩 실행
+    setupBossSelectionListeners();
 
     // 로비: 참여 (참여자 = 서포터, 호스트 방 코드 입력)
     btnDuoJoin.addEventListener('click', (e) => {
@@ -497,6 +702,10 @@
         items = EQUIPMENT_DATABASE.slot9;
         currentItem = playerLoadout.slot9;
       } else if (slotId === 'difficulty' || slotId === 'slot_diff') {
+        if (currentMode === 'duo' && myRole !== 'striker') {
+          alert('🔒 난이도는 1P 방장(호스트)만 변경할 수 있습니다!');
+          return;
+        }
         modalTitle.innerText = '난이도 선택';
         items = EQUIPMENT_DATABASE.difficulty;
         currentItem = playerLoadout.difficulty;
@@ -691,7 +900,13 @@
     document.getElementById('slot-card-9').addEventListener('click', () => openSlotSelectionModal('slot9'));
     const slotCardDiff = document.getElementById('slot-card-diff');
     if (slotCardDiff) {
-      slotCardDiff.addEventListener('click', () => openSlotSelectionModal('difficulty'));
+      slotCardDiff.addEventListener('click', () => {
+        if (currentMode === 'duo' && myRole !== 'striker') {
+          alert('🔒 난이도는 1P 방장(호스트)만 변경할 수 있습니다!');
+          return;
+        }
+        openSlotSelectionModal('difficulty');
+      });
     }
 
     // 스킬 상세 정보 모달 열기 (인게임 전용 모달, 시스템 alert 대체)

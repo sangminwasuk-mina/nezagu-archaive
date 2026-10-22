@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kaiten City - Weapon Attacks Complete</title>
-  <link rel="stylesheet" href="css/style.css?v=2.9.56">
+  <link rel="stylesheet" href="css/style.css?v=2.9.57">
 </head>
 <body>
   <!-- 메인 화면 (타이틀 오버레이) -->
@@ -24,22 +24,91 @@
     </div>
   </div>
 
-  <!-- 2인 클 전용 로비 모달 -->
+  <!-- [신규] 1인 솔로 전용 보스 선택 화면 -->
+  <div id="boss-select-screen" class="hidden">
+    <div class="boss-select-box">
+      <div class="boss-select-header">
+        <div class="boss-select-title">🎯 총력전 토벌 보스 선택</div>
+        <div class="boss-select-sub">출격할 총력전 작전 보스를 선택하고 정비실로 이동하십시오.</div>
+      </div>
+
+      <!-- 보스 선택 바: [◀] [📑 전체 목록]  이름  [▶] -->
+      <div class="boss-selector-row">
+        <button class="boss-nav-arrow" id="btn-solo-boss-prev" title="이전 보스">◀</button>
+        <button class="boss-list-btn" id="btn-solo-boss-list" title="전체 보스 목록 열람">
+          <span>📑 전체 목록</span>
+        </button>
+        <div class="boss-name-banner" id="solo-boss-banner">
+          <span class="boss-icon" id="solo-boss-icon">🍣</span>
+          <span class="boss-title-text" id="solo-boss-name">KAITEN FX Mk.0 (카이텐저 연합)</span>
+          <span class="boss-status-pill available" id="solo-boss-pill">출격 가능</span>
+        </div>
+        <button class="boss-nav-arrow" id="btn-solo-boss-next" title="다음 보스">▶</button>
+      </div>
+
+      <!-- 선택된 보스 브리핑 카드 -->
+      <div class="boss-detail-card" id="solo-boss-card">
+        <div class="boss-card-top">
+          <div class="boss-avatar-frame" id="solo-boss-avatar-frame">
+            <span id="solo-boss-avatar-icon" style="font-size: 38px;">🍣</span>
+          </div>
+          <div class="boss-meta-info">
+            <div class="boss-meta-name" id="solo-boss-meta-name">KAITEN FX Mk.0 (카이텐저 연합)</div>
+            <div class="boss-meta-sub" id="solo-boss-meta-sub">무한히 회전하는 초밥의 정의</div>
+            <div class="boss-meta-badges">
+              <span class="boss-badge armor-light" id="solo-boss-armor-badge">🛡️ 방어 장갑: 경장갑</span>
+              <span class="boss-badge phases-badge" id="solo-boss-phases-badge">⚡ 2개 페이즈 (잔당 ➜ 합체 로봇)</span>
+            </div>
+          </div>
+        </div>
+        <div class="boss-card-desc" id="solo-boss-desc">
+          신비롭고 거대한 카이텐저 5인 연합과 거대 로봇 카이텐 FX Mk.0를 토벌하는 정규 총력전 작전입니다.
+        </div>
+      </div>
+
+      <!-- 하단 액션 버튼 -->
+      <div class="boss-select-footer">
+        <button class="action-btn btn-back" id="btn-boss-select-back" style="padding: 12px 28px; font-size: 14px;">← 타이틀로</button>
+        <button class="action-btn" id="btn-boss-select-deploy" style="padding: 12px 32px; font-size: 15px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; border-radius: 8px; border: none; cursor: pointer;">
+          🚀 출격 정비실 입장
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- 2인 협동 전용 로비 모달 -->
   <div id="duo-lobby-modal" class="hidden">
     <div class="lobby-box">
       <div class="lobby-title">🌐 2인 협동 P2P 작전실</div>
       <div class="lobby-desc">
-        동료와 함께 카이텐저를 토벌하는 2인 대칭 협동 모드입니다.<br>
+        동료와 함께 총력전 보스를 토벌하는 2인 대칭 협동 모드입니다.<br>
         1P(호스트)는 <b>블루 스트라이커</b>, 2P(게스트)는 <b>레드 스트라이커</b>로 출격합니다.
       </div>
       <div class="lobby-actions">
-        <!-- 호스팅 섹션 (방 코드 직접 지정) -->
+        <!-- 호스팅 섹션 (방 만들기: 여기에만 보스 선택 바가 배치됨) -->
         <div class="lobby-card-btn" id="btn-duo-host-card">
           <div style="font-size: 32px;">👑</div>
           <div class="lobby-btn-title">방 만들기 (1P 호스트)</div>
           <span class="lobby-role-badge" style="background: #0284c7;">역할: 1P 스트라이커 (블루)</span>
           <div class="lobby-btn-sub">방 코드를 정하고 작전실을 개설합니다.</div>
+
+          <!-- [방 만들기 아래 보스 선택 바] (참가하기 제외) -->
+          <div class="duo-boss-selector-section">
+            <div class="duo-boss-selector-label">🎯 토벌 보스 선택:</div>
+            <div class="boss-selector-row compact">
+              <button class="boss-nav-arrow compact" id="btn-duo-boss-prev" title="이전 보스">◀</button>
+              <button class="boss-list-btn compact" id="btn-duo-boss-list" title="전체 보스 목록 열람">
+                <span>📑 목록</span>
+              </button>
+              <div class="boss-name-banner compact" id="duo-boss-banner">
+                <span class="boss-icon" id="duo-boss-icon">🍣</span>
+                <span class="boss-title-text" id="duo-boss-name">KAITEN FX Mk.0</span>
+                <span class="boss-status-pill available" id="duo-boss-pill">출격가능</span>
+              </div>
+              <button class="boss-nav-arrow compact" id="btn-duo-boss-next" title="다음 보스">▶</button>
+            </div>
+          </div>
+
           <div style="width: 100%; display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
             <input type="text" id="input-host-code" placeholder="방 코드 (예: 7777, KAITEN)" value="57291" maxlength="10"
                    style="width: 100%; padding: 8px 12px; font-size: 14px; font-weight: bold; border-radius: 6px; border: 1.5px solid #38bdf8; background: #0f172a; color: #38bdf8; text-align: center; letter-spacing: 2px;">
@@ -49,7 +118,7 @@
           </div>
         </div>
 
-        <!-- 참여 섹션 (코드 입력 후 참가) -->
+        <!-- 참여 섹션 (코드 입력 후 참가: 보스 선택 바 없음) -->
         <div class="lobby-card-btn" id="btn-duo-join-card">
           <div style="font-size: 32px;">🔍</div>
           <div class="lobby-btn-title">방 찾기 (2P 게스트)</div>
@@ -65,6 +134,20 @@
         </div>
       </div>
       <button class="action-btn btn-back" id="btn-duo-lobby-back" style="padding: 10px 24px; font-size: 14px;">← 타이틀로 돌아가기</button>
+    </div>
+  </div>
+
+  <!-- [신규] 총력전 보스 전체 목록 팝업 모달 -->
+  <div id="boss-list-modal" class="hidden">
+    <div class="modal-box boss-list-modal-box">
+      <div class="modal-header">
+        <div class="modal-title">📑 총력전 전체 보스 목록</div>
+        <button class="modal-close" id="btn-boss-list-close">✕</button>
+      </div>
+      <div class="modal-desc" style="color:#94a3b8; font-size:13px; margin-bottom:12px;">작전을 수행할 총력전 보스를 선택하십시오.</div>
+      <div class="boss-modal-grid" id="boss-modal-grid">
+        <!-- JS 동적 렌더링 카드: 카이텐저 / 그레고리오 -->
+      </div>
     </div>
   </div>
 
@@ -832,15 +915,15 @@
   <canvas id="minimap" class="hidden"></canvas>
 
   <!-- WebRTC 순수 P2P 라이브러리 (로컬 내장 PeerJS) -->
-  <script src="js/peerjs.min.js?v=2.9.56"></script>
+  <script src="js/peerjs.min.js?v=2.9.57"></script>
   <script>window.Peer || document.write('<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"><\/script>');</script>
 
-  <!-- 게임 엔진 스크립트 모듈 순차 로드 (캐시 방지 v=2.9.56) -->
-  <script src="js/constants.js?v=2.9.56"></script>
-  <script src="js/entities.js?v=2.9.56"></script>
-  <script src="js/network.js?v=2.9.56"></script>
-  <script src="js/ui.js?v=2.9.56"></script>
-  <script src="js/render.js?v=2.9.56"></script>
-  <script src="js/main.js?v=2.9.56"></script>
+  <!-- 게임 엔진 스크립트 모듈 순차 로드 (캐시 방지 v=2.9.57) -->
+  <script src="js/constants.js?v=2.9.57"></script>
+  <script src="js/entities.js?v=2.9.57"></script>
+  <script src="js/network.js?v=2.9.57"></script>
+  <script src="js/ui.js?v=2.9.57"></script>
+  <script src="js/render.js?v=2.9.57"></script>
+  <script src="js/main.js?v=2.9.57"></script>
 </body>
 </html>

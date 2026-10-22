@@ -950,6 +950,35 @@
     };
     playerLoadout.difficulty = EQUIPMENT_DATABASE.difficulty[0];
 
-
-
-    // 모달 DOM 참조
+    // [총력전 보스 데이터베이스]
+    const BOSS_DATABASE = [
+      {
+        id: 'kaiten',
+        name: 'KAITEN FX Mk.0 (카이텐저 연합)',
+        subName: '무한히 회전하는 초밥의 정의',
+        icon: '🍣',
+        armorType: '경장갑 (Light)',
+        armorColor: '#ef4444',
+        phases: '2개 페이즈 (1페: 잔당 5인 / 2페: 합체 로봇)',
+        tag: '출격 가능',
+        badge: 'AVAILABLE',
+        isAvailable: true,
+        desc: '신비롭고 거대한 카이텐저 5인 연합과 거대 로봇 카이텐 FX Mk.0를 토벌하는 정규 총력전 작전입니다.',
+        color: '#ef4444'
+      },
+      {
+        id: 'gregorius',
+        name: '그레고리오 (Gregorius)',
+        subName: '성스러운 합창과 음율의 지휘자',
+        icon: '🎼',
+        armorType: '특수장갑 (Special)',
+        armorColor: '#38bdf8',
+        phases: '2개 페이즈 (성가대 & 파이프 오르간)',
+        tag: '준비 중 🔒',
+        badge: 'PREPARING',
+        isAvailable: false,
+        desc: '거대한 파이프 오르간과 4인의 성가대를 지휘하는 총력전 보스로, 현재 시스템 준비 중입니다.',
+        color: '#a855f7'
+      }
+    ];
+    let selectedBossIndex = 0; // 0: 카이텐저
