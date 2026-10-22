@@ -520,6 +520,22 @@ function handleNetworkMessage(data) {
     handleEnemyBulletNetPacket(data);
   }
 
+  // [11-2] 근접 참격 즉각 애니메이션 동기화
+  else if (data.type === 'MELEE_ATTACK') {
+    if (typeof remotePlayer !== 'undefined' && remotePlayer) {
+      remotePlayer.redMistAttackAnim = {
+        type: data.stance || 'horizontal',
+        timer: data.timer || 0.30,
+        maxTimer: data.maxTimer || 0.30,
+        isEmpowered: !!data.isEmpowered
+      };
+      remotePlayer.redMistStance = data.stance || 'horizontal';
+      if (data.facing) remotePlayer.facing = data.facing;
+      if (typeof data.x === 'number') remotePlayer.targetX = data.x;
+      if (typeof data.y === 'number') remotePlayer.targetY = data.y;
+    }
+  }
+
   // [12] 승리 결산 통계 동기화 (1P <-> 2P 상호 교환)
   else if (data.type === 'VICTORY_SYNC') {
     if (!window.battleStats) {
@@ -641,8 +657,14 @@ function handleInGameSync(data) {
   if (data.strikerPlayer) {
     const sp = data.strikerPlayer;
     remotePlayer.isActive = true;
-    remotePlayer.x = sp.x;
-    remotePlayer.y = sp.y;
+
+    // [위치 튐 방지 LERP]: 좌표 즉시 강제 덮어쓰기 대신 목표 좌표 설정
+    remotePlayer.targetX = sp.x;
+    remotePlayer.targetY = sp.y;
+    if (typeof remotePlayer.x === 'undefined' || Math.hypot(remotePlayer.x - sp.x, remotePlayer.y - sp.y) > 250) {
+      remotePlayer.x = sp.x;
+      remotePlayer.y = sp.y;
+    }
     remotePlayer.vx = sp.vx;
     remotePlayer.vy = sp.vy;
     remotePlayer.hp = sp.hp;
@@ -659,6 +681,25 @@ function handleInGameSync(data) {
     }
     remotePlayer.isRunning = sp.isRunning;
     remotePlayer.isDashing = sp.isDashing;
+
+    // [신규: 모션 & 참격 애니메이션 & 시각 효과 동기화]
+    if (sp.redMistAttackAnim) {
+      remotePlayer.redMistAttackAnim = sp.redMistAttackAnim;
+    }
+    remotePlayer.redMistStance = sp.redMistStance || 'horizontal';
+    remotePlayer.redMistDashing = sp.redMistDashing || false;
+    remotePlayer.redMistSpecialPhase = sp.redMistSpecialPhase || 'none';
+    remotePlayer.redMistSpecialTimer = sp.redMistSpecialTimer || 0;
+    remotePlayer.redMistSpecialMaxTimer = sp.redMistSpecialMaxTimer || 1.4;
+    remotePlayer.redMistThrustSlideTimer = sp.redMistThrustSlideTimer || 0;
+    remotePlayer.isEgoActive = sp.isEgoActive || false;
+    remotePlayer.isEgoForced = sp.isEgoForced || false;
+    remotePlayer.egoExhaustTimer = sp.egoExhaustTimer || 0;
+    remotePlayer.aimAngle = sp.aimAngle || 0;
+    if (remotePlayer.mainWeapon && sp.flashTimer) {
+      remotePlayer.mainWeapon.flashTimer = Math.max(remotePlayer.mainWeapon.flashTimer || 0, sp.flashTimer);
+    }
+
     remotePlayer.isChargingSkill = sp.isChargingSkill || false;
     remotePlayer.chargeTimer = sp.chargeTimer || 0;
     remotePlayer.chargeLevel = sp.chargeLevel || 1;
@@ -753,8 +794,6 @@ function handleInGameSync(data) {
     });
   }
 
-
-
   // 보스 카이텐저 동기화 (호스트가 계산하여 게스트에게 전송)
   if (myRole !== 'striker' && data.kaitenzers) {
     if (data.isPhase1Retreating !== undefined) isPhase1Retreating = data.isPhase1Retreating;
@@ -762,12 +801,17 @@ function handleInGameSync(data) {
     data.kaitenzers.forEach(kData => {
       const localK = kaitenzers.find(k => k.id === kData.id);
       if (localK) {
-        localK.x = kData.x;
+        localK.targetX = kData.x;
+        localK.targetJumpY = kData.jumpY;
+        if (typeof localK.x === 'undefined' || Math.abs(localK.x - kData.x) > 300) {
+          localK.x = kData.x;
+          localK.jumpY = kData.jumpY;
+        }
         localK.hp = kData.hp;
         localK.isSpawned = kData.isSpawned;
         localK.isDead = kData.isDead;
         localK.isActive = kData.isActive;
-        localK.jumpY = kData.jumpY;
+        localK.facing = kData.facing || localK.facing;
         localK.isRetreating = kData.isRetreating || false;
         if (kData.laserState !== undefined) localK.laserState = kData.laserState;
         if (kData.laserTargetX !== undefined) localK.laserTargetX = kData.laserTargetX;
@@ -781,8 +825,12 @@ function handleInGameSync(data) {
     const fx = data.kaitenFxSync;
     kaitenFx.hp = fx.hp;
     kaitenFx.maxHp = fx.maxHp;
-    kaitenFx.x = fx.x;
-    kaitenFx.y = fx.y;
+    kaitenFx.targetX = fx.x;
+    kaitenFx.targetY = fx.y;
+    if (typeof kaitenFx.x === 'undefined' || Math.abs(kaitenFx.x - fx.x) > 300) {
+      kaitenFx.x = fx.x;
+      kaitenFx.y = fx.y;
+    }
     kaitenFx.facing = fx.facing;
     kaitenFx.isSpawned = fx.isSpawned;
     kaitenFx.isDead = fx.isDead;
@@ -793,6 +841,20 @@ function handleInGameSync(data) {
     kaitenFx.stunTimer = fx.stunTimer;
     kaitenFx.currentAction = fx.currentAction;
     kaitenFx.actionTimer = fx.actionTimer;
+
+    // [신규: 거대 로봇 모션 및 애니메이션 동기화]
+    kaitenFx.isMoving = fx.isMoving || false;
+    kaitenFx.walkCycleTimer = fx.walkCycleTimer || 0;
+    kaitenFx.isSlashing = fx.isSlashing || false;
+    kaitenFx.slashPhase = fx.slashPhase || 'none';
+    kaitenFx.slashTimer = fx.slashTimer || 0;
+    kaitenFx.chestHatchTimer = fx.chestHatchTimer || 0;
+    kaitenFx.kneelProgress = fx.kneelProgress || 0;
+    kaitenFx.shieldVisualTimer = fx.shieldVisualTimer || 0;
+    kaitenFx.jumpY = fx.jumpY || 0;
+    kaitenFx.isFiringNormal = fx.isFiringNormal || false;
+    kaitenFx.isFiringSkill = fx.isFiringSkill || false;
+
     if (fx.parts && kaitenFx.parts) {
       for (const [pKey, pVal] of Object.entries(fx.parts)) {
         if (kaitenFx.parts[pKey]) {
@@ -826,6 +888,26 @@ function sendInGameSync(now) {
     subWeaponId: player.subWeapon ? player.subWeapon.id : 'hg_sidearm',
     isRunning: player.isRunning,
     isDashing: player.isDashing,
+
+    // [신규: 모션 & 참격 애니메이션 & 시각 효과 동기화]
+    redMistAttackAnim: player.redMistAttackAnim ? {
+      type: player.redMistAttackAnim.type,
+      timer: player.redMistAttackAnim.timer,
+      maxTimer: player.redMistAttackAnim.maxTimer,
+      isEmpowered: !!player.redMistAttackAnim.isEmpowered
+    } : null,
+    redMistStance: player.redMistStance || 'horizontal',
+    redMistDashing: player.redMistDashing || false,
+    redMistSpecialPhase: player.redMistSpecialPhase || 'none',
+    redMistSpecialTimer: player.redMistSpecialTimer || 0,
+    redMistSpecialMaxTimer: player.redMistSpecialMaxTimer || 1.4,
+    redMistThrustSlideTimer: player.redMistThrustSlideTimer || 0,
+    isEgoActive: player.isEgoActive || false,
+    isEgoForced: player.isEgoForced || false,
+    egoExhaustTimer: player.egoExhaustTimer || 0,
+    flashTimer: (player.mainWeapon && player.mainWeapon.flashTimer > 0) ? player.mainWeapon.flashTimer : ((player.subWeapon && player.subWeapon.flashTimer > 0) ? player.subWeapon.flashTimer : 0),
+    aimAngle: player.aimAngle || 0,
+
     isChargingSkill: player.isChargingSkill,
     chargeTimer: player.chargeTimer,
     chargeLevel: player.chargeLevel,
@@ -879,6 +961,7 @@ function sendInGameSync(now) {
       isDead: k.isDead,
       isActive: k.isActive,
       jumpY: k.jumpY,
+      facing: k.facing || 1,
       isRetreating: k.isRetreating || false,
       laserState: k.laserState,
       laserTargetX: k.laserTargetX,
@@ -902,6 +985,18 @@ function sendInGameSync(now) {
         stunTimer: kaitenFx.stunTimer,
         currentAction: kaitenFx.currentAction,
         actionTimer: kaitenFx.actionTimer,
+        // [신규: 2페이즈 거대 로봇 모션 및 애니메이션 동기화]
+        isMoving: kaitenFx.isMoving || false,
+        walkCycleTimer: kaitenFx.walkCycleTimer || 0,
+        isSlashing: kaitenFx.isSlashing || false,
+        slashPhase: kaitenFx.slashPhase || 'none',
+        slashTimer: kaitenFx.slashTimer || 0,
+        chestHatchTimer: kaitenFx.chestHatchTimer || 0,
+        kneelProgress: kaitenFx.kneelProgress || 0,
+        shieldVisualTimer: kaitenFx.shieldVisualTimer || 0,
+        jumpY: kaitenFx.jumpY || 0,
+        isFiringNormal: kaitenFx.isFiringNormal || false,
+        isFiringSkill: kaitenFx.isFiringSkill || false,
         parts: {}
       };
       if (kaitenFx.parts) {

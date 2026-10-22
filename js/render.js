@@ -982,7 +982,7 @@
         const dy = (groundY - redKaiten.size / 2) - playerCenterY;
         elev = Math.atan2(dy, Math.abs(dx));
         elev = Math.max(-0.55, Math.min(0.55, elev));
-      } else if (targetEntity.aimMode === 'auto' && typeof getClosestActiveEnemy === 'function') {
+      } else if (typeof getClosestActiveEnemy === 'function' && (targetEntity.aimMode === 'auto' || (typeof remotePlayer !== 'undefined' && targetEntity === remotePlayer))) {
         const closestEnemy = getClosestActiveEnemy(playerCenterX, playerCenterY);
         if (closestEnemy && closestEnemy.entity) {
           const dx = closestEnemy.x - playerCenterX;
@@ -995,7 +995,7 @@
       // 사격 반동 킥백 오프셋
       let recoilX = 0;
       if (isMain) {
-        if (targetEntity.isFiringSkill || (targetEntity === player && keys.attack && targetMain.ammo > 0 && !targetMain.isReloading)) {
+        if (targetEntity.isFiringSkill || (targetMain && targetMain.flashTimer > 0) || (targetEntity === player && keys.attack && targetMain.ammo > 0 && !targetMain.isReloading)) {
           recoilX = -(Math.random() * 2.5);
         }
       }

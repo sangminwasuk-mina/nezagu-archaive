@@ -1302,6 +1302,19 @@
         isEmpowered: isThirdEmpowered
       };
 
+      if (currentMode === 'duo' && typeof sendNetPacket === 'function') {
+        sendNetPacket({
+          type: 'MELEE_ATTACK',
+          stance: currentStance,
+          timer: 0.30,
+          maxTimer: 0.30,
+          isEmpowered: isThirdEmpowered,
+          facing: player.facing,
+          x: player.x,
+          y: player.y
+        });
+      }
+
       if (isThirdEmpowered) {
         addDamageText(player.x, player.y - 35, '🔥 [3타 강화!] 피해 150% / 범위 125%', '#fb923c');
       }
@@ -6243,6 +6256,35 @@
         }
       }
 
+      // [2인 멀티플레이] 상대방 플레이어 위치 LERP 선형 보간 및 모션 타이머 진행
+      if (currentMode === 'duo' && typeof remotePlayer !== 'undefined' && remotePlayer && remotePlayer.isActive) {
+        if (typeof remotePlayer.targetX !== 'undefined') {
+          const dx = remotePlayer.targetX - remotePlayer.x;
+          const dy = remotePlayer.targetY - remotePlayer.y;
+          if (Math.hypot(dx, dy) > 250) {
+            remotePlayer.x = remotePlayer.targetX;
+            remotePlayer.y = remotePlayer.targetY;
+          } else {
+            // 부드러운 60fps LERP 추종
+            remotePlayer.x += dx * 0.35;
+            remotePlayer.y += dy * 0.35;
+          }
+        }
+        // 모션 및 시각 타이머 감쇄
+        if (remotePlayer.redMistAttackAnim && remotePlayer.redMistAttackAnim.timer > 0) {
+          remotePlayer.redMistAttackAnim.timer -= dt;
+        }
+        if (remotePlayer.mainWeapon && remotePlayer.mainWeapon.flashTimer > 0) {
+          remotePlayer.mainWeapon.flashTimer -= dt;
+        }
+        if (remotePlayer.subWeapon && remotePlayer.subWeapon.flashTimer > 0) {
+          remotePlayer.subWeapon.flashTimer -= dt;
+        }
+        if (remotePlayer.redMistThrustSlideTimer > 0) {
+          remotePlayer.redMistThrustSlideTimer -= dt;
+        }
+      }
+
       // 카메라 추적 (컷신 진행 중에는 연출 타겟, 실전 중에는 플레이어 추적)
       if (window.phase1Cutscene && window.phase1Cutscene.active) {
         // 1페이즈 컷신: 옥상/강하/착지/포징 카메라 제어
@@ -6332,111 +6374,123 @@
         updatePhase2Cutscene(dt);
       }
 
-      // 1-3. 카이텐저 점프 물리 & 이동 AI
-      kaitenzers.forEach(k => {
-        if (!k.isSpawned || k.isDead || k.isRetreating) return;
-        if ((window.phase1Cutscene && window.phase1Cutscene.active) || (window.phase2Cutscene && window.phase2Cutscene.active)) return;
-
-        // [빛의 검 : 아비 에슈흐 파이널] 시공간 결빙 히트스톱 중에는 완전 정지!
-        if (k.isFrozen) {
-          k.frozenTimer = (k.frozenTimer || 0) - dt;
-          if (k.frozenTimer <= 0) {
-            k.isFrozen = false;
+      // 1-3. 카이텐저 점프 물리 & 이동 AI (2P 게스트는 호스트 위치 LERP 추종하여 상충 방지)
+      if (currentMode === 'duo' && myRole === 'guest_striker') {
+        kaitenzers.forEach(k => {
+          if (!k.isSpawned || k.isDead || k.isRetreating) return;
+          if (typeof k.targetX !== 'undefined') {
+            k.x += (k.targetX - k.x) * 0.35;
           }
-          return;
-        }
-
-        // 점프 물리 연산 (중력 & 수평 관성) - 기절 중이어도 공중에 있다면 자연스럽게 바닥으로 착지!
-        if (k.jumpY > 0 || k.vy > 0) {
-          k.jumpY += k.vy;
-          k.vy -= 0.65; // 중력 가속도
-          if (k.vx) {
-            k.x += k.vx;
-            k.vx *= 0.96;
-          }
-          if (k.jumpY <= 0) {
-            k.jumpY = 0;
-            k.vy = 0;
-            k.vx = 0;
-          }
-        }
-
-        // [FOX 45식: 철벽의 방어] 기절 중에는 추가 점프 및 지상 이동 불가
-        if (k.stunTimer && k.stunTimer > 0) {
-          return;
-        }
-
-        // 1. 포지션 측면 설정 (targetSide: -1 = 플레이어 좌측, +1 = 플레이어 우측)
-        // 블랙(선봉 기동)과 그린은 좌측 우회, 레드/핑크/옐로는 우측 기본 배치로 양각 포위 형성
-        if (typeof k.targetSide === 'undefined') {
-          if (k.id === 'black') k.targetSide = -1;
-          else if (k.id === 'green') k.targetSide = -1;
-          else k.targetSide = 1;
-        }
-
-        // 2. 포지션 셔플 & 동적 재배치 타이머 (줄서기 방지 & 순서 뒤섞기)
-        k.repositionTimer = (k.repositionTimer || (2.5 + Math.random() * 3.0)) - dt;
-        if (k.repositionTimer <= 0) {
-          k.repositionTimer = 3.5 + Math.random() * 3.5;
-          // 랜덤 거리 오프셋 (-80px ~ +80px)으로 1-2-3-4-5 고정 순서 완전 파괴
-          k.dynOffset = (Math.random() - 0.5) * 160;
-
-          // 기동성 있는 블랙/레드/그린은 가끔 플레이어 반대편으로 뛰어넘어 양각 전환
-          if ((k.id === 'black' || k.id === 'red' || k.id === 'green') && Math.random() < 0.38) {
-            k.targetSide = -k.targetSide;
-          }
-        }
-
-        // 3. 병종별 기준 사거리 범위 (랜덤 오프셋으로 매번 섞임)
-        let baseDist = 360;
-        if (k.id === 'black') baseDist = 230;      // HG 블랙: 근접 교란
-        else if (k.id === 'green') baseDist = 310;  // MG 그린: 전방 화력
-        else if (k.id === 'red') baseDist = 370;    // AR 레드: 중거리 지휘
-        else if (k.id === 'pink') baseDist = 450;   // RL 핑크: 후방 포격
-        else if (k.id === 'yellow') baseDist = 530; // SR 옐로: 최후방 저격
-
-        const targetDist = Math.max(160, baseDist + (k.dynOffset || 0));
-        // 목표 월드 X 좌표
-        const targetX = playerCenterX + (k.targetSide * targetDist);
-        const distToTarget = targetX - k.x;
-        const absDistToTarget = Math.abs(distToTarget);
-
-        const currentSpeed = k.baseSpeed * (k.jumpY > 0 ? 1.3 : 1.0);
-
-        if (absDistToTarget > 20) {
-          k.x += Math.sign(distToTarget) * Math.min(absDistToTarget, currentSpeed * 1.15);
-        }
-
-        // 4. 점프 타이머: 바닥에서 도약할 때 수평 추진력(k.vx)을 함께 주어 역동적인 입체 도약!
-        k.jumpTimer -= dt;
-        if (k.jumpTimer <= 0) {
-          k.jumpTimer = 2.8 + Math.random() * 3.5;
-          if (k.jumpY <= 0) {
-            k.vy = 11 + Math.random() * 4;
-            // 목표 방향으로 공중 추진력 부여 (뒤로 빠지거나 앞으로 덮치기)
-            const jumpDir = Math.sign(distToTarget) || k.targetSide;
-            k.vx = jumpDir * (2.2 + Math.random() * 2.2);
-            addDamageText(k.x + k.size / 2, groundY - k.size - 10, 'LEAP!', k.color);
-          }
-        }
-
-        // 5. 맵 경계선 내 유지
-        const mapMaxX = typeof WORLD_WIDTH !== 'undefined' ? WORLD_WIDTH - 80 : 2500;
-        k.x = Math.max(80, Math.min(mapMaxX, k.x));
-
-        // 6. [동료 간 겹침 방지 밀어내기 (강력한 탄성 분리 - 겹침 0% 보장)]
-        kaitenzers.forEach(other => {
-          if (other !== k && other.isSpawned && !other.isDead && !other.isRetreating) {
-            const overlapDist = k.x - other.x;
-            const minDist = (k.size + other.size) * 0.72; // 최소 65px 이상 거리 유지
-            if (Math.abs(overlapDist) < minDist) {
-              const sign = (overlapDist >= 0 ? 1 : -1);
-              const pushForce = (minDist - Math.abs(overlapDist)) * 0.25;
-              k.x += sign * pushForce;
-            }
+          if (typeof k.targetJumpY !== 'undefined') {
+            k.jumpY = (k.jumpY || 0) + ((k.targetJumpY || 0) - (k.jumpY || 0)) * 0.45;
           }
         });
-      });
+      } else {
+        kaitenzers.forEach(k => {
+          if (!k.isSpawned || k.isDead || k.isRetreating) return;
+          if ((window.phase1Cutscene && window.phase1Cutscene.active) || (window.phase2Cutscene && window.phase2Cutscene.active)) return;
+
+          // [빛의 검 : 아비 에슈흐 파이널] 시공간 결빙 히트스톱 중에는 완전 정지!
+          if (k.isFrozen) {
+            k.frozenTimer = (k.frozenTimer || 0) - dt;
+            if (k.frozenTimer <= 0) {
+              k.isFrozen = false;
+            }
+            return;
+          }
+
+          // 점프 물리 연산 (중력 & 수평 관성) - 기절 중이어도 공중에 있다면 자연스럽게 바닥으로 착지!
+          if (k.jumpY > 0 || k.vy > 0) {
+            k.jumpY += k.vy;
+            k.vy -= 0.65; // 중력 가속도
+            if (k.vx) {
+              k.x += k.vx;
+              k.vx *= 0.96;
+            }
+            if (k.jumpY <= 0) {
+              k.jumpY = 0;
+              k.vy = 0;
+              k.vx = 0;
+            }
+          }
+
+          // [FOX 45식: 철벽의 방어] 기절 중에는 추가 점프 및 지상 이동 불가
+          if (k.stunTimer && k.stunTimer > 0) {
+            return;
+          }
+
+          // 1. 포지션 측면 설정 (targetSide: -1 = 플레이어 좌측, +1 = 플레이어 우측)
+          // 블랙(선봉 기동)과 그린은 좌측 우회, 레드/핑크/옐로는 우측 기본 배치로 양각 포위 형성
+          if (typeof k.targetSide === 'undefined') {
+            if (k.id === 'black') k.targetSide = -1;
+            else if (k.id === 'green') k.targetSide = -1;
+            else k.targetSide = 1;
+          }
+
+          // 2. 포지션 셔플 & 동적 재배치 타이머 (줄서기 방지 & 순서 뒤섞기)
+          k.repositionTimer = (k.repositionTimer || (2.5 + Math.random() * 3.0)) - dt;
+          if (k.repositionTimer <= 0) {
+            k.repositionTimer = 3.5 + Math.random() * 3.5;
+            // 랜덤 거리 오프셋 (-80px ~ +80px)으로 1-2-3-4-5 고정 순서 완전 파괴
+            k.dynOffset = (Math.random() - 0.5) * 160;
+
+            // 기동성 있는 블랙/레드/그린은 가끔 플레이어 반대편으로 뛰어넘어 양각 전환
+            if ((k.id === 'black' || k.id === 'red' || k.id === 'green') && Math.random() < 0.38) {
+              k.targetSide = -k.targetSide;
+            }
+          }
+
+          // 3. 병종별 기준 사거리 범위 (랜덤 오프셋으로 매번 섞임)
+          let baseDist = 360;
+          if (k.id === 'black') baseDist = 230;      // HG 블랙: 근접 교란
+          else if (k.id === 'green') baseDist = 310;  // MG 그린: 전방 화력
+          else if (k.id === 'red') baseDist = 370;    // AR 레드: 중거리 지휘
+          else if (k.id === 'pink') baseDist = 450;   // RL 핑크: 후방 포격
+          else if (k.id === 'yellow') baseDist = 530; // SR 옐로: 최후방 저격
+
+          const targetDist = Math.max(160, baseDist + (k.dynOffset || 0));
+          // 목표 월드 X 좌표
+          const targetX = playerCenterX + (k.targetSide * targetDist);
+          const distToTarget = targetX - k.x;
+          const absDistToTarget = Math.abs(distToTarget);
+
+          const currentSpeed = k.baseSpeed * (k.jumpY > 0 ? 1.3 : 1.0);
+
+          if (absDistToTarget > 20) {
+            k.x += Math.sign(distToTarget) * Math.min(absDistToTarget, currentSpeed * 1.15);
+          }
+
+          // 4. 점프 타이머: 바닥에서 도약할 때 수평 추진력(k.vx)을 함께 주어 역동적인 입체 도약!
+          k.jumpTimer -= dt;
+          if (k.jumpTimer <= 0) {
+            k.jumpTimer = 2.8 + Math.random() * 3.5;
+            if (k.jumpY <= 0) {
+              k.vy = 11 + Math.random() * 4;
+              // 목표 방향으로 공중 추진력 부여 (뒤로 빠지거나 앞으로 덮치기)
+              const jumpDir = Math.sign(distToTarget) || k.targetSide;
+              k.vx = jumpDir * (2.2 + Math.random() * 2.2);
+              addDamageText(k.x + k.size / 2, groundY - k.size - 10, 'LEAP!', k.color);
+            }
+          }
+
+          // 5. 맵 경계선 내 유지
+          const mapMaxX = typeof WORLD_WIDTH !== 'undefined' ? WORLD_WIDTH - 80 : 2500;
+          k.x = Math.max(80, Math.min(mapMaxX, k.x));
+
+          // 6. [동료 간 겹침 방지 밀어내기 (강력한 탄성 분리 - 겹침 0% 보장)]
+          kaitenzers.forEach(other => {
+            if (other !== k && other.isSpawned && !other.isDead && !other.isRetreating) {
+              const overlapDist = k.x - other.x;
+              const minDist = (k.size + other.size) * 0.72; // 최소 65px 이상 거리 유지
+              if (Math.abs(overlapDist) < minDist) {
+                const sign = (overlapDist >= 0 ? 1 : -1);
+                const pushForce = (minDist - Math.abs(overlapDist)) * 0.25;
+                k.x += sign * pushForce;
+              }
+            }
+          });
+        });
+      }
 
       // 2. 카이텐저 스킬 쿨타임 및 버프 갱신 (컷신 진행 중에는 스킬 쿨타임 및 발동 완전 동결)
       const isCutsceneActive = (window.phase1Cutscene && window.phase1Cutscene.active) || (window.phase2Cutscene && window.phase2Cutscene.active);
@@ -6761,6 +6815,14 @@
                 kaitenFx.isActive = true;
                 kaitenFx.introTimer = 0;
               }
+            }
+          } else if (kaitenFx.introState === 'ready') {
+            // [2P 게스트]: 실전 전투 중 호스트 좌표 LERP 추종
+            if (typeof kaitenFx.targetX !== 'undefined') {
+              kaitenFx.x += (kaitenFx.targetX - kaitenFx.x) * 0.35;
+            }
+            if (typeof kaitenFx.targetY !== 'undefined') {
+              kaitenFx.y += (kaitenFx.targetY - kaitenFx.y) * 0.35;
             }
           }
         } else {
@@ -7625,6 +7687,9 @@
               bullets.splice(i, 1);
               continue;
             }
+          }
+          if (b.life <= 0 || b.x < -300 || b.x > WORLD_WIDTH + 300) {
+            bullets.splice(i, 1);
           }
           continue;
         }
