@@ -1338,7 +1338,7 @@
         if (player.isEgoForced) {
           baseDmg *= 0.60; // 강제 개화: 40% 감소 (20% 증가는 받지 않음)
         } else {
-          baseDmg *= 1.20; // 정상 개화: 20% 증가
+          baseDmg *= 1.45; // 정상 개화: 45% 증가
         }
       }
 
@@ -3119,7 +3119,7 @@
           player.isEgoActive = true;
           player.isEgoForced = false;
           player.redMistStack = 100;
-          addDamageText(player.x, player.y - 45, '🔴 [E.G.O 개화 : 붉은안개] 특색 발현! (이속 +50%, 공격력 +20%, 범위 +35%)', '#ef4444');
+          addDamageText(player.x, player.y - 45, '🔴 [E.G.O 개화 : 붉은안개] 특색 발현! (이속 +50%, 공격력 +45%, 범위 +35%)', '#ef4444');
           updateWeaponHUD();
           return;
         }
@@ -5331,7 +5331,7 @@
             if (player.redMistSpecialTimer <= 0) {
               // 0.7초마다 타격 (총 3번)
               const isEnh = player.redMistSpecialIsEnhanced;
-              const ratio = isEnh ? 5.60 : 4.50; // 450% (강화 시 560%)
+              const ratio = isEnh ? 8.60 : 5.70; // 570% (개화 시 860%)
               const baseWpDmg = (player.mainWeapon && player.mainWeapon.stats && player.mainWeapon.stats.dmg) ? player.mainWeapon.stats.dmg : 3560;
               let dmg = baseWpDmg * ratio;
               dmg = calcPlayerAttackDamage(dmg);
@@ -5401,7 +5401,7 @@
           if (player.redMistSpecialTimer <= 0) {
             // 1.4초 붉은 화면 만료 -> 마지막 타격 날리기!
             const isEnh = player.redMistSpecialIsEnhanced;
-            const finishRatio = isEnh ? 15.50 : 12.50; // 피니시 1,250% ~ 1,550%
+            const finishRatio = isEnh ? 61.20 : 37.50; // 피니시 3,750% ~ 6,120%
             const stunDur = isEnh ? 4.0 : 2.5;
             const baseWpDmg = (player.mainWeapon && player.mainWeapon.stats && player.mainWeapon.stats.dmg) ? player.mainWeapon.stats.dmg : 3560;
             let dmg = baseWpDmg * finishRatio;
@@ -5511,7 +5511,7 @@
 
           if (player.redMistSpecialTimer <= 0) {
             // 0.7초 종료: 붉은 화면 해제 및 범위 내 모든 적에게 일괄 광역 피해 적용!
-            let dmg = ((player.mainWeapon && player.mainWeapon.stats && player.mainWeapon.stats.dmg) ? player.mainWeapon.stats.dmg : 3560) * 21.50; // 2,150% 공격력 광역 피해
+            let dmg = ((player.mainWeapon && player.mainWeapon.stats && player.mainWeapon.stats.dmg) ? player.mainWeapon.stats.dmg : 3560) * 40.00; // 4,000% 공격력 광역 피해
             dmg = calcPlayerAttackDamage(dmg);
             const finalDmg = Math.round(dmg);
 

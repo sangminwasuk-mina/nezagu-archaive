@@ -384,15 +384,15 @@
           skill1AttackType: ATTACK_TYPES.MYSTIC, // 메인스킬 1 공격 유형: 신비
           skill2AttackType: ATTACK_TYPES.MYSTIC, // 메인스킬 2 공격 유형: 신비
           specialAttackType: ATTACK_TYPES.MYSTIC, // 특수스킬 (아비 에슈흐 전 공격): 신비
-          hp: 65000,
-          desc: '• 체력: 65,000 | 방어 장갑: 특수장갑 (아비 에슈흐 폼 체인지 시 복합장갑 전환) | 장전: 5발 (단발식) | 피해량: 4,100 | 포지션: BACK (1,420px) | 딜레이: 0.70초 | 재장전: 3.0초 | 탄창: 무제한',
+          hp: 60000,
+          desc: '• 체력: 60,000 | 방어 장갑: 특수장갑 (아비 에슈흐 폼 체인지 시 복합장갑 전환) | 장전: 5발 (단발식) | 피해량: 4,100 | 포지션: BACK (1,420px) | 딜레이: 0.70초 | 재장전: 3.0초 | 탄창: 무제한',
           skillName: '[신비] 밸런스 붕괴',
           skillDesc: '• 소모: <b>5 코스트</b> | 쿨타임 2.5초 | 1.2s 차징 관통탄 (270%, 재사용 시 1/2/3배 증폭)',
           skill2Name: '[신비] 빛의 검/각성 : 슈퍼노바',
           skill2Desc: '• 충전: <b>8코스트</b> (최대 2스택) | 발사: <b>10코스트</b> 4초 관통 레이저 (0.1s마다 120%, 쿨타임 2.5초)',
           specialSkillName: '[신비] 시스템 : 아비 에슈흐',
           specialSkillDesc: '• 발동: <b>누적 코스트 150 소모 시 1회 해금</b> | 폼 체인지 시 복합장갑 전환 & 모든 공격 신비',
-          stats: { hp: 65000, capacity: 5, dmg: 4100, reloadTime: 3.0, maxMags: Infinity, holdFire: false, fireDelay: 0.70, range: 1420 },
+          stats: { hp: 60000, capacity: 5, dmg: 4100, reloadTime: 3.0, maxMags: Infinity, holdFire: false, fireDelay: 0.70, range: 1420 },
           skillDetails: {
             title: '[신비] 밸런스 붕괴',
             keyLabel: '[K키 / Q키] 메인스킬 1',
@@ -440,15 +440,15 @@
           skill1AttackType: ATTACK_TYPES.PIERCE, // 메인스킬 1 (기괴멸렬): 관통
           skill2AttackType: ATTACK_TYPES.MYSTIC, // 메인스킬 2 (격류 난사): 신비
           specialAttackType: ATTACK_TYPES.EXPLOSION, // 특수스킬 (불사 혈기 폭풍): 폭발
-          hp: 65000,
-          desc: '• 체력: 65,000 | 방어 장갑: 중장갑 | 장전: 4발 (단발식) | 피해량: 500*6 (3,000) | 포지션: FRONT (400px) | 딜레이: 0.25초 | 재장전: 0.75초 | 탄창: 무제한',
+          hp: 84000,
+          desc: '• 체력: 84,000 | 방어 장갑: 중장갑 | 장전: 4발 (단발식) | 피해량: 500*6 (3,000) | 포지션: FRONT (400px) | 딜레이: 0.25초 | 재장전: 0.75초 | 탄창: 무제한',
           skillName: '[관통] 기괴멸렬',
           skillDesc: '• 소모: <b>4 코스트</b> | 쿨타임 2.5초 | 탄창 3발 사격 & 즉시재장전 | 6회 산탄 강화 사격',
           skill2Name: '[신비] 격류',
           skill2Desc: '• 소모: <b>4 코스트</b> | 쿨타임 2.5초 | 0.5s 차징 후 산탄 8회 연속 발사',
           specialSkillName: '[폭발] 불사(不死)',
           specialSkillDesc: '• 발동: <b>상시 1회 발동 (S키)</b> | 5~10s 무적 & 무한 난사 | 종료 후 5% 흡혈 회복',
-          stats: { hp: 65000, capacity: 4, dmg: 500, pellets: 6, reloadTime: 0.75, maxMags: Infinity, holdFire: false, fireDelay: 0.25, range: 400 },
+          stats: { hp: 84000, capacity: 4, dmg: 500, pellets: 6, reloadTime: 0.75, maxMags: Infinity, holdFire: false, fireDelay: 0.25, range: 400 },
           skillDetails: {
             title: '[관통] 기괴멸렬',
             keyLabel: '[K키 / Q키] 메인스킬 1',
@@ -605,15 +605,15 @@
           skill2AttackType: ATTACK_TYPES.NORMAL,
           specialAttackType: ATTACK_TYPES.NORMAL,
           isMelee: true,
-          hp: 65000,
-          desc: '• 체력: 65,000 | 방어 장갑: 경장갑 | 공격: 일반 근접 대검 | 피해량: 3,560 | 고유 패시브: 단일 대상 연속 타격 (4타부터 +5%씩, 최대 +200%, 다수 타격 시 초기화) | 3종 자세 전환 & E.G.O 개화',
+          hp: 104200,
+          desc: '• 체력: 104,200 | 방어 장갑: 경장갑 | 공격: 일반 근접 대검 | 피해량: 3,560 | 고유 패시브: 단일 대상 연속 타격 (4타부터 +5%씩, 최대 +200%, 다수 타격 시 초기화) | 3종 자세 전환 & E.G.O 개화 (평타 +45%)',
           skillName: '[일반] 전환 (자세 순환)',
           skillDesc: '• 소모: <b>1 코스트 (개화 시 0C)</b> | 쿨타임 없음 | 횡베기 ⇋ 종베기 ⇋ 찌르기 순환 전환 & 다음 공격 +10%(개화 시 +35%)',
           skill2Name: '[일반] 기합 / 돌진',
           skill2Desc: '• 횡/종베기 시 [기합] (4C, 2.2s 기절, 3회 피해 +300%) | 찌르기 시 [돌진] (5C, 820% 대시, 치명타 시 쿨초기화+0C+공격력 누적)',
           specialSkillName: '[일반] 대절단 - 세로 / E.G.O 개화',
-          specialSkillDesc: '• 스택 100 미만: [대절단-세로] (12~8C, 450% 3연타 + 피니시 1250% + 2.5s 기절) | 스택 100: [E.G.O 개화] (특색 붉은안개 발현)',
-          stats: { hp: 65000, capacity: Infinity, dmg: 3560, reloadTime: 0, maxMags: Infinity, holdFire: true, fireDelay: 0.30, range: 140 },
+          specialSkillDesc: '• 스택 100 미만: [대절단-세로] (12~8C, 570% 3연타 + 피니시 3,750% + 2.5s 기절) | 스택 100: [E.G.O 개화] (특색 붉은안개 발현, 평타 +45%)',
+          stats: { hp: 104200, capacity: Infinity, dmg: 3560, reloadTime: 0, maxMags: Infinity, holdFire: true, fireDelay: 0.30, range: 140 },
           skillDetails: {
             title: '[일반] 전환',
             keyLabel: '[K키 / Q키] 메인스킬 1',
@@ -641,9 +641,9 @@
             badgeColor: '#dc2626',
             tags: ['공격: 일반', '스택 100 미만: 대절단-세로', '스택 100: E.G.O 개화', '개화 중: 대절단-가로/세로 분기', '치명타 미발동'],
             sections: [
-              { title: '스택 100 미만: [대절단 - 세로]', text: '스택에 따라 12~8 코스트 소모. 전방 대시 후 종베기로 적을 내리꽂고 수평 고정. 0.7초 간격 450% 3연타(총 1,350%) 후 1,250% 피니시 방출 + 2.5초 기절 (치명타 미발동).' },
-              { title: '스택 100 달성: [E.G.O 개화]', text: '특색 붉은안개 발현! 이동속도 +50%, 일반 공격력 +20%, 범위 +35% 증가. 모든 스킬이 극도로 강화되며 스택이 소진될 때까지 유지됩니다.' },
-              { title: '개화 중 특수스킬 (S키)', text: '• [찌르기 자세]: 강화 [대절단-세로] (8코스트, 단일 타겟, 560% 3연타 + 피니시 1,550% + 4초 기절, 치명타 미발동)\n• [횡/종베기 자세]: [대절단-가로] (12코스트, 0.5초 적 완전 정지 후 2,150% 화면 양단 광역 참격, 치명타 미발동)' },
+              { title: '스택 100 미만: [대절단 - 세로]', text: '스택에 따라 12~8 코스트 소모. 전방 대시 후 종베기로 적을 내리꽂고 수평 고정. 0.7초 간격 570% 3연타(총 1,710%) 후 3,750% 피니시 방출 + 2.5초 기절 (총 5,460% 확정 피해, 치명타 미발동).' },
+              { title: '스택 100 달성: [E.G.O 개화]', text: '특색 붉은안개 발현! 이동속도 +50%, 일반 공격력 +45%, 범위 +35% 증가. 모든 스킬이 극도로 강화되며 스택이 소진될 때까지 유지됩니다.' },
+              { title: '개화 중 특수스킬 (S키)', text: '• [찌르기 자세]: 강화 [대절단-세로] (8코스트, 단일 타겟, 860% 3연타 + 피니시 6,120% + 4초 기절, 총 8,700% 확정 피해, 치명타 미발동)\n• [횡/종베기 자세]: [대절단-가로] (12코스트, 0.5초 적 완전 정지 후 4,000% 화면 양단 광역 참격, 치명타 미발동)' },
               { title: '탈진 및 강제 개화', text: '• 스택 0 도달 시: 8초 탈진 기절 및 스택 충전 불가 (영구 패시브: 이속 +5%, 코스트 속도 10% 단축 획득)\n• 체력 10% 이하 시: 강제 개화 발동 (공격력 -40% 페널티, 치명타 전면 봉인)' }
             ]
           }
