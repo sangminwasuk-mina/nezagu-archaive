@@ -532,7 +532,80 @@ function handleNetworkMessage(data) {
       remotePlayer.redMistStance = data.stance || 'horizontal';
       if (data.facing) remotePlayer.facing = data.facing;
       if (typeof data.x === 'number') remotePlayer.targetX = data.x;
-      if (typeof data.y === 'number') remotePlayer.targetY = data.y;
+      const localGroundY = canvas.height - (typeof GROUND_OFFSET !== 'undefined' ? GROUND_OFFSET : 120);
+      const remoteHeight = remotePlayer.height || 70;
+      if (typeof data.heightAboveGround === 'number') {
+        remotePlayer.targetY = localGroundY - remoteHeight - data.heightAboveGround;
+      } else if (typeof data.y === 'number') {
+        remotePlayer.targetY = data.y;
+      }
+    }
+  }
+
+  // [11-3] 2페이즈 합체 컷씬 상태 실시간 동기화 (호스트 <-> 게스트)
+  else if (data.type === 'PHASE2_CUTSCENE') {
+    if (data.action === 'start') {
+      phase1Defeated = true;
+      isPhase1Retreating = false;
+      kaitenzers.forEach(k => {
+        k.isDead = true;
+        k.isActive = false;
+        k.isSpawned = false;
+        k.isSkillSealed = true;
+        if (k.id === 'yellow') k.laserState = 'none';
+        if (k.id === 'green') k.isOverheated = false;
+      });
+      bullets.length = 0;
+      explosions.length = 0;
+      keys.attack = false;
+      keys.skill = false;
+      keys.jump = false;
+      keys.left = false;
+      keys.right = false;
+      keys.up = false;
+      keys.down = false;
+      if (player.abiNormalCharging) player.abiNormalCharging = false;
+      if (typeof kaitenFx !== 'undefined') {
+        kaitenFx.x = Math.round(WORLD_WIDTH * 0.5 - kaitenFx.width / 2);
+        kaitenFx.y = 0;
+        kaitenFx.facing = -1;
+        kaitenFx.isSpawned = false;
+        kaitenFx.isDead = false;
+      }
+      window.phase2Cutscene = {
+        active: true,
+        state: 'fade_out',
+        timer: 0,
+        subTimer: 0,
+        cutIndex: 0,
+        dockStep: 0,
+        fadeAlpha: 0
+      };
+    } else if (data.action === 'end') {
+      if (window.phase2Cutscene) {
+        window.phase2Cutscene.active = false;
+        window.phase2Cutscene.state = 'done';
+        window.phase2Cutscene.fadeAlpha = 0;
+      }
+      isPhase2Active = true;
+      camera.y = 0;
+      if (typeof camera.zoom !== 'undefined') camera.zoom = 1.0;
+      const transOverlay = document.getElementById('phase-transition-overlay');
+      if (transOverlay) {
+        transOverlay.classList.add('hidden');
+        transOverlay.style.opacity = '0';
+      }
+      player.isControlLocked = false;
+      if (typeof kaitenFx !== 'undefined') {
+        kaitenFx.isSpawned = true;
+        kaitenFx.isActive = true;
+        kaitenFx.x = Math.round(WORLD_WIDTH * 0.5 - kaitenFx.width / 2);
+        kaitenFx.y = 0;
+        kaitenFx.facing = -1;
+        kaitenFx.introState = 'ready';
+        kaitenFx.normalAttackTimer = 1.0;
+      }
+      addDamageText(canvas.width / 2 + camera.x, 80, '⚔️ PHASE 2 KAITEN FX Mk.0 전투 개시! ⚔️', '#ef4444');
     }
   }
 
@@ -565,9 +638,14 @@ function handleEnemyDamageNetPacket(data) {
   const groundY = canvas.height - GROUND_OFFSET;
 
   if (data.targetType === 'kaiten') {
+    if (typeof applyKaitenzerSharedDamage === 'function') {
+      applyKaitenzerSharedDamage(data.damage);
+    }
     const targetK = kaitenzers.find(k => k.id === data.targetId);
     if (targetK && targetK.isSpawned && !targetK.isDead) {
-      targetK.hp = Math.max(0, targetK.hp - data.damage);
+      if (typeof applyKaitenzerSharedDamage !== 'function') {
+        targetK.hp = Math.max(0, targetK.hp - data.damage);
+      }
       const textX = targetK.x + targetK.size / 2;
       const textY = groundY - (targetK.jumpY || 0) - targetK.size;
       if (data.isCrit) {
@@ -658,12 +736,17 @@ function handleInGameSync(data) {
     const sp = data.strikerPlayer;
     remotePlayer.isActive = true;
 
-    // [위치 튐 방지 LERP]: 좌표 즉시 강제 덮어쓰기 대신 목표 좌표 설정
+    // [위치 튐 방지 LERP]: 좌표 즉시 강제 덮어쓰기 대신 목표 좌표 설정 (해상도 차이 Y좌표 보정)
+    const localGroundY = canvas.height - (typeof GROUND_OFFSET !== 'undefined' ? GROUND_OFFSET : 120);
+    const remoteHeight = remotePlayer.height || 70;
+    const targetY = (typeof sp.heightAboveGround === 'number')
+      ? (localGroundY - remoteHeight - sp.heightAboveGround)
+      : sp.y;
     remotePlayer.targetX = sp.x;
-    remotePlayer.targetY = sp.y;
-    if (typeof remotePlayer.x === 'undefined' || Math.hypot(remotePlayer.x - sp.x, remotePlayer.y - sp.y) > 250) {
+    remotePlayer.targetY = targetY;
+    if (typeof remotePlayer.x === 'undefined' || Math.hypot(remotePlayer.x - sp.x, (remotePlayer.y || 0) - targetY) > 250) {
       remotePlayer.x = sp.x;
-      remotePlayer.y = sp.y;
+      remotePlayer.y = targetY;
     }
     remotePlayer.vx = sp.vx;
     remotePlayer.vy = sp.vy;
@@ -835,6 +918,21 @@ function handleInGameSync(data) {
     kaitenFx.isSpawned = fx.isSpawned;
     kaitenFx.isDead = fx.isDead;
     kaitenFx.introState = fx.introState;
+
+    // [2P 게스트 컷신 안전 종료]: 호스트가 이미 실전 전투 중이면 게스트 컷신도 즉시 안전 해제
+    if (fx.isSpawned && fx.introState === 'ready' && window.phase2Cutscene && window.phase2Cutscene.active) {
+      window.phase2Cutscene.active = false;
+      window.phase2Cutscene.state = 'done';
+      window.phase2Cutscene.fadeAlpha = 0;
+      camera.y = 0;
+      if (typeof camera.zoom !== 'undefined') camera.zoom = 1.0;
+      const transOverlay = document.getElementById('phase-transition-overlay');
+      if (transOverlay) {
+        transOverlay.classList.add('hidden');
+        transOverlay.style.opacity = '0';
+      }
+      player.isControlLocked = false;
+    }
     kaitenFx.activePart = fx.activePart;
     kaitenFx.shieldActive = fx.shieldActive;
     kaitenFx.shieldHitCount = fx.shieldHitCount;
@@ -873,9 +971,11 @@ function sendInGameSync(now) {
   if (now - lastNetSyncTime < 25) return;
   lastNetSyncTime = now;
 
+  const localGroundY = canvas.height - (typeof GROUND_OFFSET !== 'undefined' ? GROUND_OFFSET : 120);
   const myStrikerPacket = {
     x: player.x,
     y: player.y,
+    heightAboveGround: Math.max(0, localGroundY - (player.y + player.height)),
     vx: player.vx,
     vy: player.vy,
     hp: player.hp,

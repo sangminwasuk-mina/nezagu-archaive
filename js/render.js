@@ -1,6 +1,25 @@
 // ==========================================
 // render.js - 캔버스 렌더링, 무기 그래픽, 이펙트, 미니맵
 // ==========================================
+    // [안전 폴리필]: ctx.roundRect 미지원 환경 호환성 보장
+    if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r = 0) {
+        if (typeof r === 'number') r = [r, r, r, r];
+        const [tl, tr, br, bl] = Array.isArray(r) ? r : [0, 0, 0, 0];
+        this.moveTo(x + tl, y);
+        this.lineTo(x + w - tr, y);
+        this.quadraticCurveTo(x + w, y, x + w, y + tr);
+        this.lineTo(x + w, y + h - br);
+        this.quadraticCurveTo(x + w, y + h, x + w - br, y + h);
+        this.lineTo(x + bl, y + h);
+        this.quadraticCurveTo(x, y + h, x, y + h - bl);
+        this.lineTo(x + tl, y);
+        this.quadraticCurveTo(x, y, x + tl, y);
+        this.closePath();
+        return this;
+      };
+    }
+
     // [시스템 : 아비 에슈흐] 등 뒤 기계식 비행 날개 파츠 렌더링 함수 (유저 레퍼런스 이미지 2 완벽 반영)
     function drawMechanicalWings(pScreenX, pScreenY, targetEntity) {
       if (!targetEntity.isAbiEshuhActive) return;

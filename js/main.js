@@ -1207,7 +1207,16 @@
           // 컷신 종료! 실전 2페이즈 전투 개시!
           cut.active = false;
           cut.state = 'done';
+          cut.fadeAlpha = 0;
           isPhase2Active = true;
+          camera.y = 0;
+          if (typeof camera.zoom !== 'undefined') camera.zoom = 1.0;
+          const transOverlay = document.getElementById('phase-transition-overlay');
+          if (transOverlay) {
+            transOverlay.classList.add('hidden');
+            transOverlay.style.opacity = '0';
+          }
+          player.isControlLocked = false;
           if (typeof kaitenFx !== 'undefined') {
             kaitenFx.isSpawned = true;
             kaitenFx.isActive = true;
@@ -1218,6 +1227,9 @@
             kaitenFx.normalAttackTimer = 1.0;
           }
           addDamageText(canvas.width / 2 + camera.x, 80, '⚔️ PHASE 2 KAITEN FX Mk.0 전투 개시! ⚔️', '#ef4444');
+          if (currentMode === 'duo' && typeof sendNetPacket === 'function') {
+            sendNetPacket({ type: 'PHASE2_CUTSCENE', action: 'end' });
+          }
         }
       }
     }
@@ -1303,6 +1315,7 @@
       };
 
       if (currentMode === 'duo' && typeof sendNetPacket === 'function') {
+        const localGroundY = canvas.height - (typeof GROUND_OFFSET !== 'undefined' ? GROUND_OFFSET : 120);
         sendNetPacket({
           type: 'MELEE_ATTACK',
           stance: currentStance,
@@ -1311,7 +1324,8 @@
           isEmpowered: isThirdEmpowered,
           facing: player.facing,
           x: player.x,
-          y: player.y
+          y: player.y,
+          heightAboveGround: Math.max(0, localGroundY - (player.y + player.height))
         });
       }
 
@@ -6364,6 +6378,9 @@
           dockStep: 0,
           fadeAlpha: 0
         };
+        if (currentMode === 'duo' && typeof sendNetPacket === 'function') {
+          sendNetPacket({ type: 'PHASE2_CUTSCENE', action: 'start' });
+        }
       }
 
       // 1-2-C. [신규 1페이즈 오프닝 & 2페이즈 합체 컷씬 상태 머신 업데이트]
