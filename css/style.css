@@ -217,6 +217,57 @@
       color: #ffffff;
     }
 
+    /* 블루아카이브 총력전 실시간 4분 전투 제한시간 타이머 */
+    .ba-battle-timer {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(15, 23, 42, 0.88);
+      border: 1.5px solid rgba(56, 189, 248, 0.45);
+      padding: 2.5px 10px;
+      border-radius: 5px;
+      transform: skewX(-12deg);
+      box-shadow: 0 0 10px rgba(15, 23, 42, 0.8);
+      user-select: none;
+      transition: border-color 0.2s, background-color 0.2s;
+    }
+    .ba-battle-timer .timer-icon {
+      font-size: 11px;
+      filter: drop-shadow(0 0 4px #38bdf8);
+    }
+    .ba-battle-timer .timer-label {
+      font-size: 10px;
+      font-weight: 900;
+      color: #38bdf8;
+      letter-spacing: 1px;
+    }
+    .ba-battle-timer .timer-digits {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 15px;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: 1px;
+      text-shadow: 0 0 6px rgba(56, 189, 248, 0.85);
+    }
+    /* 30초 이하 긴급 경고 점멸 */
+    .ba-battle-timer.warning {
+      border-color: #ef4444 !important;
+      background: rgba(153, 27, 27, 0.45) !important;
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.9), inset 0 0 8px rgba(239, 68, 68, 0.4) !important;
+      animation: timerAlertPulse 0.45s infinite alternate !important;
+    }
+    .ba-battle-timer.warning .timer-label {
+      color: #fde047 !important;
+    }
+    .ba-battle-timer.warning .timer-digits {
+      color: #f87171 !important;
+      text-shadow: 0 0 10px rgba(239, 68, 68, 0.95), 0 0 16px #ef4444 !important;
+    }
+    @keyframes timerAlertPulse {
+      0% { transform: skewX(-12deg) scale(1.0); }
+      100% { transform: skewX(-12deg) scale(1.08); filter: brightness(1.25); }
+    }
+
     /* 사선 다중 레이어 체력바 트랙 */
     .ba-hp-track-wrapper {
       width: 100%;
@@ -2430,6 +2481,21 @@
       color: #bae6fd;
       box-shadow: 0 0 14px rgba(56, 189, 248, 0.4);
       text-shadow: 0 0 6px rgba(56, 189, 248, 0.7);
+    }
+
+    .victory-title-en.fail {
+      background: linear-gradient(180deg, #ffffff 0%, #fca5a5 20%, #ef4444 65%, #991b1b 100%) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      filter: drop-shadow(0 0 24px rgba(239, 68, 68, 0.95)) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.9)) !important;
+    }
+
+    .victory-grade-badge.fail {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.35) 0%, rgba(153, 27, 27, 0.5) 100%) !important;
+      border: 1.5px solid #ef4444 !important;
+      color: #fca5a5 !important;
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.7), inset 0 0 10px rgba(239, 68, 68, 0.4) !important;
+      text-shadow: 0 0 8px rgba(239, 68, 68, 0.9) !important;
     }
 
     @keyframes pulseGlow {

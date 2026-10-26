@@ -630,6 +630,18 @@ function handleNetworkMessage(data) {
       updateVictoryModalStats();
     }
   }
+
+  // [12-2] 타임오버 / 작전 실패 동기화
+  else if (data.type === 'DEFEAT_SYNC') {
+    window.isDefeatSequenceActive = true;
+    window.defeatTimer = 0;
+    window.defeatModalShown = false;
+    window.battleTimeDilation = 1.0;
+    player.isControlLocked = true;
+    keys.left = false; keys.right = false; keys.up = false; keys.down = false; keys.attack = false; keys.skill = false;
+    player.vx = 0;
+    addDamageText(canvas.width / 2 + (typeof camera !== 'undefined' ? camera.x : 0), 80, '⏱️ [TIME OVER] 작전 시간 초과! (FAIL)', '#ef4444');
+  }
 }
 
 // 2P 게스트가 적 타격 시 1P 호스트가 권위적으로 대미지를 적용하는 함수

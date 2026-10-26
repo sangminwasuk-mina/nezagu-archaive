@@ -653,29 +653,6 @@
           <span id="posDisplay">X: 300</span>
         </div>
       </div>
-
-      <!-- 2. 동료 스트라이커 종합 상태 패널 (2인 협동 모드 시 표시) -->
-      <div id="peer-status-panel" class="panel hidden" style="border-color: #ef4444; width: 230px;">
-        <div class="status-title">
-          <span id="peerPlayerTitle" style="color: #ef4444;">🛡️ 2P 스트라이커</span>
-          <span class="badge" id="peerHpBadge" style="background: #ef4444;">HP: 65,000</span>
-        </div>
-        <div class="hp-bar-bg" style="margin-bottom: 6px;">
-          <div id="peerHpBar" class="hp-bar-fill" style="background: linear-gradient(90deg, #dc2626, #ef4444);"></div>
-          <div id="peerHpText" class="hp-text">65,000 / 65,000</div>
-        </div>
-        <div style="font-size: 11px; color: #f87171; display: flex; justify-content: space-between; margin-bottom: 2px;">
-          <span>⚡ <b>전술 코스트</b></span>
-          <span id="peerCostText" style="font-family: monospace; font-weight: bold;">6 / 15</span>
-        </div>
-        <div style="width: 100%; height: 8px; background: #334155; border-radius: 4px; overflow: hidden; margin-bottom: 6px;">
-          <div id="peerCostBar" style="width: 40%; height: 100%; background: linear-gradient(90deg, #f87171, #ef4444); transition: width 0.1s linear;"></div>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(15,23,42,0.6); padding: 4px 8px; border-radius: 6px; font-size: 11px;">
-          <span id="peerWeaponName" style="font-weight: 800; color: #facc15;">MG</span>
-          <span id="peerAmmoText" style="color: #ffffff;">40 / 7탄창</span>
-        </div>
-      </div>
     </div>
 
     <!-- [블루아카이브 총력전 스타일] 통합 보스 체력바 HUD (스케치 100% 반영) -->
@@ -690,11 +667,17 @@
 
       <!-- 2. 우측 보스 메인 바 영역 -->
       <div class="ba-bar-column">
-        <!-- 2-1. 상단 타이틀 행 (보스 이름 + 경장갑 뱃지) -->
+        <!-- 2-1. 상단 타이틀 행 (보스 이름 + 경장갑 뱃지 + 실시간 4분 전투 제한시간 타이머) -->
         <div class="ba-header-row">
           <div class="ba-name-wrapper">
             <span id="ba-boss-name" class="ba-boss-name">KAITENZERS (카이텐저 연합)</span>
             <span id="ba-boss-armor-badge" class="ba-armor-badge light">경장갑</span>
+          </div>
+          <!-- [실시간 4분 전투 제한시간 타이머: 블루아카이브 총력전 LIMIT TIME] -->
+          <div id="ba-battle-timer" class="ba-battle-timer">
+            <span class="timer-icon">⏱️</span>
+            <span class="timer-label">LIMIT</span>
+            <span id="ba-battle-timer-val" class="timer-digits">04:00</span>
           </div>
         </div>
 
@@ -850,9 +833,9 @@
     <div class="victory-content-box">
       <!-- 상단 노란 영문 VICTORY 타이틀 & 클리어 등급 배지 -->
       <div class="victory-header-area">
-        <h1 class="victory-title-en">VICTORY</h1>
+        <h1 class="victory-title-en" id="victory-title-en">VICTORY</h1>
         <div id="victory-grade-badge" class="victory-grade-badge ex-clear">EX CLEAR</div>
-        <div class="victory-time-label">클리어 시간: <span id="victory-clear-time">00:00</span></div>
+        <div class="victory-time-label" id="victory-time-label">클리어 시간: <span id="victory-clear-time">00:00</span></div>
       </div>
 
       <!-- 전적 통계 카드 그리드 (가한 피해량, 받은 피해량, 전사 횟수) -->
@@ -915,15 +898,15 @@
   <canvas id="minimap" class="hidden"></canvas>
 
   <!-- WebRTC 순수 P2P 라이브러리 (로컬 내장 PeerJS) -->
-  <script src="js/peerjs.min.js?v=2.9.63"></script>
+  <script src="js/peerjs.min.js?v=2.9.64"></script>
   <script>window.Peer || document.write('<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"><\/script>');</script>
 
-  <!-- 게임 엔진 스크립트 모듈 순차 로드 (캐시 방지 v=2.9.63) -->
-  <script src="js/constants.js?v=2.9.63"></script>
-  <script src="js/entities.js?v=2.9.63"></script>
-  <script src="js/network.js?v=2.9.63"></script>
-  <script src="js/ui.js?v=2.9.63"></script>
-  <script src="js/render.js?v=2.9.63"></script>
-  <script src="js/main.js?v=2.9.63"></script>
+  <!-- 게임 엔진 스크립트 모듈 순차 로드 (캐시 방지 v=2.9.64) -->
+  <script src="js/constants.js?v=2.9.64"></script>
+  <script src="js/entities.js?v=2.9.64"></script>
+  <script src="js/network.js?v=2.9.64"></script>
+  <script src="js/ui.js?v=2.9.64"></script>
+  <script src="js/render.js?v=2.9.64"></script>
+  <script src="js/main.js?v=2.9.64"></script>
 </body>
 </html>

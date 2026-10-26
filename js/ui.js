@@ -335,31 +335,6 @@
         if (tacticalDeck) tacticalDeck.classList.remove('hidden');
         const topRightHud = document.getElementById('top-right-hud');
         if (topRightHud) topRightHud.classList.remove('hidden');
-        const peerPanel = document.getElementById('peer-status-panel');
-        if (peerPanel) {
-          if (currentMode === 'duo') {
-            peerPanel.classList.remove('hidden');
-            const peerTitle = document.getElementById('peerPlayerTitle');
-            const peerBadge = document.getElementById('peerHpBadge');
-            if (myRole === 'guest_striker') {
-              if (peerTitle) {
-                peerTitle.innerText = '🛡️ 1P 스트라이커';
-                peerTitle.style.color = '#0284c7';
-              }
-              if (peerBadge) peerBadge.style.background = '#0284c7';
-              peerPanel.style.borderColor = '#0284c7';
-            } else {
-              if (peerTitle) {
-                peerTitle.innerText = '🛡️ 2P 스트라이커';
-                peerTitle.style.color = '#ef4444';
-              }
-              if (peerBadge) peerBadge.style.background = '#ef4444';
-              peerPanel.style.borderColor = '#ef4444';
-            }
-          } else {
-            peerPanel.classList.add('hidden');
-          }
-        }
       }
     }
 
@@ -1869,45 +1844,24 @@
         }
       }
 
-      // 동료 스트라이커 종합 상태 패널 실시간 동기화 (2인 모드 시)
-      const peerPanel = document.getElementById('peer-status-panel');
-      if (peerPanel) {
-        if (currentMode === 'duo') {
-          peerPanel.classList.remove('hidden');
-          const rHp = remotePlayer.hp;
-          const rMaxHp = remotePlayer.maxHp || 10000;
-          const rHpPct = Math.max(0, (rHp / rMaxHp) * 100);
-
-          const peerHpBar = document.getElementById('peerHpBar');
-          const peerHpText = document.getElementById('peerHpText');
-          const peerHpBadge = document.getElementById('peerHpBadge');
-          const peerCostText = document.getElementById('peerCostText');
-          const peerCostBar = document.getElementById('peerCostBar');
-          const peerWeaponName = document.getElementById('peerWeaponName');
-          const peerAmmoText = document.getElementById('peerAmmoText');
-
-          if (peerHpBar) peerHpBar.style.width = `${rHpPct}%`;
-          if (peerHpText) peerHpText.innerText = `${rHp.toLocaleString()} / ${rMaxHp.toLocaleString()}`;
-          if (peerHpBadge) {
-            peerHpBadge.innerText = rHp <= 0 ? '전투 불능' : `HP: ${rHp.toLocaleString()}`;
+      // [신규 UI] 실시간 4분 전투 제한시간 타이머 갱신 (블루아카이브 LIMIT TIME)
+      const timerContainer = getCachedEl('ba-battle-timer');
+      const timerValEl = getCachedEl('ba-battle-timer-val');
+      if (timerValEl) {
+        const remSec = Math.max(0, Math.ceil(typeof window.battleRemainingTime === 'number' ? window.battleRemainingTime : 240));
+        const mins = Math.floor(remSec / 60);
+        const secs = remSec % 60;
+        const timeText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        if (timerValEl.innerText !== timeText) {
+          timerValEl.innerText = timeText;
+        }
+        if (timerContainer) {
+          // 30초 이하 남았을 때 긴급 경고 점멸 활성화
+          if (remSec <= 30 && remSec > 0) {
+            if (!timerContainer.classList.contains('warning')) timerContainer.classList.add('warning');
+          } else {
+            if (timerContainer.classList.contains('warning')) timerContainer.classList.remove('warning');
           }
-          if (peerCostText) {
-            peerCostText.innerText = `${Math.floor(remotePlayer.cost || 0)} / ${remotePlayer.maxCost || 15}`;
-          }
-          if (peerCostBar) {
-            peerCostBar.style.width = `${((remotePlayer.cost || 0) / (remotePlayer.maxCost || 15)) * 100}%`;
-          }
-          if (peerWeaponName) {
-            const wName = remotePlayer.activeWeaponSlot === 'sub'
-              ? (remotePlayer.subWeapon ? remotePlayer.subWeapon.name : '보조무기')
-              : (remotePlayer.mainWeapon ? remotePlayer.mainWeapon.name : '주무기');
-            peerWeaponName.innerText = wName;
-          }
-          if (peerAmmoText) {
-            peerAmmoText.innerText = remotePlayer.isActive ? '동기화 완료' : '대기 중';
-          }
-        } else {
-          peerPanel.classList.add('hidden');
         }
       }
     }
@@ -2027,8 +1981,12 @@
     const victoryModal = document.getElementById('victory-modal');
     const btnVictoryConfirm = document.getElementById('btn-victory-confirm');
 
-    function showVictoryModal() {
+    function showVictoryModal(isFail = false) {
       if (!victoryModal) return;
+
+      const titleEl = document.getElementById('victory-title-en');
+      const gradeBadge = document.getElementById('victory-grade-badge');
+      const timeLabelEl = document.getElementById('victory-time-label');
 
       const stats = window.battleStats || {
         damageDealt: 0,
@@ -2041,24 +1999,42 @@
         clearTimeSeconds: 0
       };
 
-      // 클리어 시간 계산
-      const clearTimeSec = Math.floor(stats.clearTimeSeconds || ((performance.now() - (stats.startTime || performance.now())) / 1000));
-      const mins = Math.floor(clearTimeSec / 60);
-      const secs = clearTimeSec % 60;
-      const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-      const timeEl = document.getElementById('victory-clear-time');
-      if (timeEl) timeEl.innerText = timeStr;
+      if (isFail) {
+        if (titleEl) {
+          titleEl.innerText = 'DEFEAT';
+          titleEl.classList.add('fail');
+        }
+        if (gradeBadge) {
+          gradeBadge.className = 'victory-grade-badge fail';
+          gradeBadge.innerText = '★ OPERATION FAILED ★';
+        }
+        if (timeLabelEl) {
+          timeLabelEl.innerHTML = `작전 결과: <span id="victory-clear-time" style="color: #ef4444; font-weight: bold;">04:00 (시간 초과)</span>`;
+        }
+      } else {
+        if (titleEl) {
+          titleEl.innerText = 'VICTORY';
+          titleEl.classList.remove('fail');
+        }
+        // 클리어 시간 계산
+        const clearTimeSec = Math.floor(stats.clearTimeSeconds || ((performance.now() - (stats.startTime || performance.now())) / 1000));
+        const mins = Math.floor(clearTimeSec / 60);
+        const secs = clearTimeSec % 60;
+        const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        if (timeLabelEl) {
+          timeLabelEl.innerHTML = `클리어 시간: <span id="victory-clear-time">${timeStr}</span>`;
+        }
 
-      // EX CLEAR 판정: 아무도 사망하지 않았으면 EX CLEAR, 한 명이라도 사망 시 CLEAR
-      const totalDeaths = (stats.deaths || 0) + (stats.peerDeaths || 0);
-      const gradeBadge = document.getElementById('victory-grade-badge');
-      if (gradeBadge) {
-        if (totalDeaths === 0) {
-          gradeBadge.className = 'victory-grade-badge ex-clear';
-          gradeBadge.innerText = '★ EX CLEAR ★';
-        } else {
-          gradeBadge.className = 'victory-grade-badge normal-clear';
-          gradeBadge.innerText = 'CLEAR';
+        // EX CLEAR 판정: 아무도 사망하지 않았으면 EX CLEAR, 한 명이라도 사망 시 CLEAR
+        const totalDeaths = (stats.deaths || 0) + (stats.peerDeaths || 0);
+        if (gradeBadge) {
+          if (totalDeaths === 0) {
+            gradeBadge.className = 'victory-grade-badge ex-clear';
+            gradeBadge.innerText = '★ EX CLEAR ★';
+          } else {
+            gradeBadge.className = 'victory-grade-badge normal-clear';
+            gradeBadge.innerText = 'CLEAR';
+          }
         }
       }
 

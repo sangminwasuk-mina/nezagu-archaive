@@ -605,11 +605,16 @@
 
     // 카이텐저 페이즈 및 증원 초기화 함수
     function initBattleEncounter() {
-      // 0. 전투 전적 및 승리 시퀀스 초기화
+      // 0. 전투 전적 및 승리/패배 시퀀스 & 4분 타이머 초기화
       player.isControlLocked = false;
       window.isVictorySequenceActive = false;
       window.victoryTimer = 0;
       window.victoryModalShown = false;
+      window.isDefeatSequenceActive = false;
+      window.defeatTimer = 0;
+      window.defeatModalShown = false;
+      window.battleRemainingTime = 240.0; // 4분 제한시간
+      window.battleTimeDilation = 1.0;
       window.battleStats = {
         damageDealt: 0,
         damageTaken: 0,
@@ -1339,8 +1344,8 @@
         player.redMistThrustSlideSpeed = isThirdEmpowered ? 300 : 240;
       }
 
-      // 3. 기본 데미지 (3,560) 및 버프 연산
-      let baseDmg = (player.mainWeapon && player.mainWeapon.stats && player.mainWeapon.stats.dmg) ? player.mainWeapon.stats.dmg : 3560;
+      // 3. 기본 데미지 (5,200) 및 버프 연산
+      let baseDmg = (player.mainWeapon && player.mainWeapon.stats && player.mainWeapon.stats.dmg) ? player.mainWeapon.stats.dmg : 5200;
 
       // 3타 강화 피해량 150% 적용
       if (isThirdEmpowered) {
@@ -1374,10 +1379,10 @@
         player.redMistKihapBuffCount--;
       }
 
-      // 4. 대검 검신 밀착형 타격 범위 판정 (종/횡베기: 실제 검날 길이 ~85px, 찌르기: 검신+돌풍파 ~150px)
-      let baseReach = (player.redMistStance === 'thrust') ? 150 : 85;
+      // 4. 대검 검신 타격 범위 판정 (기본 범위 +15% 상향: 종/횡베기 98px, 찌르기 173px)
+      let baseReach = (player.redMistStance === 'thrust') ? 173 : 98;
       if (isThirdEmpowered) {
-        baseReach *= 1.25; // 3타 강화: 공격범위 125%
+        baseReach *= 1.35; // 3타 강화: 공격범위 135% (+35% 대폭 확대)
       }
       const hitRange = player.isEgoActive ? (baseReach * 1.35) : baseReach;
       const groundY = canvas.height - GROUND_OFFSET;
@@ -4794,6 +4799,42 @@
       const groundY = canvas.height - GROUND_OFFSET;
       const playerCenterX = player.x + player.width / 2;
       const playerCenterY = player.y + player.height / 2;
+
+      // 0-0. [신규 시스템: 4분 전투 제한시간 타이머 & 타임오버 슬로우 페일 처리]
+      const isCutsceneActiveForTimer = (window.phase1Cutscene && window.phase1Cutscene.active) || (window.phase2Cutscene && window.phase2Cutscene.active);
+      if (!isCutsceneActiveForTimer && !window.isVictorySequenceActive && !window.isDefeatSequenceActive) {
+        if (typeof window.battleRemainingTime === 'undefined') window.battleRemainingTime = 240.0;
+        window.battleRemainingTime = Math.max(0, window.battleRemainingTime - dt);
+        if (window.battleRemainingTime <= 0) {
+          window.battleRemainingTime = 0;
+          window.isDefeatSequenceActive = true;
+          window.defeatTimer = 0;
+          window.defeatModalShown = false;
+          window.battleTimeDilation = 1.0;
+          player.isControlLocked = true;
+          keys.left = false; keys.right = false; keys.up = false; keys.down = false; keys.attack = false; keys.skill = false;
+          player.vx = 0;
+          addDamageText(canvas.width / 2 + (typeof camera !== 'undefined' ? camera.x : 0), 80, '⏱️ [TIME OVER] 작전 시간 초과! (FAIL)', '#ef4444');
+          if (currentMode === 'duo' && typeof sendNetPacket === 'function') {
+            sendNetPacket({ type: 'DEFEAT_SYNC', reason: 'time_over' });
+          }
+        }
+      }
+
+      // [타임오버/패배 슬로우 모션 연출 및 FAIL 결산 팝업]
+      if (window.isDefeatSequenceActive) {
+        window.battleTimeDilation = Math.max(0.18, (window.battleTimeDilation || 1.0) - dt * 0.45);
+        window.defeatTimer = (window.defeatTimer || 0) + dt;
+        player.isControlLocked = true;
+        keys.left = false; keys.right = false; keys.up = false; keys.down = false; keys.attack = false; keys.skill = false;
+        player.vx = 0;
+        if (window.defeatTimer >= 2.2 && !window.defeatModalShown) {
+          window.defeatModalShown = true;
+          if (typeof showVictoryModal === 'function') {
+            showVictoryModal(true); // isFail = true
+          }
+        }
+      }
 
       // 0. 전술 코스트 회복 (기본 2.5초, [단련된 체력] 장착 시 20% 감소하여 2.0초) - 아비 에슈흐 중에는 자연 회복 중단
       if (!player.isAbiEshuhActive) {
@@ -8382,7 +8423,7 @@
       try {
         // 'battle' 상태(출격 완료)일 때만 전투 AI/물리/공격 로직 실행
         if (currentGameState === 'battle') {
-          updateLogic(Math.min(dt, 0.1));
+          updateLogic(Math.min(dt, 0.1) * (window.battleTimeDilation || 1.0));
           if (typeof sendInGameSync === 'function') {
             sendInGameSync(now);
           }
